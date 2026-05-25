@@ -10,19 +10,13 @@ export const useAuth = () => {
     currentCompanyId,
     currentCompany,
     email,
-    password,
     loading,
     isAuthenticated,
   } = storeToRefs(store);
 
   const localError = ref<string | null>(null);
 
-  const login = async (creds: {
-    baseUrl: string;
-    db: string;
-    username: string;
-    password: string;
-  }) => {
+  const login = async (creds: { username: string; password: string }) => {
     localError.value = null;
     try {
       if (!creds.username || !creds.password) {
@@ -37,6 +31,7 @@ export const useAuth = () => {
       await navigateTo("/");
       return true;
     } catch (err: any) {
+      console.log(err);
       console.error("[useAuth login wrapper error]:", err);
       localError.value = err.message || "حدث خطأ أثناء تسجيل الدخول.";
       throw err;
@@ -55,7 +50,6 @@ export const useAuth = () => {
     isLoading: loading,
     error: localError,
     username: email,
-    password,
     currentCompanyId,
     currentCompany,
 

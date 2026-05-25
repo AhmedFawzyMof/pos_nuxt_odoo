@@ -2,8 +2,6 @@
 import { ref } from "vue";
 import { useAuth } from "~/composables/useAuth";
 import {
-  Server,
-  Database,
   User,
   Lock,
   Eye,
@@ -11,7 +9,6 @@ import {
   AlertCircle,
   LogIn,
   Loader2,
-  Terminal,
 } from "@lucide/vue";
 import {
   Card,
@@ -31,10 +28,8 @@ definePageMeta({
 
 const auth = useAuth();
 
-const baseUrlVal = ref(auth.baseUrl.value || "https://");
-const dbVal = ref(auth.db.value || "");
-const usernameVal = ref(auth.username.value || "");
-const passwordVal = ref(auth.password.value || "");
+const usernameVal = ref("");
+const passwordVal = ref("");
 
 const showPassword = ref(false);
 const localError = ref<string | null>(null);
@@ -42,14 +37,6 @@ const localError = ref<string | null>(null);
 const handleLogin = async () => {
   localError.value = null;
 
-  if (!baseUrlVal.value || baseUrlVal.value === "https://") {
-    localError.value = "يرجى إدخال رابط خادم Odoo الصحيح.";
-    return;
-  }
-  if (!dbVal.value) {
-    localError.value = "يرجى إدخال اسم قاعدة البيانات.";
-    return;
-  }
   if (!usernameVal.value) {
     localError.value = "يرجى إدخال اسم المستخدم أو البريد الإلكتروني.";
     return;
@@ -60,14 +47,14 @@ const handleLogin = async () => {
   }
 
   try {
+    console.log(usernameVal.value, passwordVal.value);
     await auth.login({
-      baseUrl: baseUrlVal.value,
-      db: dbVal.value,
       username: usernameVal.value,
       password: passwordVal.value,
     });
   } catch (err: any) {
-    localError.value = err.message || "فشل الاتصال بخادم Odoo أو بيانات الاعتماد خاطئة.";
+    localError.value =
+      err.message || "فشل الاتصال بنظام المبيعات أو بيانات الاعتماد خاطئة.";
   }
 };
 </script>
@@ -77,61 +64,75 @@ const handleLogin = async () => {
     class="flex min-h-screen w-full items-stretch justify-center bg-background overflow-hidden select-none"
   >
     <div
-      class="relative hidden w-1/2 flex-col justify-between bg-primary p-10 text-white lg:flex overflow-hidden"
+      class="relative hidden w-1/2 flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex overflow-hidden"
     >
       <div
-        class="absolute inset-0 bg-linear-to-tr from-[#714B67] via-[#5D3853] to-[#8C5E7F] z-0"
+        class="absolute inset-0 bg-linear-to-tr from-primary/95 via-primary to-primary/85 z-0"
       />
       <div
-        class="absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full bg-white/5 blur-3xl z-0"
+        class="absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full bg-primary-foreground/5 blur-3xl z-0"
       />
       <div
         class="absolute -bottom-32 -right-32 h-[600px] w-[600px] rounded-full bg-black/10 blur-3xl z-0"
       />
 
-      <!-- Top logo / Title -->
       <div class="relative z-10 flex items-center gap-2">
         <div
-          class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md border border-white/20"
+          class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15 backdrop-blur-md border border-primary-foreground/20"
         >
-          <span class="material-symbols-outlined text-white text-2xl font-bold"
+          <span
+            class="material-symbols-outlined text-primary-foreground text-2xl font-bold"
             >point_of_sale</span
           >
         </div>
-        <span class="text-xl font-bold tracking-wide">Odoo Retail Lite</span>
+        <span class="text-xl font-bold tracking-wide">POS Retail Lite</span>
       </div>
 
       <!-- Center content -->
       <div class="relative z-10 my-auto max-w-lg space-y-6">
-        <h1 class="text-4xl font-extrabold leading-tight text-white/95">
+        <h1
+          class="text-4xl font-extrabold leading-tight text-primary-foreground/95"
+        >
           نظام المبيعات ونقاط البيع المتكامل
         </h1>
-        <p class="text-lg text-white/80 leading-relaxed font-light">
-          قم بتوصيل جهاز الكاشير أو نقطة البيع الخاصة بك مباشرة بخادم Odoo
+        <p
+          class="text-lg text-primary-foreground/80 leading-relaxed font-light"
+        >
+          قم بتوصيل جهاز الكاشير أو نقطة البيع الخاصة بك مباشرة بنظام المبيعات
           لمزامنة المنتجات، المبيعات، العملاء والطلبات بشكل فوري وسلس.
         </p>
 
         <div class="grid grid-cols-2 gap-4 pt-4">
           <div
-            class="rounded-2xl bg-white/5 p-4 backdrop-blur-xs border border-white/10 flex items-center gap-3"
+            class="rounded-2xl bg-primary-foreground/5 p-4 backdrop-blur-xs border border-primary-foreground/10 flex items-center gap-3"
           >
-            <span class="material-symbols-outlined text-white/90 text-3xl"
+            <span
+              class="material-symbols-outlined text-primary-foreground/90 text-3xl"
               >sync</span
             >
             <div>
-              <p class="text-sm font-semibold text-white/90">مزامنة فورية</p>
-              <p class="text-xs text-white/60">للمنتجات والطلبات</p>
+              <p class="text-sm font-semibold text-primary-foreground/90">
+                مزامنة فورية
+              </p>
+              <p class="text-xs text-primary-foreground/60">
+                للمنتجات والطلبات
+              </p>
             </div>
           </div>
           <div
-            class="rounded-2xl bg-white/5 p-4 backdrop-blur-xs border border-white/10 flex items-center gap-3"
+            class="rounded-2xl bg-primary-foreground/5 p-4 backdrop-blur-xs border border-primary-foreground/10 flex items-center gap-3"
           >
-            <span class="material-symbols-outlined text-white/90 text-3xl"
+            <span
+              class="material-symbols-outlined text-primary-foreground/90 text-3xl"
               >offline_pin</span
             >
             <div>
-              <p class="text-sm font-semibold text-white/90">دعم غير متصل</p>
-              <p class="text-xs text-white/60">جاهز للعمل دائماً</p>
+              <p class="text-sm font-semibold text-primary-foreground/90">
+                دعم غير متصل
+              </p>
+              <p class="text-xs text-primary-foreground/60">
+                جاهز للعمل دائماً
+              </p>
             </div>
           </div>
         </div>
@@ -139,12 +140,14 @@ const handleLogin = async () => {
 
       <!-- Bottom footer info -->
       <div
-        class="relative z-10 text-xs text-white/60 flex items-center justify-between"
+        class="relative z-10 text-xs text-primary-foreground/60 flex items-center justify-between"
       >
-        <p>© 2026 Odoo Retail Lite. جميع الحقوق محفوظة.</p>
+        <p>© 2026 POS Retail Lite. جميع الحقوق محفوظة.</p>
         <div class="flex gap-4">
-          <a href="#" class="hover:underline hover:text-white/80">المساعدة</a>
-          <a href="#" class="hover:underline hover:text-white/80"
+          <a href="#" class="hover:underline hover:text-primary-foreground/80"
+            >المساعدة</a
+          >
+          <a href="#" class="hover:underline hover:text-primary-foreground/80"
             >الشروط والأحكام</a
           >
         </div>
@@ -165,7 +168,7 @@ const handleLogin = async () => {
               >point_of_sale</span
             >
           </div>
-          <h2 class="text-2xl font-bold text-foreground">Odoo Retail Lite</h2>
+          <h2 class="text-2xl font-bold text-foreground">POS Retail Lite</h2>
           <p class="text-sm text-muted-foreground mt-1">
             نظام المبيعات ونقاط البيع المتكامل
           </p>
@@ -177,7 +180,7 @@ const handleLogin = async () => {
               >تسجيل الدخول للنظام</CardTitle
             >
             <CardDescription class="text-center sm:text-right">
-              أدخل رابط خادم Odoo وبيانات الاعتماد الخاصة بك للبدء
+              أدخل بيانات الاعتماد الخاصة بك للبدء
             </CardDescription>
           </CardHeader>
 
@@ -201,60 +204,6 @@ const handleLogin = async () => {
             </transition>
 
             <form @submit.prevent="handleLogin" class="space-y-4">
-              <!-- Section 1: Server Config -->
-              <div class="space-y-3">
-                <div
-                  class="flex items-center justify-between border-b border-border/50 pb-1.5"
-                >
-                  <span
-                    class="text-xs font-semibold text-primary flex items-center gap-1.5"
-                  >
-                    <Server class="h-3.5 w-3.5" />
-                    إعدادات خادم Odoo
-                  </span>
-                </div>
-
-                <!-- Base URL -->
-                <div class="space-y-1">
-                  <Label for="baseUrl" class="text-xs text-muted-foreground"
-                    >رابط الخادم (Server URL)</Label
-                  >
-                  <div class="relative">
-                    <Server
-                      class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/75"
-                    />
-                    <Input
-                      id="baseUrl"
-                      v-model="baseUrlVal"
-                      type="text"
-                      placeholder="https://odoo-pos-instance.com"
-                      class="pr-10 text-left ltr focus-visible:ring-primary/40 focus-visible:border-primary"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <!-- Database Name -->
-                <div class="space-y-1">
-                  <Label for="dbName" class="text-xs text-muted-foreground"
-                    >اسم قاعدة البيانات (Database)</Label
-                  >
-                  <div class="relative">
-                    <Database
-                      class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/75"
-                    />
-                    <Input
-                      id="dbName"
-                      v-model="dbVal"
-                      type="text"
-                      placeholder="my-company-db"
-                      class="pr-10 text-left ltr focus-visible:ring-primary/40 focus-visible:border-primary"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
               <!-- Section 2: Account Config -->
               <div class="space-y-3 pt-2">
                 <div
@@ -346,7 +295,7 @@ const handleLogin = async () => {
               <span
                 class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
               ></span>
-              يدعم الاتصال الآمن بـ Odoo JSON-RPC
+              يدعم الاتصال الآمن ومزامنة المبيعات الفورية
             </span>
           </CardFooter>
         </Card>

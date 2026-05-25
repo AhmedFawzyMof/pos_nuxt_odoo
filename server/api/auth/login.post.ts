@@ -1,90 +1,107 @@
 import { defineEventHandler, readBody } from "h3";
-import { JsonClient } from "../../utils/json_client";
+import { connectToOdoo } from "~~/server/utils/client";
+import { tryCatch } from "~~/server/utils/tryCatch";
+const DEFAULT_URL = process.env.DEFAULT_URL || "https://83832.odoo.com";
+const DEFAULT_DB = process.env.DEFAULT_DB || "83832";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
-  if (!body.baseUrl || !body.db || !body.username || !body.password) {
+  if (!body.username || !body.password) {
     return {
       success: false,
-      error: "جميع الحقول (رابط الخادم، قاعدة البيانات، اسم المستخدم، كلمة المرور) مطلوبة.",
+      error:
+        "جميع الحقول (رابط الخادم، قاعدة البيانات، اسم المستخدم، كلمة المرور) مطلوبة.",
     };
   }
 
-  try {
-    const client = new JsonClient({
-      baseUrl: body.baseUrl,
-      db: body.db,
-      username: body.username,
-      password: body.password,
-    });
+  const client = connectToOdoo(body.username, body.password);
 
-    const uid = await client.login();
+  const [err, uid] = await tryCatch(client.connect());
 
-    // Default safe fallback metadata in case Odoo models are restricted or custom
-    let userName = body.username;
-    let allowedCompanies = [{ id: 1, name: "الشركة الرئيسية" }];
-    let primaryCompanyId = 1;
+  if (err) {
+    return {
+      success: false,
+      error: err.message,
+    };
+  }
 
-    try {
-      const userDetailsList = await client.executeKw(uid, "res.users", "read", [
-        [uid],
-        ["name", "company_id", "company_ids"],
-      ]);
+  const [userErr, userDetailsList] = await tryCatch(
+    client.read<any>(
+      "res.users",
+      [Number(uid)],
+      ["name", "company_id", "company_ids", "groups_id"],
+    ),
+  );
 
-      if (userDetailsList && userDetailsList[0]) {
-        const userDetails = userDetailsList[0];
-        userName = userDetails.name || body.username;
+  if (userErr) {
+    return {
+      success: false,
+      error: userErr.message,
+    };
+  }
 
-        const allowedCompanyIds = userDetails.company_ids || [];
-        if (allowedCompanyIds.length > 0) {
-          try {
-            const fetchedCompanies = await client.executeKw(uid, "res.company", "read", [
-              allowedCompanyIds,
-              ["name"],
-            ]);
-            if (fetchedCompanies && fetchedCompanies.length > 0) {
-              allowedCompanies = fetchedCompanies.map((c: any) => ({
-                id: c.id,
-                name: c.name,
-              }));
-            }
-          } catch (compError) {
-            console.warn("Could not read res.company models, falling back to primary company:", compError);
-            if (userDetails.company_id) {
-              allowedCompanies = [{
-                id: userDetails.company_id[0],
-                name: userDetails.company_id[1],
-              }];
-            }
-          }
-        } else if (userDetails.company_id) {
-          allowedCompanies = [{
-            id: userDetails.company_id[0],
-            name: userDetails.company_id[1],
-          }];
-        }
+  if (!userDetailsList || userDetailsList.length === 0) {
+    return {
+      success: false,
+      error: "المستخدم غير موجود",
+    };
+  }
+  const groupIds = userDetailsList[0].groups_id || [];
 
-        primaryCompanyId = userDetails.company_id ? userDetails.company_id[0] : (allowedCompanies[0]?.id || 1);
-      }
-    } catch (profileError) {
-      console.warn("Could not read res.users model, returning authenticated uid with default company context:", profileError);
+  let userPermissions: any = [];
+
+  if (groupIds.length > 0) {
+    const [groupError, groupRecords] = await tryCatch(
+      client.read("res.groups", groupIds, ["name", "full_name", "category_id"]),
+    );
+
+    if (!groupError) {
+      userPermissions = groupRecords.map((g: any) => ({
+        id: g.id,
+        name: g.name,
+        fullName: g.full_name,
+      }));
     }
+    console.warn("Could not read permission groups:", groupError);
+  }
 
-    return {
-      success: true,
-      user: {
-        id: uid,
-        name: userName,
-        allowedCompanies,
-        primaryCompanyId,
-      },
-    };
-  } catch (error: any) {
-    console.error("[Auth API Error]:", error);
+  const [companyErr, companyDetailsList] = await tryCatch(
+    client.read<any>("res.company", userDetailsList[0].company_ids, ["name"]),
+  );
+
+  if (companyErr) {
     return {
       success: false,
-      error: error.message || "فشل الاتصال بخادم Odoo أو بيانات الاعتماد خاطئة.",
+      error: companyErr.message,
     };
   }
+
+  const allowedCompanies = (companyDetailsList || []).map((company: any) => ({
+    id: company.id,
+    name: company.name,
+  }));
+
+  const primaryCompanyId = userDetailsList[0].company_id[0];
+
+  await setUserSession(event, {
+    user: {
+      id: uid,
+      name: userDetailsList[0].name,
+      userPermissions,
+    },
+    odooPassword: body.password,
+    odooUsername: body.username,
+  });
+
+  return {
+    success: true,
+    user: {
+      id: uid,
+      name: userDetailsList[0].name,
+      allowedCompanies,
+      primaryCompanyId,
+      userPermissions,
+    },
+  };
 });

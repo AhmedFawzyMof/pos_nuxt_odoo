@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useRoute } from "#app";
-import {
-  LayoutDashboard,
-  Receipt,
-  Warehouse,
-  Bell,
-  Settings,
-  Menu,
-  Search,
-} from "@lucide/vue";
+import { LayoutDashboard, Receipt, Warehouse } from "@lucide/vue";
 import { navLinks } from "~/lib/navlinks";
+import { useAuthStore } from "~~/stores/auth";
 
 const route = useRoute();
+const auth = useAuthStore();
+
+const userInitial = computed(() => {
+  const name = auth.user?.name;
+  return name ? name.trim().charAt(0).toUpperCase() : "U";
+});
 
 const pageTitle = computed(() => {
   const currentLink = navLinks.find((link) => {
@@ -34,47 +33,45 @@ const pageTitle = computed(() => {
       v-if="route.path !== '/login'"
       class="bg-background border-b border-border flex justify-between items-center w-full px-6 h-16 z-40 sticky top-0"
     >
+      <!-- Right side: Sidebar Toggle & Page Title (Assuming RTL context) -->
       <div class="flex items-center gap-4">
         <AppSidebar />
-        <h2 class="text-lg font-bold text-primary">{{ pageTitle }}</h2>
+        <h1 class="text-lg font-bold text-primary">{{ pageTitle }}</h1>
       </div>
-      <div class="flex items-center gap-6">
-        <div
-          class="hidden md:flex bg-muted rounded-md px-3 py-1.5 items-center gap-2 border border-input focus-within:ring-1 focus-within:ring-ring"
-        >
-          <Search class="w-4 h-4 text-muted-foreground" />
-          <input
-            class="bg-transparent border-none focus:ring-0 text-sm w-48 text-right outline-hidden placeholder:text-muted-foreground"
-            placeholder="بحث في النظام..."
-            type="text"
-          />
+
+      <!-- Left side: User profile & Current Company details -->
+      <div class="flex items-center gap-4">
+        <!-- Company Badge & Username Info -->
+        <div class="flex flex-col text-left md:text-right">
+          <span class="text-sm font-semibold text-foreground hidden md:block">
+            {{ auth.user?.name || "مستخدم" }}
+          </span>
+          <span class="text-xs font-medium text-muted-foreground">
+            {{
+              auth.user?.allowedCompanies.find((company) => {
+                return company.id === auth.user?.primaryCompanyId;
+              })?.name || "الفرع الرئيسي"
+            }}
+          </span>
         </div>
-        <div class="flex items-center gap-4">
-          <span
-            class="hidden md:block text-xs font-medium text-muted-foreground"
-            >الفرع الرئيسي</span
-          >
-          <div class="flex gap-1">
-            <Button variant="ghost" size="icon" class="relative rounded-full">
-              <Bell class="w-5 h-5 text-muted-foreground" />
-              <span
-                class="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full"
-              ></span>
-            </Button>
-            <Button variant="ghost" size="icon" class="rounded-full">
-              <Settings class="w-5 h-5 text-muted-foreground" />
-            </Button>
-          </div>
-          <img
-            alt="صورة المدير"
-            class="w-8 h-8 rounded-full border border-border object-cover"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-B7Do99NBN3tEwZzZmUk5car_UwvosU6pRN_zxkNCtHFIcf6L8wFLjIdeJ4HAzEJw3O6BD-ZvwUms_vYJTMH2RbEpGGSsWE4Wlvq_MdF90khy2e8QP80Gb5r2gnLXTwG13iiFnfhw98HRrRAXd37lrkpZnmIxxW3cE3270ZCA-B6OEA6G8Z0lHluoaQsOGqnIXkK2ji069JisCBsU5uifz4Mbg4mM-F4NjciNOIhkCTF9RBkTyKH3PuzF8kO3mLOAsiYHm_O_vSrc"
-          />
+
+        <!-- Avatar with Initial Letter -->
+        <div
+          class="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-sm select-none"
+          title="الملف الشخصي"
+        >
+          {{ userInitial }}
         </div>
       </div>
     </header>
 
-    <main :class="route.path === '/login' ? 'w-full min-h-screen flex items-center justify-center p-0 overflow-hidden' : 'w-full p-6 pb-24 lg:pb-8'">
+    <main
+      :class="
+        route.path === '/login'
+          ? 'w-full min-h-screen flex items-center justify-center p-0 overflow-hidden'
+          : 'w-full p-6 pb-24 lg:pb-8'
+      "
+    >
       <slot />
     </main>
 

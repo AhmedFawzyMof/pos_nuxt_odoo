@@ -5,6 +5,7 @@ interface UserSession {
   id: number;
   name: string;
   allowedCompanies: { id: number; name: string }[];
+  primaryCompanyId: number;
 }
 
 export const useAuthStore = defineStore("auth", () => {
@@ -18,31 +19,30 @@ export const useAuthStore = defineStore("auth", () => {
     maxAge: 60 * 60 * 24 * 7,
   });
 
+  const permissions = useCookie<string[]>("auth_permissions", {
+    default: () => [],
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
   const emailState = useCookie<string>("auth_email", {
     default: () => "",
     maxAge: 60 * 60 * 24 * 365,
   });
 
-  const passwordState = ref("");
   const loading = ref(false);
 
-  onMounted(() => {
-    if (import.meta.client && !passwordState.value) {
-      const savedPass = sessionStorage.getItem("active_session_p_secret");
-      if (savedPass) {
-        passwordState.value = savedPass;
-      }
-    }
-  });
-
-  const isAuthenticated = computed(() => !!user.value && !!emailState.value);
+  const isAuthenticated = computed(() => !!user.value);
 
   const currentCompany = computed(() => {
     if (!user.value || !currentCompanyId.value) return null;
+
+    // Always return the actual company object from the allowed list
     return (
+      user.value.primaryCompanyId ||
       user.value.allowedCompanies.find(
-        (c) => c.id === currentCompanyId.value,
-      ) || null
+        (c) => c.id === user.value?.primaryCompanyId,
+      ) ||
+      null
     );
   });
 
@@ -72,18 +72,17 @@ export const useAuthStore = defineStore("auth", () => {
         id: data.user.id,
         name: data.user.name,
         allowedCompanies: data.user.allowedCompanies,
+        primaryCompanyId: data.user.primaryCompanyId,
       };
+
+      permissions.value = data.user.userPermissions || [];
 
       currentCompanyId.value = data.user.primaryCompanyId;
       emailState.value = creds.username.trim();
 
-      passwordState.value = creds.password;
-      if (import.meta.client) {
-        sessionStorage.setItem("active_session_p_secret", creds.password);
-      }
-
       return { success: true };
     } catch (error: any) {
+      console.error(error);
       logout();
       throw new Error(
         error.data?.statusMessage || error.message || "Authentication failed",
@@ -103,7 +102,6 @@ export const useAuthStore = defineStore("auth", () => {
   function logout() {
     user.value = null;
     currentCompanyId.value = null;
-    passwordState.value = "";
     if (import.meta.client) {
       sessionStorage.removeItem("active_session_p_secret");
     }
@@ -114,7 +112,6 @@ export const useAuthStore = defineStore("auth", () => {
     currentCompanyId,
     currentCompany,
     email: emailState,
-    password: passwordState,
     loading,
     isAuthenticated,
     login,
