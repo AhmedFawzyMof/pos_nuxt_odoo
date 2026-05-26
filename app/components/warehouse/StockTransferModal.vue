@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onBeforeUnmount, nextTick } from "vue";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { GitMerge, X, AlertTriangle, RefreshCw, VideoOff, ScanBarcode, Trash2 } from '@lucide/vue';
 
 interface OdooLocation {
   id: number;
@@ -300,10 +301,7 @@ onBeforeUnmount(async () => {
           class="p-6 pb-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between"
         >
           <div class="flex items-center gap-3">
-            <span
-              class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg"
-              >split_scene</span
-            >
+            <GitMerge class="text-primary bg-primary/10 p-2 rounded-lg w-10 h-10" />
             <div>
               <h3 class="text-lg font-bold text-slate-900">
                 نقل مخزني متعدد المنتجات
@@ -317,7 +315,7 @@ onBeforeUnmount(async () => {
             @click="closeModal"
             class="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600"
           >
-            <span class="material-symbols-outlined">close</span>
+            <X class="w-6 h-6" />
           </button>
         </div>
 
@@ -326,7 +324,7 @@ onBeforeUnmount(async () => {
             v-if="errorMessage"
             class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-semibold flex items-center gap-2"
           >
-            <span class="material-symbols-outlined text-sm">warning</span>
+            <AlertTriangle class="w-4 h-4" />
             {{ errorMessage }}
           </div>
 
@@ -406,11 +404,10 @@ onBeforeUnmount(async () => {
                 "
               />
 
-              <span
+              <RefreshCw
                 v-if="isSearching"
-                class="material-symbols-outlined absolute left-12 text-slate-400 animate-spin text-[20px]"
-                >sync</span
-              >
+                class="absolute left-12 text-slate-400 animate-spin w-5 h-5"
+              />
 
               <button
                 type="button"
@@ -423,9 +420,8 @@ onBeforeUnmount(async () => {
                 ]"
                 title="تشغيل كاميرا مسح الباركود"
               >
-                <span class="material-symbols-outlined text-[20px]">
-                  {{ isScannerActive ? "videocam_off" : "barcode_scanner" }}
-                </span>
+                <VideoOff v-if="isScannerActive" class="w-5 h-5" />
+                <ScanBarcode v-else class="w-5 h-5" />
               </button>
             </div>
 
@@ -523,9 +519,7 @@ onBeforeUnmount(async () => {
                     @click="removeCartItem(index)"
                     class="text-red-500 hover:text-red-700 p-1 flex items-center justify-center"
                   >
-                    <span class="material-symbols-outlined text-[18px]"
-                      >delete</span
-                    >
+                    <Trash2 class="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -549,11 +543,10 @@ onBeforeUnmount(async () => {
             :disabled="isSaving || transferCart.length === 0"
             class="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-2 disabled:opacity-40"
           >
-            <span
+            <RefreshCw
               v-if="isSaving"
-              class="material-symbols-outlined text-[16px] animate-spin"
-              >sync</span
-            >
+              class="w-4 h-4 animate-spin"
+            />
             <span>{{
               isSaving
                 ? "جاري ترحيل الباقة لأودو..."

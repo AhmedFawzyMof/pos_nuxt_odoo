@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Edit, MoreVertical, ChevronRight, ChevronLeft } from '@lucide/vue';
+
 interface StockLevelItem {
   name: string;
   sku: string;
@@ -120,16 +122,12 @@ const setPage = (page: number) => {
                 <button
                   class="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant"
                 >
-                  <span class="material-symbols-outlined text-[20px]"
-                    >edit</span
-                  >
+                  <Edit class="w-5 h-5" />
                 </button>
                 <button
                   class="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant"
                 >
-                  <span class="material-symbols-outlined text-[20px]"
-                    >more_vert</span
-                  >
+                  <MoreVertical class="w-5 h-5" />
                 </button>
               </div>
             </td>
@@ -151,7 +149,7 @@ const setPage = (page: number) => {
           @click="setPage(currentPage - 1)"
           class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-high transition-all text-on-surface-variant disabled:opacity-40 disabled:hover:bg-surface-container-lowest"
         >
-          <span class="material-symbols-outlined">chevron_right</span>
+          <ChevronRight class="w-5 h-5" />
         </button>
 
         <button
@@ -173,7 +171,7 @@ const setPage = (page: number) => {
           @click="setPage(currentPage + 1)"
           class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-high transition-all text-on-surface-variant disabled:opacity-40 disabled:hover:bg-surface-container-lowest"
         >
-          <span class="material-symbols-outlined">chevron_left</span>
+          <ChevronLeft class="w-5 h-5" />
         </button>
       </div>
     </div>

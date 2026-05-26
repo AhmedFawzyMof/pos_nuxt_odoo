@@ -10,6 +10,8 @@ interface LocationItem {
   progressBarColor: string;
 }
 
+import { Warehouse, Plus, ArrowRightLeft, Store, Building2, MapPin } from '@lucide/vue';
+
 defineProps<{
   locations: LocationItem[];
 }>();
@@ -28,7 +30,7 @@ defineEmits<{
       class="p-6 border-b border-outline-variant flex flex-col md:flex-row justify-between items-center md:items-start bg-white/50 backdrop-blur-sm sticky top-0"
     >
       <h2 class="text-headline-sm font-bold flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">warehouse</span>
+        <Warehouse class="text-primary w-6 h-6" />
         المواقع والمخازن
       </h2>
       <div class="flex gap-2 flex-col md:flex-row">
@@ -36,14 +38,14 @@ defineEmits<{
           @click="$emit('create-location')"
           class="px-4 py-2 bg-primary text-white rounded-lg text-label-md font-bold flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-95 cursor-pointer"
         >
-          <span class="material-symbols-outlined text-[20px]">add</span>
+          <Plus class="w-5 h-5" />
           إنشاء موقع جديد
         </button>
         <button
           @click="$emit('stock-transfer')"
           class="px-4 py-2 bg-primary text-white rounded-lg text-label-md font-bold flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-95 cursor-pointer"
         >
-          <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
+          <ArrowRightLeft class="w-5 h-5" />
           نقل مخزني
         </button>
       </div>
@@ -60,15 +62,7 @@ defineEmits<{
             <div
               class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container/30 transition-colors"
             >
-              <span class="material-symbols-outlined">
-                {{
-                  idx === 0
-                    ? "storefront"
-                    : idx === 1
-                      ? "apartment"
-                      : "location_on"
-                }}
-              </span>
+              <component :is="idx === 0 ? Store : idx === 1 ? Building2 : MapPin" class="w-6 h-6" />
             </div>
             <div>
               <h4 class="font-bold text-body-lg text-on-surface">

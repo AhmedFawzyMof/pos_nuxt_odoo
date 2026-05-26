@@ -8,9 +8,20 @@ interface MovementItem {
   color: string;
 }
 
+import { History, TrendingUp, TrendingDown, ArrowRightLeft, Package, Activity } from '@lucide/vue';
+
 defineProps<{
   movements: MovementItem[];
 }>();
+
+const getIcon = (iconName: string) => {
+  if (!iconName) return Activity;
+  const lower = iconName.toLowerCase();
+  if (lower.includes('up') || lower.includes('in') || lower === 'arrow_upward') return TrendingUp;
+  if (lower.includes('down') || lower.includes('out') || lower === 'arrow_downward') return TrendingDown;
+  if (lower.includes('swap') || lower.includes('transfer') || lower === 'sync') return ArrowRightLeft;
+  return Package;
+};
 </script>
 
 <template>
@@ -21,7 +32,7 @@ defineProps<{
       class="p-6 border-b border-outline-variant bg-white/50 backdrop-blur-sm"
     >
       <h2 class="text-headline-sm font-bold flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">history</span>
+        <History class="text-primary w-6 h-6" />
         حركات المخزون الأخيرة
       </h2>
     </div>
@@ -36,7 +47,7 @@ defineProps<{
           class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
           :class="mv.color"
         >
-          <span class="material-symbols-outlined">{{ mv.icon }}</span>
+          <component :is="getIcon(mv.icon)" class="w-5 h-5" />
         </div>
         <div class="flex-1">
           <p class="text-label-md font-bold text-on-surface">

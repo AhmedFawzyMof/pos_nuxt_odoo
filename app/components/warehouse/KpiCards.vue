@@ -9,9 +9,21 @@ interface KpiItem {
   color: string;
 }
 
+import { Wallet, AlertTriangle, Package, Truck, Activity } from '@lucide/vue';
+
 defineProps<{
   kpis: KpiItem[];
 }>();
+
+const getIcon = (iconName: string) => {
+  switch (iconName) {
+    case 'account_balance_wallet': return Wallet;
+    case 'warning': return AlertTriangle;
+    case 'inventory': return Package;
+    case 'local_shipping': return Truck;
+    default: return Activity;
+  }
+};
 </script>
 
 <template>
@@ -23,9 +35,7 @@ defineProps<{
     >
       <div class="flex justify-between items-start mb-4">
         <div class="p-3 rounded-lg" :class="kpi.color">
-          <span class="material-symbols-outlined text-primary">{{
-            kpi.icon
-          }}</span>
+          <component :is="getIcon(kpi.icon)" class="text-primary w-6 h-6" />
         </div>
         <span
           v-if="kpi.change"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { AlertCircle, RefreshCcw } from '@lucide/vue';
 
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
@@ -51,9 +52,7 @@ const openCreateLoctaion = ref(false);
         class="bg-error-container/20 border border-error/30 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-on-error-container"
       >
         <div class="flex items-center gap-3">
-          <span class="material-symbols-outlined text-error text-2xl"
-            >error</span
-          >
+          <AlertCircle class="text-error w-6 h-6" />
           <div>
             <p class="font-bold text-sm">
               عذراً، حدث خطأ أثناء تحديث بيانات المستودع
@@ -67,7 +66,7 @@ const openCreateLoctaion = ref(false);
           @click="refresh()"
           class="flex items-center gap-2 px-4 py-2 bg-error text-white font-medium text-xs rounded-lg hover:bg-error/90 active:scale-95 transition-all self-end sm:self-auto"
         >
-          <span class="material-symbols-outlined text-sm">refresh</span>
+          <RefreshCcw class="w-4 h-4" />
           إعادة المحاولة
         </button>
       </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { FolderArchive, X, Link, ChevronDown, Folder, Search, Check, FolderOpen, AlertTriangle, Warehouse, Trash2, ScanBarcode, CheckCircle, RefreshCw, CheckCheck } from '@lucide/vue';
 
 interface OdooLocation {
   id: number;
@@ -194,10 +195,7 @@ const handleSaveLocation = async () => {
           class="p-6 pb-4 border-b border-outline-variant bg-surface-container-low flex items-center justify-between"
         >
           <div class="flex items-center gap-3">
-            <span
-              class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg"
-              >folder_shared</span
-            >
+            <FolderArchive class="text-primary bg-primary/10 p-2 rounded-lg w-10 h-10" />
             <div>
               <h3 class="text-headline-sm font-bold text-primary">
                 إنشاء موقع تخزين جديد
@@ -213,7 +211,7 @@ const handleSaveLocation = async () => {
             @click="emit('update:open', false)"
             class="p-2 hover:bg-surface-container rounded-full transition-colors flex items-center justify-center text-on-surface-variant hover:text-foreground"
           >
-            <span class="material-symbols-outlined">close</span>
+            <X class="w-6 h-6" />
           </button>
         </div>
 
@@ -234,9 +232,7 @@ const handleSaveLocation = async () => {
               class="font-mono text-primary text-sm tracking-wide flex items-center gap-2 overflow-x-auto justify-start py-0.5"
               dir="ltr"
             >
-              <span class="material-symbols-outlined text-[18px] text-primary"
-                >link</span
-              >
+              <Link class="text-primary w-5 h-5" />
               {{ breadcrumbPreview }}
             </div>
           </div>
@@ -255,19 +251,14 @@ const handleSaveLocation = async () => {
                 class="h-11 w-full bg-background border border-outline rounded-lg px-4 flex items-center justify-between text-on-surface hover:bg-muted/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary text-right font-mono"
                 dir="ltr"
               >
-                <span class="material-symbols-outlined text-on-surface-variant">
-                  keyboard_arrow_down
-                </span>
+                <ChevronDown class="text-on-surface-variant w-6 h-6" />
                 <span class="flex items-center gap-2">
                   {{
                     selectedParentLocation
                       ? selectedParentLocation.name
                       : "Select Parent Location"
                   }}
-                  <span
-                    class="material-symbols-outlined text-primary text-[18px]"
-                    >folder</span
-                  >
+                  <Folder class="text-primary w-5 h-5" />
                 </span>
               </button>
 
@@ -278,10 +269,7 @@ const handleSaveLocation = async () => {
                 <div
                   class="p-3 border-b border-outline-variant bg-surface-container flex items-center gap-2"
                 >
-                  <span
-                    class="material-symbols-outlined text-on-surface-variant text-[20px]"
-                    >search</span
-                  >
+                  <Search class="text-on-surface-variant w-5 h-5" />
                   <input
                     v-model="parentSearchQuery"
                     type="text"
@@ -310,23 +298,18 @@ const handleSaveLocation = async () => {
                     class="w-full h-11 px-4 hover:bg-surface-container-low flex items-center justify-between text-right text-xs font-mono text-on-surface transition-colors"
                     dir="ltr"
                   >
-                    <span
+                    <Check
                       v-if="
                         selectedParentLocation &&
                         selectedParentLocation.id === loc.id
                       "
-                      class="material-symbols-outlined text-primary text-[18px]"
-                    >
-                      check
-                    </span>
-                    <span v-else></span>
+                      class="text-primary w-5 h-5"
+                    />
+                    <span v-else class="w-5 h-5"></span>
 
                     <span class="flex items-center gap-2">
                       {{ loc.name }}
-                      <span
-                        class="material-symbols-outlined text-on-surface-variant text-[16px]"
-                        >folder_open</span
-                      >
+                      <FolderOpen class="text-on-surface-variant w-4 h-4" />
                     </span>
                   </button>
                   <div
@@ -360,7 +343,7 @@ const handleSaveLocation = async () => {
               v-if="validationError"
               class="text-xs text-error font-semibold flex items-center gap-1 mt-0.5 justify-start text-right"
             >
-              <span class="material-symbols-outlined text-[14px]">warning</span>
+              <AlertTriangle class="w-4 h-4" />
               {{ validationError }}
             </span>
           </div>
@@ -383,9 +366,7 @@ const handleSaveLocation = async () => {
                     : 'border-outline bg-background hover:bg-muted text-on-surface-variant'
                 "
               >
-                <span class="material-symbols-outlined text-[18px]"
-                  >warehouse</span
-                >
+                <Warehouse class="w-5 h-5" />
                 <span class="text-xs">داخلي للتخزين</span>
               </button>
 
@@ -400,9 +381,7 @@ const handleSaveLocation = async () => {
                     : 'border-outline bg-background hover:bg-muted text-on-surface-variant'
                 "
               >
-                <span class="material-symbols-outlined text-[18px]"
-                  >delete_sweep</span
-                >
+                <Trash2 class="w-5 h-5" />
                 <span class="text-xs">تالف / تصفية</span>
               </button>
 
@@ -417,9 +396,7 @@ const handleSaveLocation = async () => {
                     : 'border-outline bg-background hover:bg-muted text-on-surface-variant'
                 "
               >
-                <span class="material-symbols-outlined text-[18px]"
-                  >folder_shared</span
-                >
+                <FolderArchive class="w-5 h-5" />
                 <span class="text-xs">مجلد عرض هيكلي</span>
               </button>
             </div>
@@ -437,9 +414,7 @@ const handleSaveLocation = async () => {
                 @click="autoGenerateBarcode"
                 class="h-11 px-4 bg-muted hover:bg-muted/80 border border-outline rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer text-on-surface shrink-0"
               >
-                <span class="material-symbols-outlined text-primary text-[18px]"
-                  >quick_reference</span
-                >
+                <ScanBarcode class="text-primary w-5 h-5" />
                 توليد تلقائي
               </button>
 
@@ -474,24 +449,18 @@ const handleSaveLocation = async () => {
             :disabled="isSaving || saveSuccess"
             class="h-11 px-6 bg-primary text-white font-bold rounded-lg flex items-center justify-center gap-1.5 shadow-md shadow-primary/10 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
           >
-            <span
+            <CheckCircle
               v-if="saveSuccess"
-              class="material-symbols-outlined text-[18px] text-white animate-bounce"
-            >
-              check_circle
-            </span>
-            <span
+              class="w-5 h-5 text-white animate-bounce"
+            />
+            <RefreshCw
               v-else-if="isSaving"
-              class="material-symbols-outlined text-[18px] text-white animate-spin"
-            >
-              sync
-            </span>
-            <span
+              class="w-5 h-5 text-white animate-spin"
+            />
+            <CheckCheck
               v-else
-              class="material-symbols-outlined text-[18px] text-white"
-            >
-              done_all
-            </span>
+              class="w-5 h-5 text-white"
+            />
 
             <span>
               {{
