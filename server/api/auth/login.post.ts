@@ -1,8 +1,6 @@
 import { defineEventHandler, readBody } from "h3";
 import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
-const DEFAULT_URL = process.env.DEFAULT_URL || "https://83832.odoo.com";
-const DEFAULT_DB = process.env.DEFAULT_DB || "83832";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -88,7 +86,6 @@ export default defineEventHandler(async (event) => {
     user: {
       id: uid,
       name: userDetailsList[0].name,
-      userPermissions,
     },
     odooPassword: body.password,
     odooUsername: body.username,

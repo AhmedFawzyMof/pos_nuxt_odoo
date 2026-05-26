@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 definePageMeta({
   layout: "default",
 });
-
+const { user, fetch: refreshSession } = useUserSession();
 const auth = useAuth();
 
 const usernameVal = ref("");
@@ -52,6 +52,7 @@ const handleLogin = async () => {
       username: usernameVal.value,
       password: passwordVal.value,
     });
+    await refreshSession();
   } catch (err: any) {
     localError.value =
       err.message || "فشل الاتصال بنظام المبيعات أو بيانات الاعتماد خاطئة.";

@@ -2,6 +2,11 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
+  devServer: {
+    host: "0.0.0.0",
+    port: 3000,
+    https: true,
+  },
   css: ["@/assets/tailwind.css"],
   modules: [
     "@nuxtjs/tailwindcss",
@@ -10,7 +15,15 @@ export default defineNuxtConfig({
     "nuxt-auth-utils",
   ],
   auth: {
-    maxAge: 60 * 60 * 24 * 7,
+    session: {
+      maxAge: 60 * 60 * 24 * 7,
+      cookie: {
+        maxAge: 60 * 60 * 24 * 7, // 7 days — makes it a persistent cookie
+        sameSite: "lax",
+        secure: true, // use false in dev if not on HTTPS
+        httpOnly: true,
+      },
+    },
   },
   app: {
     head: {
