@@ -9,6 +9,9 @@ import {
   AlertCircle,
   LogIn,
   Loader2,
+  Receipt,
+  RefreshCw,
+  WifiOff,
 } from "@lucide/vue";
 import {
   Card,
@@ -81,10 +84,7 @@ const handleLogin = async () => {
         <div
           class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15 backdrop-blur-md border border-primary-foreground/20"
         >
-          <span
-            class="material-symbols-outlined text-primary-foreground text-2xl font-bold"
-            >point_of_sale</span
-          >
+          <Receipt class="w-6 h-6 text-primary-foreground font-bold" />
         </div>
         <span class="text-xl font-bold tracking-wide">POS Retail Lite</span>
       </div>
@@ -107,10 +107,7 @@ const handleLogin = async () => {
           <div
             class="rounded-2xl bg-primary-foreground/5 p-4 backdrop-blur-xs border border-primary-foreground/10 flex items-center gap-3"
           >
-            <span
-              class="material-symbols-outlined text-primary-foreground/90 text-3xl"
-              >sync</span
-            >
+            <RefreshCw class="w-7 h-7 text-primary-foreground/90" />
             <div>
               <p class="text-sm font-semibold text-primary-foreground/90">
                 مزامنة فورية
@@ -123,10 +120,7 @@ const handleLogin = async () => {
           <div
             class="rounded-2xl bg-primary-foreground/5 p-4 backdrop-blur-xs border border-primary-foreground/10 flex items-center gap-3"
           >
-            <span
-              class="material-symbols-outlined text-primary-foreground/90 text-3xl"
-              >offline_pin</span
-            >
+            <WifiOff class="w-7 h-7 text-primary-foreground/90" />
             <div>
               <p class="text-sm font-semibold text-primary-foreground/90">
                 دعم غير متصل
@@ -165,9 +159,7 @@ const handleLogin = async () => {
           <div
             class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg mb-3"
           >
-            <span class="material-symbols-outlined text-3xl font-bold"
-              >point_of_sale</span
-            >
+            <Receipt class="w-7 h-7 font-bold" />
           </div>
           <h2 class="text-2xl font-bold text-foreground">POS Retail Lite</h2>
           <p class="text-sm text-muted-foreground mt-1">

@@ -1,5 +1,23 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import {
+  Search,
+  Image,
+  Plus,
+  Receipt,
+  Trash2,
+  ChevronDown,
+  Minus,
+  ShoppingCart,
+  Note,
+  ArrowLeft,
+  X,
+  CheckCircle,
+  Banknote,
+  CreditCard,
+  Smartphone,
+  Loader2,
+} from "@lucide/vue";
 
 interface Product {
   id: number
@@ -160,7 +178,7 @@ const finishSale = () => {
       <!-- Search & Filters -->
       <div class="p-6 space-y-4 bg-surface shadow-sm shrink-0 border-b border-outline-variant">
         <div class="relative group">
-          <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+          <Search class="absolute right-4 top-1/2 -translate-y-1/2 text-outline w-5 h-5" />
           <input
             v-model="searchQuery"
             class="w-full h-12 pr-12 pl-4 rounded-xl border border-outline-variant bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-body-md"
@@ -195,7 +213,7 @@ const finishSale = () => {
         >
           <div class="h-32 bg-surface-variant relative flex-shrink-0 flex items-center justify-center">
             <img v-if="prod.image" :alt="prod.name" class="w-full h-full object-cover" :src="prod.image" />
-            <span v-else class="material-symbols-outlined text-outline text-4xl">image</span>
+            <Image v-else class="w-9 h-9 text-outline" />
           </div>
           <div class="p-3 flex-1 flex flex-col justify-between">
             <div>
@@ -207,9 +225,9 @@ const finishSale = () => {
             <div class="flex justify-between items-center mt-auto">
               <span class="text-primary font-bold text-body-md">{{ prod.price }} EGP</span>
               <span
-                class="material-symbols-outlined text-primary bg-primary/10 rounded-full p-1 group-hover:bg-primary group-hover:text-on-primary transition-colors text-lg"
+                class="text-primary bg-primary/10 rounded-full p-1 group-hover:bg-primary group-hover:text-on-primary transition-colors"
               >
-                add
+                <Plus class="w-[18px] h-[18px]" />
               </span>
             </div>
           </div>
@@ -223,14 +241,14 @@ const finishSale = () => {
       <div class="p-6 border-b border-outline-variant space-y-4 shrink-0 bg-surface-container-low">
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary">receipt_long</span>
+            <Receipt class="w-5 h-5 text-primary" />
             <h2 class="text-headline-sm font-bold text-on-surface">التذكرة النشطة</h2>
           </div>
           <button
             @click="clearCart"
             class="text-error flex items-center gap-1 hover:bg-error/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
           >
-            <span class="material-symbols-outlined text-sm">delete_sweep</span>
+            <Trash2 class="w-[14px] h-[14px]" />
             <span class="text-label-md font-bold">مسح السلة</span>
           </button>
         </div>
@@ -247,9 +265,7 @@ const finishSale = () => {
               <option value="wholesale">جملة / Wholesale</option>
               <option value="vip">كبار العملاء / VIP Customers</option>
             </select>
-            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">
-              expand_more
-            </span>
+            <ChevronDown class="absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none w-5 h-5" />
           </div>
         </div>
       </div>
@@ -263,7 +279,7 @@ const finishSale = () => {
         >
           <div class="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden shrink-0 flex items-center justify-center">
             <img v-if="item.product.image" alt="Item" class="w-full h-full object-cover" :src="item.product.image" />
-            <span v-else class="material-symbols-outlined text-outline">image</span>
+            <Image v-else class="w-5 h-5 text-outline" />
           </div>
           <div class="flex-1">
             <div class="flex justify-between items-start">
@@ -279,28 +295,28 @@ const finishSale = () => {
                   @click="updateQuantity(item.product.id, -1)"
                   class="w-8 h-8 flex items-center justify-center hover:bg-surface-variant transition-colors cursor-pointer"
                 >
-                  <span class="material-symbols-outlined text-sm">remove</span>
+                    <Minus class="w-[14px] h-[14px]" />
                 </button>
                 <span class="w-10 text-center text-body-md font-bold">{{ item.quantity }}</span>
                 <button
                   @click="updateQuantity(item.product.id, 1)"
                   class="w-8 h-8 flex items-center justify-center hover:bg-surface-variant transition-colors cursor-pointer"
                 >
-                  <span class="material-symbols-outlined text-sm">add</span>
+                    <Plus class="w-[14px] h-[14px]" />
                 </button>
               </div>
               <button
                 @click="removeFromCart(item.product.id)"
                 class="opacity-0 group-hover:opacity-100 text-error p-1 hover:bg-error/10 rounded transition-all cursor-pointer"
               >
-                <span class="material-symbols-outlined">delete</span>
+                <Trash2 class="w-5 h-5" />
               </button>
             </div>
           </div>
         </div>
 
         <div v-if="cart.length === 0" class="p-12 text-center text-on-surface-variant">
-          <span class="material-symbols-outlined text-4xl block mb-2 text-outline">shopping_cart</span>
+          <ShoppingCart class="w-9 h-9 block mb-2 text-outline mx-auto" />
           سلة البيع فارغة حالياً
         </div>
       </div>
@@ -311,10 +327,10 @@ const finishSale = () => {
         <details class="group bg-surface-container-low rounded-xl border border-outline-variant overflow-hidden">
           <summary class="flex justify-between items-center p-3 cursor-pointer hover:bg-surface-container-high transition-colors">
             <div class="flex items-center gap-2 text-on-surface font-bold text-label-md">
-              <span class="material-symbols-outlined text-sm">note_alt</span>
+              <Note class="w-[14px] h-[14px]" />
               <span>ملاحظات الطلب</span>
             </div>
-            <span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+            <ChevronDown class="w-5 h-5 transition-transform group-open:rotate-180" />
           </summary>
           <div class="p-4 space-y-3 border-t border-outline-variant bg-surface-container-lowest">
             <div>
@@ -360,9 +376,7 @@ const finishSale = () => {
             <div class="text-xs opacity-80">الذهاب للدفع</div>
             <div class="text-body-lg font-bold">تأكيد ودفع الحساب</div>
           </div>
-          <span class="material-symbols-outlined text-3xl group-hover:-translate-x-1 transition-transform">
-            arrow_back
-          </span>
+          <ArrowLeft class="w-7 h-7 group-hover:-translate-x-1 transition-transform" />
         </button>
       </div>
     </aside>
@@ -381,13 +395,13 @@ const finishSale = () => {
         <div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
           <h3 class="text-headline-md font-bold text-primary">عملية الدفع والتحصيل</h3>
           <button @click="checkoutOpen = false" class="p-2 hover:bg-surface-container rounded-full transition-colors cursor-pointer">
-            <span class="material-symbols-outlined">close</span>
+            <X class="w-5 h-5" />
           </button>
         </div>
 
         <!-- Receipt Mode -->
         <div v-if="showReceipt" class="p-6 flex-1 overflow-y-auto space-y-6 text-center custom-scrollbar">
-          <span class="material-symbols-outlined text-6xl text-primary animate-bounce">check_circle</span>
+          <CheckCircle class="w-15 h-15 text-primary animate-bounce" />
           <div>
             <h4 class="text-headline-sm font-bold text-on-surface">تمت العملية بنجاح!</h4>
             <p class="text-label-md text-on-surface-variant">تم حفظ المبيعات وتحديث مخزون المنتجات.</p>
@@ -474,7 +488,7 @@ const finishSale = () => {
                 class="h-16 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold cursor-pointer transition-all"
                 :class="selectedPaymentMethod === 'cash' ? 'border-primary bg-primary/5 text-primary' : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'"
               >
-                <span class="material-symbols-outlined">payments</span>
+                <Banknote class="w-5 h-5" />
                 <span class="text-xs">نقدي / Cash</span>
               </button>
               <button
@@ -482,7 +496,7 @@ const finishSale = () => {
                 class="h-16 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold cursor-pointer transition-all"
                 :class="selectedPaymentMethod === 'card' ? 'border-primary bg-primary/5 text-primary' : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'"
               >
-                <span class="material-symbols-outlined">credit_card</span>
+                <CreditCard class="w-5 h-5" />
                 <span class="text-xs">فيزا / Card</span>
               </button>
               <button
@@ -490,7 +504,7 @@ const finishSale = () => {
                 class="h-16 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold cursor-pointer transition-all"
                 :class="selectedPaymentMethod === 'wallet' ? 'border-primary bg-primary/5 text-primary' : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'"
               >
-                <span class="material-symbols-outlined">cell_phone</span>
+                <Smartphone class="w-5 h-5" />
                 <span class="text-xs">محفظة / Wallet</span>
               </button>
             </div>
@@ -530,7 +544,7 @@ const finishSale = () => {
 
           <!-- Other Payment Details -->
           <div v-else class="p-6 bg-surface-container rounded-xl text-center text-on-surface-variant text-label-md border border-outline-variant">
-            <span class="material-symbols-outlined text-4xl text-primary animate-pulse mb-2">dock_to_bottom</span>
+            <CreditCard class="w-9 h-9 text-primary animate-pulse mb-2 mx-auto" />
             <p>الرجاء سحب أو تمرير البطاقة على جهاز الدفع (POS Terminal) المرفق.</p>
           </div>
         </div>
@@ -548,7 +562,7 @@ const finishSale = () => {
             :disabled="isProcessingPayment"
             class="flex-1 bg-primary text-on-primary py-3 rounded-xl font-bold shadow-lg hover:bg-primary/95 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
           >
-            <span v-if="isProcessingPayment" class="material-symbols-outlined animate-spin">sync</span>
+            <Loader2 v-if="isProcessingPayment" class="w-5 h-5 animate-spin" />
             {{ isProcessingPayment ? 'جاري الدفع...' : 'تأكيد الدفع' }}
           </button>
         </div>

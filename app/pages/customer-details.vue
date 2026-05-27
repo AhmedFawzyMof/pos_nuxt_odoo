@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Mail, Phone } from "@lucide/vue";
 
 const activeTab = ref<'overview' | 'orders' | 'loyalty' | 'settings'>('overview')
 
@@ -83,11 +84,11 @@ const redeemPoints = () => {
           <p class="text-body-md text-on-surface-variant mb-4">عميل منذ {{ customer.joinedDate }} • {{ customer.address }}</p>
           <div class="flex flex-wrap gap-2 justify-center md:justify-start">
             <span class="px-3.5 py-1.5 bg-surface-container rounded-lg text-label-md text-on-surface-variant flex items-center gap-2">
-              <span class="material-symbols-outlined text-sm">mail</span>
+              <Mail class="w-[14px] h-[14px]" />
               {{ customer.email }}
             </span>
             <span class="px-3.5 py-1.5 bg-surface-container rounded-lg text-label-md text-on-surface-variant flex items-center gap-2">
-              <span class="material-symbols-outlined text-sm">call</span>
+              <Phone class="w-[14px] h-[14px]" />
               {{ customer.phone }}
             </span>
           </div>

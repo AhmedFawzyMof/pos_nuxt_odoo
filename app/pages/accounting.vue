@@ -1,5 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import {
+  TrendingUp,
+  Banknote,
+  Wallet,
+  ArrowLeft,
+  PieChart,
+  FileWarning,
+  FileText,
+  Landmark,
+  BarChart3,
+  Receipt,
+} from "@lucide/vue";
 
 const taxPeriod = ref('هذا الشهر')
 
@@ -50,22 +62,22 @@ const reports = [
   {
     title: 'قائمة الدخل',
     desc: 'ملخص الأرباح والخسائر للربع الحالي',
-    icon: 'description'
+    icon: FileText
   },
   {
     title: 'الميزانية العمومية',
     desc: 'الأصول والالتزامات وحقوق الملكية',
-    icon: 'account_balance'
+    icon: Landmark
   },
   {
     title: 'تقرير التدفق النقدي',
     desc: 'حركة السيولة النقدية الواردة والصادرة',
-    icon: 'analytics'
+    icon: BarChart3
   },
   {
     title: 'الإقرار الضريبي',
     desc: 'ضريبة القيمة المضافة للفترة السابقة',
-    icon: 'receipt_long'
+    icon: Receipt
   }
 ]
 
@@ -88,7 +100,7 @@ const expenseDistribution = [
           <div
             class="w-12 h-12 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform"
           >
-            <span class="material-symbols-outlined text-3xl">trending_up</span>
+            <TrendingUp class="w-7 h-7" />
           </div>
           <span class="text-label-md font-bold text-primary bg-primary-container/10 px-2 py-1 rounded">+12.5%</span>
         </div>
@@ -106,7 +118,7 @@ const expenseDistribution = [
           <div
             class="w-12 h-12 rounded-lg bg-error-container/20 flex items-center justify-center text-error group-hover:scale-110 transition-transform"
           >
-            <span class="material-symbols-outlined text-3xl">payments</span>
+            <Banknote class="w-7 h-7" />
           </div>
           <span class="text-label-md font-bold text-error bg-error-container/10 px-2 py-1 rounded">-3.2%</span>
         </div>
@@ -122,9 +134,7 @@ const expenseDistribution = [
           <div
             class="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center group-hover:rotate-12 transition-transform"
           >
-            <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">
-              account_balance_wallet
-            </span>
+            <Wallet class="w-7 h-7" />
           </div>
           <span class="text-label-md font-bold text-white bg-white/20 px-2 py-1 rounded">المستهدف: 85%</span>
         </div>
@@ -147,7 +157,7 @@ const expenseDistribution = [
           <h4 class="text-headline-sm font-bold">آخر المعاملات</h4>
           <button class="text-primary text-label-md font-bold flex items-center gap-1 hover:underline">
             عرض الكل
-            <span class="material-symbols-outlined text-sm">arrow_back</span>
+            <ArrowLeft class="w-[14px] h-[14px]" />
           </button>
         </div>
         <div class="overflow-x-auto custom-scrollbar">
@@ -202,7 +212,7 @@ const expenseDistribution = [
               <div
                 class="p-2 bg-secondary-container text-on-secondary-container rounded group-hover:bg-primary group-hover:text-on-primary transition-colors"
               >
-                <span class="material-symbols-outlined">{{ rep.icon }}</span>
+                <component :is="rep.icon" class="w-5 h-5" />
               </div>
               <div>
                 <p class="text-body-md font-bold">{{ rep.title }}</p>
@@ -226,9 +236,7 @@ const expenseDistribution = [
       <div class="bg-surface-container-high/50 p-6 rounded-xl border border-outline-variant">
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">
-              pie_chart
-            </span>
+            <PieChart class="w-5 h-5 text-primary" />
             <h4 class="text-headline-sm font-bold">توزيع المصروفات</h4>
           </div>
           <select
@@ -271,7 +279,7 @@ const expenseDistribution = [
         </div>
         <!-- Decorative Background element -->
         <div class="absolute -bottom-6 -left-6 opacity-10 scale-150 rotate-12 text-primary">
-          <span class="material-symbols-outlined text-[120px]">assignment_late</span>
+          <FileWarning class="w-[120px] h-[120px]" />
         </div>
       </div>
     </div>

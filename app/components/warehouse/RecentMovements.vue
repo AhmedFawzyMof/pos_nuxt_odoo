@@ -81,7 +81,7 @@ const getIcon = (typeClass: string) => {
             </p>
           </div>
         </div>
-        <p dir="ltr">{{ new Date(mv.time).toLocaleString("ar-eg") }}</p>
+        <p class="text-sm">{{ new Date(mv.time).toLocaleString("ar-eg") }}</p>
       </div>
     </div>
     <div class="p-4 border-t border-outline-variant bg-surface-container-low">

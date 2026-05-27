@@ -1,6 +1,36 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { CloudOff } from "@lucide/vue";
+import {
+  CloudOff,
+  LayoutGrid,
+  Receipt,
+  Landmark,
+  Warehouse,
+  ShoppingBag,
+  Users,
+  History,
+  TrendingUp,
+  Banknote,
+  Wallet,
+  ShoppingCart,
+  Circle,
+} from "@lucide/vue";
+
+const kpiIconMap: Record<string, any> = {
+  trending_up: TrendingUp,
+  payments: Banknote,
+  account_balance_wallet: Wallet,
+  shopping_cart: ShoppingCart,
+  inventory: Warehouse,
+  group: Users,
+  receipt_long: Receipt,
+  point_of_sale: Receipt,
+  account_balance: Landmark,
+  inventory_2: Warehouse,
+  history: History,
+};
+
+const getKpiIcon = (name: string) => kpiIconMap[name] || Circle;
 
 const { data, error, status } = await useFetch("/api/kpi/dashboard");
 
@@ -11,7 +41,7 @@ const modules = [
     name: "نقطة البيع (POS)",
     description: "واجهة سريعة وبسيطة لعمليات البيع اليومية وقبول المدفوعات.",
     path: "/pos",
-    icon: "point_of_sale",
+    icon: Receipt,
     bg: "bg-primary-container/10",
     color: "text-primary",
   },
@@ -19,7 +49,7 @@ const modules = [
     name: "الحسابات والمحاسبة",
     description: "تسجيل المعاملات المالية، الفواتير، التقارير والضرائب.",
     path: "/accounting",
-    icon: "account_balance",
+    icon: Landmark,
     bg: "bg-indigo-500/10",
     color: "text-indigo-600",
   },
@@ -27,7 +57,7 @@ const modules = [
     name: "المستودعات والمخزون",
     description: "متابعة مستويات المخزون، الشحنات الواردة وحركات النقل.",
     path: "/warehouse",
-    icon: "inventory_2",
+    icon: Warehouse,
     bg: "bg-amber-500/10",
     color: "text-amber-600",
   },
@@ -35,7 +65,7 @@ const modules = [
     name: "إدارة المنتجات",
     description: "إضافة المنتجات الجديدة، تحديث الأسعار والـ SKU.",
     path: "/products",
-    icon: "shopping_bag",
+    icon: ShoppingBag,
     bg: "bg-emerald-500/10",
     color: "text-emerald-600",
   },
@@ -43,7 +73,7 @@ const modules = [
     name: "أقسام المنتجات",
     description: "تنظيم شجرة الأقسام والفئات لتسهيل البحث والبيع.",
     path: "/categories",
-    icon: "grid_view",
+    icon: LayoutGrid,
     bg: "bg-sky-500/10",
     color: "text-sky-600",
   },
@@ -51,7 +81,7 @@ const modules = [
     name: "العملاء والشركاء",
     description: "إدارة بيانات العملاء، الحسابات الآجلة وبرامج الولاء.",
     path: "/customers",
-    icon: "group",
+    icon: Users,
     bg: "bg-rose-500/10",
     color: "text-rose-600",
   },
@@ -59,7 +89,7 @@ const modules = [
     name: "سجل الطلبات",
     description: "تاريخ الفواتير الصادرة، عمليات الإرجاع والطلب المعلق.",
     path: "/orders",
-    icon: "history",
+    icon: History,
     bg: "bg-teal-500/10",
     color: "text-teal-600",
   },
@@ -124,9 +154,7 @@ const modules = [
                 : '',
             ]"
           >
-            <span class="material-symbols-outlined text-3xl">{{
-              kpi.icon
-            }}</span>
+            <component :is="getKpiIcon(kpi.icon)" class="w-7 h-7" />
           </div>
           <span
             class="text-label-md font-bold px-2 py-1 rounded"
@@ -164,7 +192,7 @@ const modules = [
     <!-- Navigation Hub Grid -->
     <div>
       <h3 class="text-headline-md font-bold mb-6 flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">apps</span>
+        <LayoutGrid class="w-6 h-6 text-primary" />
         الوصول السريع للأقسام
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -178,11 +206,11 @@ const modules = [
             class="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
             :class="mod.bg"
           >
-            <span
-              class="material-symbols-outlined text-3xl"
+            <component
+              :is="mod.icon"
+              class="w-7 h-7"
               :class="mod.color"
-              >{{ mod.icon }}</span
-            >
+            />
           </div>
           <div class="space-y-1">
             <h4

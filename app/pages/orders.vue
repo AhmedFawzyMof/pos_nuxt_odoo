@@ -1,5 +1,21 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import {
+  Banknote,
+  Receipt,
+  CloudCog,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+  Trash2,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  Store,
+  CheckCheck,
+} from "@lucide/vue";
 
 interface Order {
   id: string
@@ -104,7 +120,7 @@ const toggleShift = () => {
           <p class="text-xs text-primary font-bold">↑ ١٢٪ عن الأمس</p>
         </div>
         <div class="w-14 h-14 bg-primary-container/10 rounded-full flex items-center justify-center text-primary">
-          <span class="material-symbols-outlined text-3xl">payments</span>
+          <Banknote class="w-7 h-7" />
         </div>
       </div>
 
@@ -116,7 +132,7 @@ const toggleShift = () => {
           <p class="text-xs text-on-surface-variant">متوسط سلة المشتريات: {{ (totalSales / (completedCount || 1)).toFixed(2) }} ج.م</p>
         </div>
         <div class="w-14 h-14 bg-secondary-container/20 rounded-full flex items-center justify-center text-secondary">
-          <span class="material-symbols-outlined text-3xl">receipt_long</span>
+          <Receipt class="w-7 h-7" />
         </div>
       </div>
 
@@ -131,7 +147,7 @@ const toggleShift = () => {
           <p class="text-xs text-on-surface-variant">تحديث تلقائي للمبيعات مفعل</p>
         </div>
         <div class="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center text-primary">
-          <span class="material-symbols-outlined text-3xl">cloud_sync</span>
+          <CloudCog class="w-7 h-7" />
         </div>
       </div>
     </div>
@@ -145,7 +161,7 @@ const toggleShift = () => {
         </h3>
         <div class="flex gap-2">
           <div class="relative">
-            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">search</span>
+            <Search class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
             <input
               v-model="searchQuery"
               class="bg-surface-container text-on-surface border-none rounded-xl pr-10 pl-4 py-2 w-full md:w-64 focus:ring-2 focus:ring-primary outline-none"
@@ -154,7 +170,7 @@ const toggleShift = () => {
             />
           </div>
           <button class="bg-surface-container-high text-on-surface-variant p-2.5 rounded-xl hover:bg-outline-variant transition-colors cursor-pointer">
-            <span class="material-symbols-outlined">filter_list</span>
+            <Filter class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -195,12 +211,11 @@ const toggleShift = () => {
                   class="flex items-center gap-1.5 px-3 py-1 rounded-full w-fit text-[12px] font-bold"
                   :class="order.syncStatus === 'تمت' ? 'bg-primary/10 text-primary' : order.syncStatus === 'ملغاة' ? 'bg-error-container text-error' : 'bg-secondary-container text-secondary'"
                 >
-                  <span
-                    class="material-symbols-outlined text-[14px]"
+                  <component
+                    :is="order.syncStatus === 'تمت' ? CheckCircle : order.syncStatus === 'ملغاة' ? XCircle : RefreshCw"
+                    class="w-[14px] h-[14px]"
                     :class="{ 'animate-spin': order.syncStatus === 'جاري المزامنة' }"
-                  >
-                    {{ order.syncStatus === 'تمت' ? 'check_circle' : order.syncStatus === 'ملغاة' ? 'cancel' : 'sync' }}
-                  </span>
+                  />
                   <span>{{ order.syncStatus }}</span>
                 </div>
               </td>
@@ -210,7 +225,7 @@ const toggleShift = () => {
                   @click="voidOrder(order.id)"
                   class="text-error border border-error/20 px-3 py-1.5 rounded-lg hover:bg-error/10 transition-colors flex items-center gap-2 text-label-md font-bold cursor-pointer"
                 >
-                  <span class="material-symbols-outlined text-sm">delete_sweep</span>
+                  <Trash2 class="w-[14px] h-[14px]" />
                   إلغاء الطلب
                 </button>
                 <span v-else class="text-on-surface-variant text-label-md">-</span>
@@ -232,12 +247,12 @@ const toggleShift = () => {
         </p>
         <div class="flex gap-2">
           <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface transition-all text-on-surface-variant cursor-pointer">
-            <span class="material-symbols-outlined">chevron_right</span>
+            <ChevronLeft class="w-5 h-5" />
           </button>
           <button class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-on-primary font-bold shadow-md">1</button>
           <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface transition-all text-on-surface cursor-pointer">2</button>
           <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface transition-all text-on-surface-variant cursor-pointer">
-            <span class="material-symbols-outlined">chevron_left</span>
+            <ChevronRight class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -252,7 +267,7 @@ const toggleShift = () => {
             <p class="text-body-md text-on-surface-variant">مراقبة الأداء لكل ساعة لفرع القاهرة بالتفصيل</p>
           </div>
           <button class="bg-primary-container text-on-primary-container px-6 py-2 rounded-full font-bold flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer shadow-sm">
-            <span class="material-symbols-outlined">download</span>
+            <Download class="w-5 h-5" />
             تصدير كشف اليوم
           </button>
         </div>
@@ -290,7 +305,7 @@ const toggleShift = () => {
           :class="shiftOpen ? 'bg-primary text-on-primary shadow-primary/20' : 'bg-surface-variant text-on-surface-variant border border-outline-variant shadow-sm'"
         >
           <div>
-            <span class="material-symbols-outlined text-4xl mb-4">storefront</span>
+            <Store class="w-9 h-9 mb-4" />
             <h5 class="text-headline-sm font-bold">
               {{ shiftOpen ? 'الوردية مفتوحة حالياً' : 'الوردية مغلقة' }}
             </h5>
@@ -315,7 +330,7 @@ const toggleShift = () => {
       :class="showToast ? 'translate-y-0 opacity-100' : 'translate-y-32 opacity-0 pointer-events-none'"
     >
       <div class="w-10 h-10 bg-primary text-on-primary rounded-full flex items-center justify-center">
-        <span class="material-symbols-outlined">done_all</span>
+        <CheckCheck class="w-5 h-5" />
       </div>
       <div>
         <p class="font-bold">تم إلغاء الطلب بنجاح</p>

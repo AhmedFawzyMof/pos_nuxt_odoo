@@ -1,5 +1,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import {
+  UserPlus,
+  Users,
+  BadgeCheck,
+  Building2,
+  Star,
+  Search,
+  History,
+  Edit,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from "@lucide/vue";
 
 interface Customer {
   id: number
@@ -150,7 +163,7 @@ const saveCustomer = () => {
         @click="openAddCustomer"
         class="bg-primary hover:bg-primary/95 text-on-primary px-6 py-2.5 rounded-full flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer font-bold"
       >
-        <span class="material-symbols-outlined">person_add</span>
+        <UserPlus class="w-5 h-5" />
         إضافة عميل جديد
       </button>
     </div>
@@ -160,7 +173,7 @@ const saveCustomer = () => {
       <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm">
         <div class="flex justify-between items-center mb-4">
           <span class="p-3 rounded-xl bg-primary/10 text-primary">
-            <span class="material-symbols-outlined">group</span>
+            <Users class="w-5 h-5" />
           </span>
           <span class="text-label-md text-primary font-bold">+12%</span>
         </div>
@@ -171,7 +184,7 @@ const saveCustomer = () => {
       <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm">
         <div class="flex justify-between items-center mb-4">
           <span class="p-3 rounded-xl bg-secondary-container text-on-secondary-container">
-            <span class="material-symbols-outlined">verified</span>
+            <BadgeCheck class="w-5 h-5" />
           </span>
         </div>
         <p class="text-on-surface-variant text-label-md">نشطون مؤخراً</p>
@@ -183,7 +196,7 @@ const saveCustomer = () => {
       <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm">
         <div class="flex justify-between items-center mb-4">
           <span class="p-3 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed">
-            <span class="material-symbols-outlined">corporate_fare</span>
+            <Building2 class="w-5 h-5" />
           </span>
         </div>
         <p class="text-on-surface-variant text-label-md">شركات (B2B)</p>
@@ -195,7 +208,7 @@ const saveCustomer = () => {
       <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm">
         <div class="flex justify-between items-center mb-4">
           <span class="p-3 rounded-xl bg-primary-container/20 text-primary">
-            <span class="material-symbols-outlined">stars</span>
+            <Star class="w-5 h-5" />
           </span>
         </div>
         <p class="text-on-surface-variant text-label-md font-label-md">برنامج الولاء</p>
@@ -210,7 +223,7 @@ const saveCustomer = () => {
       <!-- Filters and Search -->
       <div class="p-6 border-b border-outline-variant flex flex-col lg:flex-row gap-4 items-center">
         <div class="relative w-full lg:w-96">
-          <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+          <Search class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
           <input
             v-model="searchQuery"
             class="w-full pr-12 pl-4 py-2.5 bg-surface-container rounded-xl border-none focus:ring-2 focus:ring-primary text-body-md"
@@ -286,13 +299,10 @@ const saveCustomer = () => {
               </td>
               <td class="px-6 py-5">
                 <div class="flex items-center gap-1">
-                  <span
-                    class="material-symbols-outlined text-[18px]"
+                  <Star
+                    class="w-[18px] h-[18px]"
                     :style="c.tier === 'بلاتيني' ? 'color:#94a3b8;' : c.tier === 'ذهبي' ? 'color:#f59e0b;' : 'color:#94a3b8;'"
-                    style="font-variation-settings: 'FILL' 1;"
-                  >
-                    stars
-                  </span>
+                  />
                   <span class="text-label-md">{{ c.tier }}</span>
                 </div>
               </td>
@@ -303,10 +313,10 @@ const saveCustomer = () => {
               <td class="px-6 py-5 text-center" @click.stop>
                 <div class="flex justify-center gap-2">
                   <button @click="navigateTo('/customer-details')" class="p-2 rounded-lg hover:bg-surface-container text-on-surface-variant" title="سجل المشتريات والتفاصيل">
-                    <span class="material-symbols-outlined text-[20px]">history</span>
+                    <History class="w-[20px] h-[20px]" />
                   </button>
                   <button @click="openCustomerDetails(c)" class="p-2 rounded-lg hover:bg-surface-container text-on-surface-variant" title="تعديل">
-                    <span class="material-symbols-outlined text-[20px]">edit</span>
+                    <Edit class="w-[20px] h-[20px]" />
                   </button>
                 </div>
               </td>
@@ -325,12 +335,12 @@ const saveCustomer = () => {
         <p class="text-label-md text-on-surface-variant">عرض 1-{{ filteredCustomers.length }} من أصل {{ customersList.length }} عميل</p>
         <div class="flex gap-2">
           <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white text-on-surface-variant">
-            <span class="material-symbols-outlined">chevron_right</span>
+            <ChevronLeft class="w-5 h-5" />
           </button>
           <button class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-on-primary font-bold">1</button>
           <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white text-on-surface">2</button>
           <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white text-on-surface-variant">
-            <span class="material-symbols-outlined">chevron_left</span>
+            <ChevronRight class="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -351,7 +361,7 @@ const saveCustomer = () => {
             {{ drawerMode === 'view' ? 'تفاصيل العميل' : 'إضافة عميل جديد' }}
           </h4>
           <button @click="closeDrawer" class="p-2 rounded-full hover:bg-surface-container-highest transition-colors cursor-pointer">
-            <span class="material-symbols-outlined">close</span>
+            <X class="w-5 h-5" />
           </button>
         </div>
 
@@ -401,7 +411,7 @@ const saveCustomer = () => {
                   <p class="text-headline-md font-bold text-primary">{{ selectedCustomer.points.toLocaleString('ae-EG') }} نقطة</p>
                   <p class="text-xs text-on-surface-variant">الرصيد القابل للاستبدال</p>
                 </div>
-                <span class="material-symbols-outlined text-[42px] text-primary" style="font-variation-settings: 'FILL' 1;">stars</span>
+                <Star class="w-[42px] h-[42px] text-primary" />
               </div>
             </div>
           </div>
