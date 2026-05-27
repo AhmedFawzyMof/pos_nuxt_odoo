@@ -4,6 +4,10 @@ import { connectToOdoo } from "~~/server/utils/client";
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
 
+  if (!session.user) {
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
+  }
+
   const query = getQuery(event);
   const page = Math.max(1, parseInt((query.page as string) || "1"));
   const limit = 28;
@@ -94,9 +98,9 @@ export default defineEventHandler(async (event) => {
       data: completeProducts,
     };
   } catch (error: any) {
-    return createError({
+    throw createError({
       statusCode: 500,
-      statusMessage: `Odoo Bulk Fetch Failed: ${error.message}`,
+      statusMessage: `فشل في جلب المنتجات: ${error.message}`,
     });
   }
 });

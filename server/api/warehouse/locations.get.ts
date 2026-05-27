@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
 
   if (!session.user) {
-    return { success: false, error: "not authenticated" };
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
 
   const odoo = connectToOdoo(
@@ -16,10 +16,10 @@ export default defineEventHandler(async (event) => {
 
   const [connectErr] = await tryCatch(odoo.connect());
   if (connectErr) {
-    return {
-      success: false,
-      error: `Connection failed: ${connectErr.message}`,
-    };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل الاتصال بأودو: ${connectErr.message}`,
+    });
   }
 
   const [err, rawLocations] = await tryCatch(
@@ -29,10 +29,10 @@ export default defineEventHandler(async (event) => {
   );
 
   if (err) {
-    return {
-      success: false,
-      error: `Failed to fetch locations: ${err.message}`,
-    };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل في جلب المواقع: ${err.message}`,
+    });
   }
 
   return {

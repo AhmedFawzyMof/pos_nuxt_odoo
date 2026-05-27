@@ -54,14 +54,15 @@ export default defineEventHandler(async (event) => {
       client.read("res.groups", groupIds, ["name", "full_name", "category_id"]),
     );
 
-    if (!groupError) {
+    if (groupError) {
+      console.warn("Could not read permission groups:", groupError);
+    } else {
       userPermissions = groupRecords.map((g: any) => ({
         id: g.id,
         name: g.name,
         fullName: g.full_name,
       }));
     }
-    console.warn("Could not read permission groups:", groupError);
   }
 
   const [companyErr, companyDetailsList] = await tryCatch(

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { AlertCircle, RefreshCcw } from '@lucide/vue';
+import { AlertCircle, RefreshCcw } from "@lucide/vue";
 
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
 
-// 1. Fetch main warehouse dashboard aggregation payloads
 const { data, error, pending, refresh } = await useFetch(
   "/api/warehouse/dashboard",
   {
@@ -17,7 +16,6 @@ const { data, error, pending, refresh } = await useFetch(
   },
 );
 
-// Check if either the network layer fails OR Odoo returns a success: false payload
 const isError = computed(() => !!error.value || data.value?.success === false);
 const errorMessage = computed(() => {
   if (error.value) return "فشل الاتصال بالخادم الداخلي. يرجى التحقق من الشبكة.";
@@ -26,7 +24,6 @@ const errorMessage = computed(() => {
   return "";
 });
 
-// 2. Safe mapping computing lines with structural null-safety tracking
 const kpis = computed(() =>
   data.value?.success ? (data.value as any).kpis : [],
 );

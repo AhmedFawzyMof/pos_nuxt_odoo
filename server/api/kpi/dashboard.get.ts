@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
 
   const session = await getUserSession(event);
   if (!session.user) {
-    return { success: false, error: "not authenticated" };
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
 
   // ?date_from=2026-05-01&date_to=2026-05-25  (both optional, default = today)
@@ -53,10 +53,10 @@ export default defineEventHandler(async (event) => {
 
   const [connectErr] = await tryCatch(odoo.connect());
   if (connectErr) {
-    return {
-      success: false,
-      error: `Connection failed: ${connectErr.message}`,
-    };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل الاتصال بأودو: ${connectErr.message}`,
+    });
   }
 
   const [kpiErr, data] = await tryCatch(
@@ -68,7 +68,10 @@ export default defineEventHandler(async (event) => {
     ]),
   );
   if (kpiErr) {
-    return { success: false, error: `KPI fetch failed: ${kpiErr.message}` };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل في جلب بيانات الأداء: ${kpiErr.message}`,
+    });
   }
 
   const { total_revenue, total_expenses, low_stock_count, total_customers } =

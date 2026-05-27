@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { Search, RefreshCw, Plus, CloudOff } from "@lucide/vue";
+import { Search, RefreshCw, Plus, CloudOff, AlertCircle, X } from "@lucide/vue";
 import ProductsTable from "~/components/products/ProductsTable.vue";
 import ProductDrawer from "~/components/products/ProductDrawer.vue";
 import type { Product } from "~/types/product";
@@ -58,6 +58,7 @@ const drawerOpen = ref(false);
 const drawerMode = ref<"add" | "edit">("add");
 const selectedProduct = ref<Product | null>(null);
 const isSaving = ref(false);
+const actionError = ref("");
 
 const openAddDrawer = () => {
   drawerMode.value = "add";
@@ -111,6 +112,7 @@ const handleSave = async (
   payload: Partial<Product> & { variants?: any[]; image_1920?: string | null },
 ) => {
   isSaving.value = true;
+  actionError.value = "";
 
   try {
     const response = await $fetch<{
@@ -128,6 +130,10 @@ const handleSave = async (
     }
   } catch (err: any) {
     console.error("Failed to preserve modifications to Odoo ERP:", err);
+    actionError.value =
+      err.statusMessage ||
+      err.message ||
+      "فشل في حفظ المنتج. يرجى المحاولة مجدداً.";
   } finally {
     isSaving.value = false;
   }
@@ -136,6 +142,7 @@ const handleSave = async (
 const handleDeleteFromDrawer = async () => {
   if (selectedProduct.value) {
     isSaving.value = true;
+    actionError.value = "";
 
     try {
       const response = await $fetch<{
@@ -152,7 +159,11 @@ const handleDeleteFromDrawer = async () => {
         drawerOpen.value = false;
       }
     } catch (err: any) {
-      console.error("Failed to preserve modifications to Odoo ERP:", err);
+      console.error("Failed to archive product in Odoo ERP:", err);
+      actionError.value =
+        err.statusMessage ||
+        err.message ||
+        "فشل في أرشفة المنتج. يرجى المحاولة مجدداً.";
     } finally {
       isSaving.value = false;
     }
@@ -197,17 +208,34 @@ const handleDeleteFromDrawer = async () => {
       </div>
     </div>
 
+    <!-- Fetch error banner -->
     <div
       v-if="status === 'error'"
       class="bg-error/10 border border-error text-error p-6 rounded-2xl text-center"
     >
       <CloudOff class="w-10 h-10 mb-2 inline-block" />
-      <p class="font-bold">فشل الاتصال بخادم</p>
+      <p class="font-bold">فشل الاتصال بالخادم</p>
       <p class="text-sm opacity-80">{{ error?.message }}</p>
     </div>
 
+    <!-- Action error toast (save / archive) -->
+    <Transition name="fade">
+      <div
+        v-if="actionError"
+        class="flex items-start gap-3 bg-error-container/20 border border-error/30 text-on-error-container px-4 py-3 rounded-xl"
+      >
+        <AlertCircle class="w-5 h-5 text-error mt-0.5 shrink-0" />
+        <p class="text-sm flex-1">{{ actionError }}</p>
+        <button
+          @click="actionError = ''"
+          class="text-error hover:text-error/70 transition-colors"
+        >
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+    </Transition>
+
     <ProductsTable
-      v-else
       :products="filteredProducts"
       :status="status"
       :all-products-count="totalItems"

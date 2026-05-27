@@ -1,180 +1,235 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed } from "vue";
+import { Search, RefreshCw, Plus, CloudOff, Folder, Package, Gauge } from "@lucide/vue";
+import CategoriesTable from "~/components/categories/CategoriesTable.vue";
+import CategoryDrawer from "~/components/categories/CategoryDrawer.vue";
 
 interface Category {
-  name: string
-  productsCount: number
-  status: 'نشط' | 'مسودة'
-  icon: string
-  image: string
+  id?: number;
+  name: string;
+  parent_id?: { id: number; name: string } | null;
+  sequence?: number;
+  image?: string | null;
+  productsCount?: number;
+  status?: string;
 }
 
-const searchQuery = ref('')
-const categoriesList = ref<Category[]>([
-  {
-    name: 'الخضروات والفاكهة',
-    productsCount: 142,
-    status: 'نشط',
-    icon: 'eco',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDmEIrXilARQjqVz5J6lsUt13RRScgUJQMqHXfKI_dXEuN2pEnQwQjj5ts2URjv8B8OhPliOtvSjHspybuGNCFdZo7bijgib1P4fnVG75WMgJwK1JbVyz-qEF2pT3v7itod4Iy5qxUXAk9UnMj4UxebEePXZaQhS3mZlmB4qnKsNmz6t_HGseNnwk-Xb43HWSKwAfEG-HKtSztTHoBokxCPiE2Y-tWTub46cE7AmYtnC2UpyXXKSWy1ugkewRB3I-kHc4EQHERcm5GU'
-  },
-  {
-    name: 'الألبان والأجبان',
-    productsCount: 86,
-    status: 'نشط',
-    icon: 'cheese',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDZgpYhnC-zxSAO3PUpb5ROk4fIWUPbHG7FXpQBUXWrH1ullxvkMYjF1VOuXbyr29tHSdYVxWqX4aMLJOEXcqOD3WfvIiz_0YiExAe70kyWa-neHrAfrLUFr0NHw8nX9nUJM4nNKKwBabJuUZxIH0ryJZYAqx-s8gEKZ15Rnm1nHlzj4hMd91ksgPCGg0jT-YpIyO4RFBTcxD_aPF576k7pyEdryVb3vC1dyoHQZ3m2hvZb3ZnNnCKObHRqx0q9-N7S6keVQVZwEioa'
-  },
-  {
-    name: 'المخبوزات',
-    productsCount: 54,
-    status: 'نشط',
-    icon: 'bakery_dining',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCaM4uVA7VnxjE7E_IKltxlQYkljh8irvVMjfk3g_lRVBqtsRlWSteSWyMTJYolAsqLZdD6Idr9z5eOsFEoHgks38Aobwq-TWoo0V9UCHadZE-i0EPltT84uevpqbY8pMo0XgcvGYdGSgp5rvy_OoxIR9rApkEk9Kg487-x280hVhccP6ZXzWh6Rq6u0ZdnOvCxe3leVZeW1jK1y45KFUV-x1kI3yVqhqNIxaL48G2FIP9I_Us9fhjkdE7zAMBhpui-293-0i4Zbr_o'
-  },
-  {
-    name: 'اللحوم والدواجن',
-    productsCount: 38,
-    status: 'نشط',
-    icon: 'room_service',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBTff5JX-1FMN2Gp39ldMkQp3HpBy1CacHBwNExtBV571g-oy7M2tw94oI3zwv9OT_gUDIrLwh2wD_EDzgGLgkxUSgJr9Ngq0EcHcZAvuds9lg2CagE-zCrCcFUWdU7IrDrns1vnhrhV74n6BrLJxisv3xTE_2bbBeCvqgcf7cCFaqEuEGHz_2dzzRak9UMeSXsM6O9m4mB_L6N4AXhDwPoPG2opd2WkkZWiZAT08-8os0NzpDnz-FUnI0tms4quaRglJggxHZQqJOx'
-  }
-])
+const currentPage = ref(1);
+const searchQuery = ref("");
 
-const filteredCategories = computed(() => {
-  if (!searchQuery.value) return categoriesList.value
-  const query = searchQuery.value.toLowerCase()
-  return categoriesList.value.filter(c => c.name.includes(query))
-})
+const {
+  data: apiResponse,
+  status,
+  error,
+  refresh,
+} = await useFetch<{
+  success: boolean;
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  itemsPerPage: number;
+  data: Category[];
+}>("/api/pos/categories", {
+  query: { page: currentPage, search: searchQuery },
+  watch: [currentPage, searchQuery],
+  transform: (response) => {
+    if (!response.data) response.data = [];
+    return response;
+  },
+});
+
+const categories = computed<Category[]>(() => apiResponse.value?.data || []);
+const totalPages = computed(() => apiResponse.value?.totalPages || 1);
+const totalItems = computed(() => apiResponse.value?.totalItems || 0);
 
 const totalProducts = computed(() => {
-  return categoriesList.value.reduce((sum, c) => sum + c.productsCount, 0)
-})
+  return categories.value.reduce((sum, c) => sum + (c.productsCount || 0), 0);
+});
 
-const editCategory = (c: Category) => {
-  const newName = prompt('تعديل اسم القسم:', c.name)
-  if (newName) {
-    c.name = newName
-  }
-}
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+};
 
-const deleteCategory = (index: number) => {
-  if (confirm('هل أنت متأكد من رغبتك في حذف هذا القسم؟')) {
-    categoriesList.value.splice(index, 1)
-  }
-}
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--;
+};
 
-const addCategory = () => {
-  const name = prompt('أدخل اسم القسم الجديد:')
-  if (name) {
-    categoriesList.value.push({
-      name,
-      productsCount: 0,
-      status: 'نشط',
-      icon: 'category',
-      image: ''
-    })
+// Drawer System Management
+const drawerOpen = ref(false);
+const drawerMode = ref<"add" | "edit">("add");
+const selectedCategory = ref<Category | null>(null);
+const isSaving = ref(false);
+
+const openAddDrawer = () => {
+  drawerMode.value = "add";
+  selectedCategory.value = null;
+  drawerOpen.value = true;
+};
+
+const handleEdit = (category: Category) => {
+  drawerMode.value = "edit";
+  selectedCategory.value = category;
+  drawerOpen.value = true;
+};
+
+const handleDelete = async (category: Category) => {
+  const targetCategory = category;
+  if (!targetCategory || !targetCategory.id) {
+    alert("لم يتم العثور على معرّف هذا القسم بالنظام");
+    return;
   }
-}
+
+  if (
+    confirm(
+      `⚠️ تحذير: هل أنت متأكد من رغبتك في حذف قسم "${targetCategory.name}" نهائياً من النظام؟ لا يمكن التراجع عن هذه الخطوة.`,
+    )
+  ) {
+    try {
+      isSaving.value = true;
+
+      const response = await $fetch<{ success: boolean; message: string }>(
+        "/api/pos/categories/delete",
+        {
+          method: "DELETE",
+          body: { id: targetCategory.id },
+        },
+      );
+
+      if (response.success) {
+        await refresh();
+        drawerOpen.value = false;
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.statusMessage || "خطأ في الاتصال بالنظام، لم يتم حذف القسم.");
+    } finally {
+      isSaving.value = false;
+    }
+  }
+};
+
+const handleSave = async (payload: {
+  id?: number;
+  name: string;
+  sequence: number;
+  parent_id: number | null;
+  image: string | null;
+}) => {
+  isSaving.value = true;
+
+  try {
+    const response = await $fetch<{
+      success: boolean;
+      message: string;
+      id: number;
+    }>("/api/pos/categories/save", {
+      method: "POST",
+      body: payload,
+    });
+
+    if (response.success) {
+      await refresh();
+      drawerOpen.value = false;
+    }
+  } catch (err: any) {
+    console.error("Failed to save POS Category to Odoo:", err);
+    alert(err.statusMessage || "خطأ في حفظ القسم بالنظام.");
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+const handleDeleteFromDrawer = async () => {
+  if (selectedCategory.value) {
+    await handleDelete(selectedCategory.value);
+  }
+};
 </script>
 
 <template>
-  <div class="space-y-8 max-w-7xl mx-auto">
-    <!-- Header & Search Controls -->
-    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm">
+  <div class="space-y-6 max-w-7xl mx-auto">
+    <div
+      class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm"
+    >
       <div class="relative flex-1 max-w-md">
-        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+        <Search
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5"
+        />
         <input
           v-model="searchQuery"
           class="w-full h-11 pr-10 pl-4 bg-surface-container rounded-full border-none focus:ring-2 focus:ring-primary text-label-md outline-none"
-          placeholder="بحث عن قسم..."
+          placeholder="بحث بالاسم..."
           type="text"
         />
       </div>
-      <button
-        @click="addCategory"
-        class="flex items-center justify-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold hover:bg-primary/95 transition-all active:scale-95 cursor-pointer shadow-sm"
-      >
-        <span class="material-symbols-outlined">add_circle</span>
-        إضافة قسم جديد
-      </button>
-    </div>
-
-    <!-- Category Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <!-- Category Card -->
-      <div
-        v-for="(cat, index) in filteredCategories"
-        :key="cat.name"
-        class="group relative bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md flex flex-col justify-between"
-      >
-        <div class="h-40 overflow-hidden relative bg-surface-variant flex items-center justify-center">
-          <img
-            v-if="cat.image"
-            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            :src="cat.image"
-            :alt="cat.name"
+      <div class="flex items-center gap-2">
+        <button
+          @click="refresh()"
+          class="p-2.5 rounded-full border border-outline-variant hover:bg-surface-container transition-all active:scale-95 text-on-surface-variant cursor-pointer flex items-center justify-center"
+          title="تحديث البيانات"
+        >
+          <RefreshCw
+            :class="{ 'animate-spin': status === 'pending' }"
+            class="w-5 h-5"
           />
-          <span v-else class="material-symbols-outlined text-outline text-5xl">image</span>
-
-          <!-- Overlay Actions -->
-          <div class="absolute inset-0 bg-black/40 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              @click="editCategory(cat)"
-              class="p-2 bg-white rounded-full text-primary hover:bg-primary hover:text-white transition-colors cursor-pointer"
-            >
-              <span class="material-symbols-outlined text-[20px]">edit</span>
-            </button>
-            <button
-              @click="deleteCategory(index)"
-              class="p-2 bg-white rounded-full text-error hover:bg-error hover:text-white transition-colors cursor-pointer"
-            >
-              <span class="material-symbols-outlined text-[20px]">delete</span>
-            </button>
-          </div>
-        </div>
-        <div class="p-5 flex-1 flex flex-col justify-between">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-headline-sm font-bold text-on-surface">{{ cat.name }}</h3>
-            <span class="material-symbols-outlined text-primary">{{ cat.icon }}</span>
-          </div>
-          <div class="flex items-center justify-between text-label-md text-on-surface-variant mt-auto">
-            <span>{{ cat.productsCount }} منتجاً</span>
-            <span class="px-2.5 py-0.5 bg-primary/10 text-primary rounded-md text-xs font-bold">{{ cat.status }}</span>
-          </div>
-        </div>
+        </button>
+        <button
+          @click="openAddDrawer"
+          class="text-white flex items-center justify-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold hover:bg-primary/95 transition-all active:scale-95 cursor-pointer shadow-sm"
+        >
+          <Plus class="w-5 h-5" />
+          إضافة قسم جديد
+        </button>
       </div>
-
-      <!-- Add Category Quick Action -->
-      <button
-        @click="addCategory"
-        class="group h-full min-h-[250px] border-2 border-dashed border-outline-variant hover:border-primary hover:bg-primary/5 rounded-xl flex flex-col items-center justify-center gap-4 transition-all active:scale-95 cursor-pointer"
-      >
-        <div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-          <span class="material-symbols-outlined text-4xl text-outline group-hover:text-primary transition-colors">add</span>
-        </div>
-        <span class="text-headline-sm font-bold text-on-surface-variant group-hover:text-primary transition-colors">
-          إضافة قسم سريع
-        </span>
-      </button>
     </div>
+
+    <div
+      v-if="status === 'error'"
+      class="bg-error/10 border border-error text-error p-6 rounded-2xl text-center"
+    >
+      <CloudOff class="w-10 h-10 mb-2 inline-block" />
+      <p class="font-bold">فشل الاتصال بخادم</p>
+      <p class="text-sm opacity-80">{{ error?.message }}</p>
+    </div>
+
+    <CategoriesTable
+      v-else
+      :categories="categories"
+      :status="status"
+      :all-categories-count="totalItems"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      @edit="handleEdit"
+      @delete="handleDelete"
+      @next-page="nextPage"
+      @prev-page="prevPage"
+    />
+
+    <CategoryDrawer
+      v-model:isOpen="drawerOpen"
+      :mode="drawerMode"
+      :category="selectedCategory"
+      :is-saving="isSaving"
+      @save="handleSave"
+      @delete="handleDeleteFromDrawer"
+    />
 
     <!-- Analytics Section -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-outline-variant">
       <!-- Total Categories Card -->
       <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm">
         <div class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
-          <span class="material-symbols-outlined text-3xl">category</span>
+          <Folder class="w-7 h-7" />
         </div>
         <div>
           <p class="text-label-md text-on-surface-variant">إجمالي الأقسام</p>
-          <h4 class="text-display-lg font-bold text-on-surface">{{ categoriesList.length }}</h4>
+          <h4 class="text-display-lg font-bold text-on-surface">{{ totalItems }}</h4>
         </div>
       </div>
       <!-- Total Products Card -->
       <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm">
         <div class="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
-          <span class="material-symbols-outlined text-3xl">inventory_2</span>
+          <Package class="w-7 h-7" />
         </div>
         <div>
           <p class="text-label-md text-on-surface-variant">إجمالي المنتجات المدرجة</p>
@@ -184,7 +239,7 @@ const addCategory = () => {
       <!-- Shelf Efficiency Card -->
       <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm">
         <div class="w-14 h-14 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
-          <span class="material-symbols-outlined text-3xl">speed</span>
+          <Gauge class="w-7 h-7" />
         </div>
         <div>
           <p class="text-label-md text-on-surface-variant">كفاءة مساحات العرض</p>

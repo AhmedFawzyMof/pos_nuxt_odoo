@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed } from "vue";
+import { CloudOff } from "@lucide/vue";
 
 const { data, error, status } = await useFetch("/api/kpi/dashboard");
 
-const kpis = data.value?.kpis || [];
+const kpis = computed(() => data.value?.kpis || []);
 
 const modules = [
   {
@@ -67,6 +68,19 @@ const modules = [
 
 <template>
   <div class="space-y-8">
+    <!-- Connection error banner -->
+    <Transition name="fade">
+      <div
+        v-if="status === 'error' || status === 'success' && !data?.kpis"
+        class="flex items-center gap-3 bg-error/10 border border-error/30 text-error px-5 py-4 rounded-xl"
+      >
+        <CloudOff class="w-6 h-6 shrink-0" />
+        <div>
+          <p class="font-bold text-sm">فشل جلب بيانات لوحة التحكم</p>
+          <p class="text-xs opacity-75 font-mono mt-0.5">{{ error?.message || 'تعذر الاتصال بأودو' }}</p>
+        </div>
+      </div>
+    </Transition>
     <!-- Welcome Header Banner -->
     <div
       class="bg-primary text-white p-8 rounded-2xl relative overflow-hidden shadow-md"

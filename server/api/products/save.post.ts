@@ -1,8 +1,26 @@
-import OdooAwait from "odoo-await";
-
+async function odooWrite(
+  odoo: any,
+  model: string,
+  ids: number[],
+  values: object,
+): Promise<boolean> {
+  return await odoo.execute_kw(model, "write", [[ids, values], {}]);
+}
+async function safeSearchRead(
+  odoo: any,
+  model: string,
+  domain: any[],
+  fields: string[],
+  limit = 0,
+) {
+  const params: any[] = [domain, fields];
+  if (limit) params.push(0, limit); // offset=0, limit=N
+  return await odoo.execute_kw(model, "search_read", [params]);
+}
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const session = await getUserSession(event);
+  console.log(body);
 
   const odoo = connectToOdoo(
     session.odooUsername as string,
@@ -11,11 +29,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     await odoo.connect();
-    // const odooTypeMapping: Record<string, string> = {
-    //   product: "goods",
-    //   consu: "consu",
-    //   service: "service",
-    // };
+
     const productValues: any = {
       name: body.name,
       barcode:
@@ -35,6 +49,7 @@ export default defineEventHandler(async (event) => {
       purchase_ok: Boolean(body.purchase_ok),
       active: Boolean(body.active),
       available_in_pos: Boolean(body.available_in_pos),
+      is_storable: true,
     };
 
     if (body.image_1920 !== undefined) {
@@ -47,27 +62,26 @@ export default defineEventHandler(async (event) => {
     }
 
     let templateId: number;
-    let isEditMode = !!body.id;
+    const isEditMode = !!body.id;
 
     if (isEditMode) {
-      const currentProducts: any = await odoo.searchRead(
+      const currentProducts: any = await safeSearchRead(
+        odoo,
         "product.product",
         [["id", "=", body.id]],
         ["product_tmpl_id"],
       );
 
       if (!currentProducts || currentProducts.length === 0) {
-        return createError({
+        throw createError({
           statusCode: 404,
           statusMessage: "المنتج غير موجود بالنظام",
         });
       }
 
       templateId = currentProducts[0].product_tmpl_id[0];
-      await odoo.execute_kw("product.template", "write", [
-        [templateId],
-        productValues,
-      ]);
+
+      await odooWrite(odoo, "product.template", [templateId], productValues);
     } else {
       templateId = await odoo.execute_kw("product.template", "create", [
         [productValues],
@@ -75,8 +89,7 @@ export default defineEventHandler(async (event) => {
     }
 
     if (body.variants && body.variants.length > 0) {
-      let attributeId = await getOrCreateAttribute(odoo, "المواصفات");
-
+      const attributeId = await getOrCreateAttribute(odoo, "المواصفات");
       const valueIds: number[] = [];
 
       for (const variant of body.variants) {
@@ -91,7 +104,8 @@ export default defineEventHandler(async (event) => {
       }
 
       if (valueIds.length > 0) {
-        const existingLines: any = await odoo.searchRead(
+        const existingLines: any = await safeSearchRead(
+          odoo,
           "product.template.attribute.line",
           [
             ["product_tmpl_id", "=", templateId],
@@ -101,10 +115,13 @@ export default defineEventHandler(async (event) => {
         );
 
         if (existingLines.length > 0) {
-          await odoo.execute_kw("product.template.attribute.line", "write", [
+          // ✅ correct write
+          await odooWrite(
+            odoo,
+            "product.template.attribute.line",
             [existingLines[0].id],
             { value_ids: [[6, 0, valueIds]] },
-          ]);
+          );
         } else {
           await odoo.execute_kw("product.template.attribute.line", "create", [
             [
@@ -117,7 +134,8 @@ export default defineEventHandler(async (event) => {
           ]);
         }
 
-        const generatedVariants: any = await odoo.searchRead(
+        const generatedVariants: any = await safeSearchRead(
+          odoo,
           "product.product",
           [["product_tmpl_id", "=", templateId]],
           ["id", "name", "product_template_attribute_value_ids"],
@@ -130,41 +148,37 @@ export default defineEventHandler(async (event) => {
               generatedVariants.length === 1,
           );
 
-          if (matchedVariantForm) {
-            const updateData: any = {};
-            if (matchedVariantForm.barcode) {
-              updateData.barcode = matchedVariantForm.barcode;
-            }
+          if (!matchedVariantForm) continue;
 
-            if (Object.keys(updateData).length > 0) {
-              await odoo.execute_kw("product.product", "write", [
-                [variantData.id],
-                updateData,
-              ]);
-            }
+          // ✅ update barcode on product.product
+          if (matchedVariantForm.barcode) {
+            await odooWrite(odoo, "product.product", [variantData.id], {
+              barcode: matchedVariantForm.barcode,
+            });
+          }
 
-            if (
-              matchedVariantForm.price_extra !== undefined &&
-              variantData.product_template_attribute_value_ids?.length > 0
-            ) {
-              await odoo.execute_kw(
-                "product.template.attribute.value",
-                "write",
-                [
-                  [variantData.product_template_attribute_value_ids[0]],
-                  { price_extra: Number(matchedVariantForm.price_extra) },
-                ],
-              );
-            }
+          // ✅ update price_extra on attribute value
+          if (
+            matchedVariantForm.price_extra !== undefined &&
+            variantData.product_template_attribute_value_ids?.length > 0
+          ) {
+            await odooWrite(
+              odoo,
+              "product.template.attribute.value",
+              [variantData.product_template_attribute_value_ids[0]],
+              { price_extra: Number(matchedVariantForm.price_extra) },
+            );
           }
         }
       }
     }
 
+    // ── Stock (no-variant products only) ─────────────────────────────────────
     if (!body.variants || body.variants.length === 0) {
       const finalProductId = isEditMode
         ? body.id
         : await getVariantIdFromTemplate(odoo, templateId);
+
       if (finalProductId && body.qty_available !== undefined) {
         await updateOdooStock(odoo, finalProductId, Number(body.qty_available));
       }
@@ -184,12 +198,15 @@ export default defineEventHandler(async (event) => {
   }
 });
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 async function getOrCreateAttribute(odoo: any, name: string): Promise<number> {
-  const res: any = await odoo.searchRead(
+  const res: any = await safeSearchRead(
+    odoo,
     "product.attribute",
     [["name", "=", name]],
     ["id"],
-    { limit: 1 },
+    1,
   );
   if (res.length > 0) return res[0].id;
   return await odoo.execute_kw("product.attribute", "create", [
@@ -202,14 +219,15 @@ async function getOrCreateAttributeValue(
   attributeId: number,
   valueName: string,
 ): Promise<number> {
-  const res: any = await odoo.searchRead(
+  const res: any = await safeSearchRead(
+    odoo,
     "product.attribute.value",
     [
       ["name", "=", valueName],
       ["attribute_id", "=", attributeId],
     ],
     ["id"],
-    { limit: 1 },
+    1,
   );
   if (res.length > 0) return res[0].id;
   return await odoo.execute_kw("product.attribute.value", "create", [
@@ -221,58 +239,72 @@ async function getVariantIdFromTemplate(
   odoo: any,
   templateId: number,
 ): Promise<number | null> {
-  const res: any = await odoo.searchRead(
+  const res: any = await safeSearchRead(
+    odoo,
     "product.product",
     [["product_tmpl_id", "=", templateId]],
     ["id"],
-    { limit: 1 },
+    1,
   );
   return res.length > 0 ? res[0].id : null;
 }
-
 async function updateOdooStock(odoo: any, productId: number, newQty: number) {
   try {
-    const quantIds: any = await odoo.searchRead(
+    // 1. Get internal location
+    const locations: any = await safeSearchRead(
+      odoo,
+      "stock.location",
+      [["usage", "=", "internal"]],
+      ["id"],
+      1,
+    );
+
+    if (!locations.length) {
+      console.error("No internal location found");
+      return;
+    }
+
+    const locationId = locations[0].id;
+
+    // 2. Find existing quant
+    const quants: any = await safeSearchRead(
+      odoo,
       "stock.quant",
       [
         ["product_id", "=", productId],
-        ["location_id.usage", "=", "internal"],
+        ["location_id", "=", locationId],
       ],
-      ["id"],
+      ["id", "quantity"],
+      1,
     );
 
-    if (quantIds.length > 0) {
-      await odoo.execute_kw("stock.quant", "write", [
-        [quantIds[0].id],
-        { inventory_quantity: newQty },
-      ]);
-      await odoo.execute_kw("stock.quant", "action_apply_inventory", [
-        [quantIds[0].id],
-      ]);
-    } else {
-      const locations: any = await odoo.searchRead(
-        "stock.location",
-        [["usage", "=", "internal"]],
-        ["id"],
-        { limit: 1 },
-      );
+    let quantId: number;
 
-      if (locations.length > 0) {
-        const newQuant = await odoo.execute_kw("stock.quant", "create", [
-          [
-            {
-              product_id: productId,
-              location_id: locations[0].id,
-              inventory_quantity: newQty,
-            },
-          ],
-        ]);
-        await odoo.execute_kw("stock.quant", "action_apply_inventory", [
-          [newQuant],
-        ]);
-      }
+    if (quants.length > 0) {
+      quantId = quants[0].id;
+
+      // ✅ VERY IMPORTANT: enable inventory mode
+      await odooWrite(odoo, "stock.quant", [quantId], {
+        inventory_quantity: newQty,
+      });
+    } else {
+      // create only if not exists
+      quantId = await odoo.execute_kw("stock.quant", "create", [
+        [
+          {
+            product_id: productId,
+            location_id: locationId,
+            inventory_quantity: newQty,
+          },
+        ],
+      ]);
     }
+
+    // 3. Apply inventory adjustment (SET value, not add)
+    await odoo.execute_kw("stock.quant", "action_apply_inventory", [[quantId]]);
+
+    console.log(`Stock set to ${newQty} for product ${productId}`);
   } catch (e: any) {
-    console.warn(`تنبيه: لم يتم تحديث كمية المخزن. خطأ: ${e?.message || e}`);
+    console.error("Stock update error:", e);
   }
 }

@@ -49,7 +49,11 @@ const emit = defineEmits<{
   (e: "update:isOpen", value: boolean): void;
   (
     e: "save",
-    payload: Partial<Product> & { variants?: ProductVariantLocal[] },
+    payload: Partial<Product> & {
+      variants?: ProductVariantLocal[];
+      pos_category_id?: number | null;
+      location_id?: number | null;
+    },
   ): void;
   (e: "delete"): void;
 }>();
@@ -65,7 +69,7 @@ const formSaleOk = ref(true);
 const formPurchaseOk = ref(true);
 const formActive = ref(true);
 const formAvailableInPos = ref(true);
-const formPosCategoryName = ref("");
+const formPosCategoryId = ref(0);
 const formIsWeight = ref(false);
 const formLocation = ref<number | null>(null);
 const showCategoryDropdown = ref(false);
@@ -134,7 +138,6 @@ watch(
         formPurchaseOk.value = true;
         formActive.value = true;
         formAvailableInPos.value = true;
-        formPosCategoryName.value = "";
         formIsWeight.value = false;
         formLocation.value = locations.value?.[0]?.id || null;
         formVariants.value = []; // تصفية المتغيرات عند الإضافة الجديدة
@@ -152,19 +155,21 @@ watch(
         formPurchaseOk.value = props.product.purchase_ok ?? true;
         formActive.value = props.product.active ?? true;
         formAvailableInPos.value = props.product.available_in_pos ?? true;
-        formPosCategoryName.value =
-          props.product.pos_categories?.[0]?.name || "";
+        formPosCategoryId.value = 0;
+        props.product.pos_categories?.[0]?.name || "";
         formIsWeight.value = (props.product as any).to_weight || false;
         formLocation.value = null;
         formQtyAvailable.value = props.product.qty_available || 0;
-        
+
         // Handling image data URLs or raw base64. Odoo returns base64, so prepend standard PNG header if needed or keep raw.
         // Usually if it's already a full data url from Odoo, we use it directly, or prepend helper.
         // Let's check if the product has image_1920.
         const rawImg = props.product.image_1920;
         if (rawImg) {
           // If it doesn't already have the data URL header, prepending it allows standard <img src="..."> to display it.
-          formImage1920.value = rawImg.startsWith("data:") ? rawImg : `data:image/png;base64,${rawImg}`;
+          formImage1920.value = rawImg.startsWith("data:")
+            ? rawImg
+            : `data:image/png;base64,${rawImg}`;
         } else {
           formImage1920.value = null;
         }
@@ -323,8 +328,8 @@ const saveProduct = () => {
     location_id: formLocation.value,
     qty_available: Number(formQtyAvailable.value),
     image_1920: formImage1920.value,
-    // إرسال مصفوفة المتغيرات الجديدة والقديمة المحدثة للـ API
     variants: formVariants.value,
+    pos_category_id: formPosCategoryId.value,
   });
 };
 </script>
@@ -365,7 +370,9 @@ const saveProduct = () => {
 
       <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
         <!-- قسم رفع صورة المنتج -->
-        <div class="flex flex-col items-center justify-center pb-4 border-b border-outline-variant">
+        <div
+          class="flex flex-col items-center justify-center pb-4 border-b border-outline-variant"
+        >
           <div
             @click="triggerFileInput"
             class="relative group w-32 h-32 rounded-2xl border-2 border-dashed border-outline-variant hover:border-primary bg-surface-container-low hover:bg-surface-container transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-sm"
@@ -379,13 +386,23 @@ const saveProduct = () => {
             />
             <div v-if="formImage1920" class="w-full h-full relative">
               <img :src="formImage1920" class="w-full h-full object-cover" />
-              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div
+                class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              >
                 <Upload class="w-6 h-6 text-white" />
               </div>
             </div>
-            <div v-else class="flex flex-col items-center justify-center p-4 text-center">
-              <Image class="w-8 h-8 text-on-surface-variant mb-1 group-hover:text-primary transition-colors" />
-              <span class="text-[11px] text-on-surface-variant group-hover:text-primary transition-colors">رفع صورة المنتج</span>
+            <div
+              v-else
+              class="flex flex-col items-center justify-center p-4 text-center"
+            >
+              <Image
+                class="w-8 h-8 text-on-surface-variant mb-1 group-hover:text-primary transition-colors"
+              />
+              <span
+                class="text-[11px] text-on-surface-variant group-hover:text-primary transition-colors"
+                >رفع صورة المنتج</span
+              >
             </div>
           </div>
           <button
@@ -686,12 +703,12 @@ const saveProduct = () => {
             <div class="relative mt-4">
               <div class="relative">
                 <input
-                  v-model="formPosCategoryName"
+                  v-model="formPosCategoryId"
                   @focus="showCategoryDropdown = true"
                   @blur="hideCategoryDropdown"
                   class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
                   placeholder=" "
-                  type="text"
+                  type="number"
                 />
                 <label
                   class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
@@ -709,7 +726,7 @@ const saveProduct = () => {
                   v-for="cat in posCategories"
                   :key="cat.id"
                   @click="
-                    formPosCategoryName = cat.name;
+                    formPosCategoryId = cat.id;
                     showCategoryDropdown = false;
                   "
                   class="w-full text-right px-4 py-2 hover:bg-surface-container text-body-md text-on-surface"

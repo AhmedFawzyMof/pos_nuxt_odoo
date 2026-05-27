@@ -1,4 +1,4 @@
-import { defineEventHandler } from "h3";
+import { defineEventHandler, getQuery } from "h3";
 import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
 
   if (!session.user) {
-    return { success: false, error: "not authenticated" };
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
 
   const odoo = connectToOdoo(
@@ -16,28 +16,118 @@ export default defineEventHandler(async (event) => {
 
   const [connectErr] = await tryCatch(odoo.connect());
   if (connectErr) {
-    return {
-      success: false,
-      error: `Connection failed: ${connectErr.message}`,
-    };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل الاتصال بأودو: ${connectErr.message}`,
+    });
   }
+
+  const query = getQuery(event);
+  const page = query.page ? Math.max(1, parseInt(query.page as string)) : null;
+  const limit = page ? 28 : 1000;
+  const offset = page ? (page - 1) * limit : 0;
+  const searchQuery = ((query.search as string) || "").trim().toLowerCase();
+
+  const domain: any[] = [];
+  if (searchQuery) {
+    domain.push(["name", "ilike", searchQuery]);
+  }
+
+  const [countErr, totalCount] = await tryCatch(
+    odoo.execute_kw("pos.category", "search_count", [[domain]])
+  );
+
+  if (countErr) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل في حساب عدد الأقسام: ${countErr.message}`,
+    });
+  }
+
+  // Find the available image field in Odoo dynamically
+  let imageField = "image_128";
+  try {
+    const fields: any = await odoo.execute_kw("pos.category", "fields_get", [
+      [],
+      ["image_128", "image", "image_medium"],
+    ]);
+    if (fields.image_128) {
+      imageField = "image_128";
+    } else if (fields.image) {
+      imageField = "image";
+    } else if (fields.image_medium) {
+      imageField = "image_medium";
+    }
+  } catch (e) {
+    console.warn("fields_get failed for pos.category, defaulting to image_128", e);
+  }
+
+  const fields = ["id", "name", "parent_id", "sequence", imageField];
 
   const [err, rawCategories] = await tryCatch(
     odoo.execute_kw("pos.category", "search_read", [
-      [[]],
-      { fields: ["id", "name"] },
-    ]),
+      [domain],
+      {
+        fields,
+        limit,
+        offset,
+        order: "sequence, id desc",
+      },
+    ])
   );
 
   if (err) {
-    return {
-      success: false,
-      error: `Failed to fetch POS categories: ${err.message}`,
-    };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل في جلب الأقسام: ${err.message}`,
+    });
   }
 
-  return {
-    success: true,
-    data: rawCategories as any[],
-  };
+  const [productsErr, productsData] = await tryCatch(
+    odoo.execute_kw("product.product", "search_read", [
+      [[[" id", "not in", [1, 2, 3]]]],
+      { fields: ["pos_categ_ids"] },
+    ])
+  );
+
+  const categoryCountMap: Record<number, number> = {};
+  if (!productsErr && productsData) {
+    for (const p of productsData) {
+      if (p.pos_categ_ids) {
+        for (const catId of p.pos_categ_ids) {
+          categoryCountMap[catId] = (categoryCountMap[catId] || 0) + 1;
+        }
+      }
+    }
+  }
+
+  const completeCategories = (rawCategories as any[]).map((cat: any) => {
+    return {
+      id: cat.id,
+      name: cat.name,
+      parent_id: cat.parent_id
+        ? { id: cat.parent_id[0], name: cat.parent_id[1] }
+        : null,
+      sequence: cat.sequence || 0,
+      image: cat[imageField] || null,
+      productsCount: categoryCountMap[cat.id] || 0,
+      status: "نشط",
+    };
+  });
+
+  if (page) {
+    return {
+      success: true,
+      totalItems: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      itemsPerPage: limit,
+      data: completeCategories,
+    };
+  } else {
+    return {
+      success: true,
+      data: completeCategories,
+    };
+  }
 });

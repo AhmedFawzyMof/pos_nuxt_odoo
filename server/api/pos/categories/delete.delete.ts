@@ -1,3 +1,6 @@
+import { defineEventHandler, readBody } from "h3";
+import { connectToOdoo } from "~~/server/utils/client";
+
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
 
@@ -10,7 +13,7 @@ export default defineEventHandler(async (event) => {
   if (!body.id) {
     throw createError({
       statusCode: 400,
-      statusMessage: "معرّف المنتج مطلوب",
+      statusMessage: "معرّف القسم مطلوب",
     });
   }
 
@@ -22,16 +25,16 @@ export default defineEventHandler(async (event) => {
   try {
     await odoo.connect();
 
-    await odoo.execute_kw("product.product", "unlink", [[body.id]]);
+    await odoo.execute_kw("pos.category", "unlink", [[body.id]]);
 
     return {
       success: true,
-      message: "تم حذف المنتج بنجاح",
+      message: "تم حذف القسم بنجاح",
     };
   } catch (error: any) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في حذف المنتج: ${error.message}`,
+      statusMessage: `فشل حذف القسم من أودو: ${error.message}`,
     });
   }
 });

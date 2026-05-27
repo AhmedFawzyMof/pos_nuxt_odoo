@@ -3,11 +3,12 @@ import { connectToOdoo } from "~~/server/utils/client";
 
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
-  if (!session.user) {
-    return { success: false, error: "not authenticated" };
-  }
-  const body = await readBody(event);
 
+  if (!session.user) {
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
+  }
+
+  const body = await readBody(event);
   const { sourceLocationId, destinationLocationId, items } = body;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
       if (!finalProductId && item.createNewProduct && item.productName) {
         finalProductId = await odoo.create("product.product", {
           name: item.productName,
-          type: "product", // Consumable
+          type: "product",
           barcode: item.productName.match(/^[0-9]+$/)
             ? item.productName
             : false,
@@ -66,7 +67,7 @@ export default defineEventHandler(async (event) => {
     console.error("Odoo Batch Processing Fail:", error);
     throw createError({
       statusCode: 500,
-      statusMessage: error.message || "Error sync layout data",
+      statusMessage: `فشل في معالجة النقل المخزني: ${error.message}`,
     });
   }
 });

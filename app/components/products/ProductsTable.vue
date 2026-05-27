@@ -2,14 +2,14 @@
 import type { Product } from "~/types/product";
 import { RefreshCw, Edit, Trash2, SearchX, Package } from "@lucide/vue";
 
-defineProps<{
+const props = defineProps<{
   products: Product[];
   status: string;
   allProductsCount: number;
   currentPage?: number;
   totalPages?: number;
 }>();
-
+console.log(props.products);
 const emit = defineEmits<{
   (e: "edit", product: Product, index: number): void;
   (e: "delete", product: Product, index: number): void;
@@ -78,10 +78,16 @@ const emit = defineEmits<{
             </td>
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center overflow-hidden shrink-0">
+                <div
+                  class="w-10 h-10 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center overflow-hidden shrink-0"
+                >
                   <img
                     v-if="prod.image_1920"
-                    :src="prod.image_1920.startsWith('data:') ? prod.image_1920 : `data:image/png;base64,${prod.image_1920}`"
+                    :src="
+                      prod.image_1920.startsWith('data:')
+                        ? prod.image_1920
+                        : `data:image/png;base64,${prod.image_1920}`
+                    "
                     class="w-full h-full object-cover"
                   />
                   <Package v-else class="w-5 h-5 text-on-surface-variant/60" />

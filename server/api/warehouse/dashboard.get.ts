@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
 
   if (!session.user) {
-    return { success: false, error: "not authenticated" };
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
 
   const odoo = connectToOdoo(
@@ -55,20 +55,21 @@ export default defineEventHandler(async (event) => {
 
   const [connectErr] = await tryCatch(odoo.connect());
   if (connectErr) {
-    return {
-      success: false,
-      error: `Connection failed: ${connectErr.message}`,
-    };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل الاتصال بأودو: ${connectErr.message}`,
+    });
   }
 
   const [kpiErr, data] = await tryCatch(
     odoo.execute_kw("kpi.dashboard", "get_storage_kpi", [{} as any]),
   );
 
-  console.log(data);
-
   if (kpiErr) {
-    return { success: false, error: `KPI fetch failed: ${kpiErr.message}` };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل في جلب بيانات المخزون: ${kpiErr.message}`,
+    });
   }
 
   const { inventory_value, out_of_stock, total_quantity, incoming_shipments } =
@@ -89,10 +90,10 @@ export default defineEventHandler(async (event) => {
   );
 
   if (err) {
-    return {
-      success: false,
-      error: `Failed to fetch locations: ${err.message}`,
-    };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل في جلب مواقع المستودع: ${err.message}`,
+    });
   }
 
   const locations = rawLocations as any[];
@@ -102,10 +103,10 @@ export default defineEventHandler(async (event) => {
   );
 
   if (movementErr) {
-    return {
-      success: false,
-      error: `Failed to fetch locations: ${movementErr.message}`,
-    };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل في جلب حركات المخزون: ${movementErr.message}`,
+    });
   }
 
   const movement = movementData as any[];
@@ -121,10 +122,10 @@ export default defineEventHandler(async (event) => {
   );
 
   if (stockLevelsError) {
-    return {
-      success: false,
-      error: `Failed to fetch locations: ${stockLevelsError.message}`,
-    };
+    throw createError({
+      statusCode: 500,
+      statusMessage: `فشل في جلب مستويات المخزون: ${stockLevelsError.message}`,
+    });
   }
 
   return {

@@ -4,18 +4,18 @@ import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
-  if (!session.user) {
-    return { success: false, error: "not authenticated" };
-  }
-  const body = await readBody(event);
 
+  if (!session.user) {
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
+  }
+
+  const body = await readBody(event);
   const { name, type, parentId, barcode } = body;
 
-  // Simple validation
   if (!name) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Location name is required",
+      statusMessage: "اسم الموقع مطلوب",
     });
   }
 
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
     console.error("Odoo Sync Error:", err.message);
     throw createError({
       statusCode: 500,
-      statusMessage: err.message || "Failed to sync with Odoo instance",
+      statusMessage: `فشل الاتصال بأودو: ${err.message}`,
     });
   }
 
@@ -55,14 +55,13 @@ export default defineEventHandler(async (event) => {
     console.error("Odoo Sync Error:", newLocationError);
     throw createError({
       statusCode: 500,
-      statusMessage:
-        newLocationError.message || "Failed to sync with Odoo instance",
+      statusMessage: `فشل في إنشاء الموقع: ${newLocationError.message}`,
     });
   }
 
   return {
     success: true,
     id: newLocationId,
-    message: "Location sync completed successfully",
+    message: "تم إنشاء الموقع بنجاح",
   };
 });

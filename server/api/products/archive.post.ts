@@ -1,14 +1,18 @@
 export default defineEventHandler(async (event) => {
+  const session = await getUserSession(event);
+
+  if (!session.user) {
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
+  }
+
   const body = await readBody(event);
 
   if (!body.id) {
-    return createError({
+    throw createError({
       statusCode: 400,
       statusMessage: "معرّف المنتج مطلوب",
     });
   }
-
-  const session = await getUserSession(event);
 
   const odoo = connectToOdoo(
     session.odooUsername as string,
@@ -24,7 +28,7 @@ export default defineEventHandler(async (event) => {
 
     return { success: true, message: "تم أرشفة المنتج بنجاح" };
   } catch (error: any) {
-    return createError({
+    throw createError({
       statusCode: 500,
       statusMessage: `فشل في أرشفة المنتج: ${error.message}`,
     });
