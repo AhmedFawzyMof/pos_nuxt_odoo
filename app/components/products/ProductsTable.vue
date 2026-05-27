@@ -39,6 +39,7 @@ const emit = defineEmits<{
             <th class="px-6 py-4 font-bold text-label-md">التكلفة</th>
             <th class="px-6 py-4 font-bold text-label-md">الوزن / الحجم</th>
             <th class="px-6 py-4 font-bold text-label-md">المخزون الحالي</th>
+            <th class="px-6 py-4 font-bold text-label-md">موقع التخزين</th>
             <th class="px-6 py-4 font-bold text-label-md text-center">
               الإجراءات
             </th>
@@ -47,7 +48,7 @@ const emit = defineEmits<{
 
         <tbody class="divide-y divide-outline-variant">
           <tr v-if="status === 'pending' && !products.length">
-            <td colspan="8" class="p-16 text-center text-on-surface-variant">
+            <td colspan="9" class="p-16 text-center text-on-surface-variant">
               <RefreshCw
                 class="w-10 h-10 block mb-2 mx-auto animate-spin text-primary"
               />
@@ -150,6 +151,9 @@ const emit = defineEmits<{
                 {{ (prod.qty_available || 0) <= 5 ? "(منخفض)" : "" }}
               </span>
             </td>
+            <td class="px-6 py-4 text-label-md text-on-surface-variant">
+              {{ prod.location?.name || "-" }}
+            </td>
             <td class="px-6 py-4 text-center" @click.stop>
               <div class="flex items-center justify-center gap-2">
                 <button
@@ -171,7 +175,7 @@ const emit = defineEmits<{
           </tr>
 
           <tr v-if="products.length === 0 && status !== 'pending'">
-            <td colspan="8" class="p-12 text-center text-on-surface-variant">
+            <td colspan="9" class="p-12 text-center text-on-surface-variant">
               <SearchX class="w-10 h-10 block mb-2 mx-auto text-outline" />
               لا توجد منتجات مطابقة في كتالوج المستودع.
             </td>

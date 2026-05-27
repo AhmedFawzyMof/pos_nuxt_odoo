@@ -30,6 +30,7 @@ export interface Product {
   available_in_pos: boolean;
   to_weight?: boolean;
   location_id?: number | null;
+  location?: { id: number; name: string } | null;
   pos_categ_ids?: number[];
   pos_categories?: POSCategory[];
   image_1920?: string | null;

@@ -1,26 +1,39 @@
 <script setup lang="ts">
 interface MovementItem {
-  title: string;
-  meta: string;
+  product: string;
+  reference: string;
+  destination: string;
+  source: string;
   qty: string;
-  action: string;
-  icon: string;
-  color: string;
+  type: string;
+  typeClass: string;
+  badgeColor: string;
+  time: string;
 }
 
-import { History, TrendingUp, TrendingDown, ArrowRightLeft, Package, Activity } from '@lucide/vue';
+import {
+  History,
+  TrendingUp,
+  TrendingDown,
+  ArrowRightLeft,
+  Package,
+  Activity,
+  ReplaceAll,
+  Replace,
+} from "@lucide/vue";
 
-defineProps<{
+const props = defineProps<{
   movements: MovementItem[];
 }>();
 
-const getIcon = (iconName: string) => {
-  if (!iconName) return Activity;
-  const lower = iconName.toLowerCase();
-  if (lower.includes('up') || lower.includes('in') || lower === 'arrow_upward') return TrendingUp;
-  if (lower.includes('down') || lower.includes('out') || lower === 'arrow_downward') return TrendingDown;
-  if (lower.includes('swap') || lower.includes('transfer') || lower === 'sync') return ArrowRightLeft;
-  return Package;
+const getIcon = (typeClass: string) => {
+  if (typeClass === "incoming") return Package;
+  if (typeClass === "outgoing") return Activity;
+  if (typeClass === "internal") return ArrowRightLeft;
+  if (typeClass === "inbound") return ReplaceAll;
+  if (typeClass === "outbound") return Replace;
+  if (typeClass === "adjustment") return TrendingUp;
+  return ReplaceAll;
 };
 </script>
 
@@ -41,29 +54,34 @@ const getIcon = (iconName: string) => {
       <div
         v-for="(mv, idx) in movements"
         :key="idx"
-        class="flex items-center gap-4 p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer"
+        class="flex flex-col items-start gap-4 p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer"
       >
-        <div
-          class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-          :class="mv.color"
-        >
-          <component :is="getIcon(mv.icon)" class="w-5 h-5" />
-        </div>
-        <div class="flex-1">
-          <p class="text-label-md font-bold text-on-surface">
-            {{ mv.title }}
-          </p>
-          <p class="text-xs text-on-surface-variant">{{ mv.meta }}</p>
-        </div>
-        <div class="text-left">
-          <p
-            class="font-bold"
-            :class="mv.qty.startsWith('+') ? 'text-primary' : 'text-error'"
+        <div class="flex w-full">
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+            :class="mv.badgeColor"
           >
-            {{ mv.qty }}
-          </p>
-          <p class="text-[10px] text-on-surface-variant">{{ mv.action }}</p>
+            <component :is="getIcon(mv.typeClass)" class="w-5 h-5" />
+          </div>
+          <div class="flex-1">
+            <p class="text-label-md font-bold text-on-surface">
+              {{ mv.destination }}
+            </p>
+            <p class="text-xs text-on-surface-variant">{{ mv.product }}</p>
+          </div>
+          <div class="text-left">
+            <p
+              class="font-bold"
+              :class="mv.qty.startsWith('+') ? 'text-primary' : 'text-error'"
+            >
+              {{ mv.qty }}
+            </p>
+            <p class="text-[10px] text-on-surface-variant">
+              {{ mv.reference }}
+            </p>
+          </div>
         </div>
+        <p dir="ltr">{{ new Date(mv.time).toLocaleString("ar-eg") }}</p>
       </div>
     </div>
     <div class="p-4 border-t border-outline-variant bg-surface-container-low">

@@ -14,6 +14,7 @@ import {
   Plus,
   Image,
   Upload,
+  Check,
 } from "@lucide/vue";
 
 // واجهة تعريف هيكل المتغير المحلي
@@ -51,7 +52,7 @@ const emit = defineEmits<{
     e: "save",
     payload: Partial<Product> & {
       variants?: ProductVariantLocal[];
-      pos_category_id?: number | null;
+      pos_categ_ids?: number[];
       location_id?: number | null;
     },
   ): void;
@@ -69,7 +70,7 @@ const formSaleOk = ref(true);
 const formPurchaseOk = ref(true);
 const formActive = ref(true);
 const formAvailableInPos = ref(true);
-const formPosCategoryId = ref(0);
+const formPosCategoryIds = ref<number[]>([]);
 const formIsWeight = ref(false);
 const formLocation = ref<number | null>(null);
 const showCategoryDropdown = ref(false);
@@ -139,6 +140,7 @@ watch(
         formActive.value = true;
         formAvailableInPos.value = true;
         formIsWeight.value = false;
+        formPosCategoryIds.value = [];
         formLocation.value = locations.value?.[0]?.id || null;
         formVariants.value = []; // تصفية المتغيرات عند الإضافة الجديدة
         formQtyAvailable.value = 0;
@@ -155,8 +157,10 @@ watch(
         formPurchaseOk.value = props.product.purchase_ok ?? true;
         formActive.value = props.product.active ?? true;
         formAvailableInPos.value = props.product.available_in_pos ?? true;
-        formPosCategoryId.value = 0;
-        props.product.pos_categories?.[0]?.name || "";
+        formPosCategoryIds.value =
+          (props.product as any).pos_categ_ids ||
+          props.product.pos_categories?.map((c) => c.id) ||
+          [];
         formIsWeight.value = (props.product as any).to_weight || false;
         formLocation.value = null;
         formQtyAvailable.value = props.product.qty_available || 0;
@@ -310,6 +314,21 @@ const hideCategoryDropdown = () => {
   }, 200);
 };
 
+const selectedCategoryNames = computed(() => {
+  return posCategories.value
+    .filter((c) => formPosCategoryIds.value.includes(c.id))
+    .map((c) => c.name);
+});
+
+const toggleCategory = (catId: number) => {
+  const idx = formPosCategoryIds.value.indexOf(catId);
+  if (idx === -1) {
+    formPosCategoryIds.value.push(catId);
+  } else {
+    formPosCategoryIds.value.splice(idx, 1);
+  }
+};
+
 const saveProduct = () => {
   emit("save", {
     id: props.product?.id,
@@ -329,7 +348,7 @@ const saveProduct = () => {
     qty_available: Number(formQtyAvailable.value),
     image_1920: formImage1920.value,
     variants: formVariants.value,
-    pos_category_id: formPosCategoryId.value,
+    pos_categ_ids: formPosCategoryIds.value,
   });
 };
 </script>
@@ -684,7 +703,7 @@ const saveProduct = () => {
               </div>
             </div>
 
-            <div class="relative mt-4">
+            <div class="relative mt-4" v-if="props.mode !== 'edit'">
               <select
                 v-model="formLocation"
                 class="peer w-full h-12 px-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all appearance-none"
@@ -701,18 +720,30 @@ const saveProduct = () => {
             </div>
 
             <div class="relative mt-4">
-              <div class="relative">
-                <input
-                  v-model="formPosCategoryId"
-                  @focus="showCategoryDropdown = true"
-                  @blur="hideCategoryDropdown"
-                  class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
-                  placeholder=" "
-                  type="number"
-                />
-                <label
-                  class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
-                  >فئة كاشير نقاط البيع</label
+              <div
+                class="relative min-h-12 border-b-2 border-outline-variant focus-within:border-primary transition-colors px-4 pt-4 pb-1 flex flex-wrap items-center gap-1 cursor-text"
+                @click="showCategoryDropdown = !showCategoryDropdown"
+              >
+                <span
+                  v-for="catName in selectedCategoryNames"
+                  class="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full"
+                >
+                  {{ catName }}
+                  <button
+                    type="button"
+                    @click.stop="
+                      const cat = posCategories.find((c) => c.name === catName);
+                      if (cat) toggleCategory(cat.id);
+                    "
+                    class="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <X class="w-3 h-3" />
+                  </button>
+                </span>
+                <span
+                  v-if="selectedCategoryNames.length === 0"
+                  class="text-on-surface-variant text-body-md"
+                  >فئات نقاط البيع</span
                 >
                 <ChevronDown
                   class="absolute left-4 top-3.5 w-5 h-5 text-on-surface-variant pointer-events-none"
@@ -725,12 +756,22 @@ const saveProduct = () => {
                 <button
                   v-for="cat in posCategories"
                   :key="cat.id"
-                  @click="
-                    formPosCategoryId = cat.id;
-                    showCategoryDropdown = false;
-                  "
-                  class="w-full text-right px-4 py-2 hover:bg-surface-container text-body-md text-on-surface"
+                  @mousedown.prevent="toggleCategory(cat.id)"
+                  class="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-surface-container text-body-md text-on-surface"
                 >
+                  <span
+                    class="w-4 h-4 border rounded flex items-center justify-center shrink-0"
+                    :class="
+                      formPosCategoryIds.includes(cat.id)
+                        ? 'bg-primary border-primary'
+                        : 'border-outline'
+                    "
+                  >
+                    <Check
+                      v-if="formPosCategoryIds.includes(cat.id)"
+                      class="w-3 h-3 text-white"
+                    />
+                  </span>
                   {{ cat.name }}
                 </button>
               </div>

@@ -32,11 +32,14 @@ export default defineEventHandler(async (event) => {
 
     const productValues: any = {
       name: body.name,
+      pos_categ_ids: body.pos_categ_ids?.length
+        ? [[6, 0, body.pos_categ_ids.map(Number)]]
+        : [],
       barcode:
         body.variants && body.variants.length > 0
           ? false
           : body.barcode || false,
-      type: "consu",
+      type: ["consu", "service"].includes(body.type) ? body.type : "consu",
       list_price: isNaN(Number(body.list_price))
         ? 0.0
         : Number(body.list_price),
@@ -49,6 +52,7 @@ export default defineEventHandler(async (event) => {
       purchase_ok: Boolean(body.purchase_ok),
       active: Boolean(body.active),
       available_in_pos: Boolean(body.available_in_pos),
+      to_weight: Boolean(body.to_weight),
       is_storable: true,
     };
 
@@ -180,7 +184,12 @@ export default defineEventHandler(async (event) => {
         : await getVariantIdFromTemplate(odoo, templateId);
 
       if (finalProductId && body.qty_available !== undefined) {
-        await updateOdooStock(odoo, finalProductId, Number(body.qty_available));
+        await updateOdooStock(
+          odoo,
+          finalProductId,
+          Number(body.qty_available),
+          body.location_id,
+        );
       }
     }
 
@@ -248,7 +257,12 @@ async function getVariantIdFromTemplate(
   );
   return res.length > 0 ? res[0].id : null;
 }
-async function updateOdooStock(odoo: any, productId: number, newQty: number) {
+async function updateOdooStock(
+  odoo: any,
+  productId: number,
+  newQty: number,
+  location_id?: number,
+) {
   try {
     // 1. Get internal location
     const locations: any = await safeSearchRead(
@@ -264,7 +278,7 @@ async function updateOdooStock(odoo: any, productId: number, newQty: number) {
       return;
     }
 
-    const locationId = locations[0].id;
+    const locationId = location_id ? Number(location_id) : locations[0].id;
 
     // 2. Find existing quant
     const quants: any = await safeSearchRead(
