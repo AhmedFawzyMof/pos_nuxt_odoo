@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { Search, RefreshCw, Plus, CloudOff, Folder, Package, Gauge } from "@lucide/vue";
+import {
+  Search,
+  RefreshCw,
+  Plus,
+  CloudOff,
+  Folder,
+  Package,
+  Gauge,
+} from "@lucide/vue";
 import CategoriesTable from "~/components/categories/CategoriesTable.vue";
 import CategoryDrawer from "~/components/categories/CategoryDrawer.vue";
 
@@ -25,6 +33,7 @@ const {
 } = await useFetch<{
   success: boolean;
   totalItems: number;
+  totalProducts: number;
   totalPages: number;
   currentPage: number;
   itemsPerPage: number;
@@ -41,10 +50,7 @@ const {
 const categories = computed<Category[]>(() => apiResponse.value?.data || []);
 const totalPages = computed(() => apiResponse.value?.totalPages || 1);
 const totalItems = computed(() => apiResponse.value?.totalItems || 0);
-
-const totalProducts = computed(() => {
-  return categories.value.reduce((sum, c) => sum + (c.productsCount || 0), 0);
-});
+const totalProducts = computed(() => apiResponse.value?.totalProducts || 0);
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) currentPage.value++;
@@ -215,34 +221,56 @@ const handleDeleteFromDrawer = async () => {
     />
 
     <!-- Analytics Section -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-outline-variant">
+    <div
+      class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-outline-variant"
+    >
       <!-- Total Categories Card -->
-      <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm">
-        <div class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+      <div
+        class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm"
+      >
+        <div
+          class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container"
+        >
           <Folder class="w-7 h-7" />
         </div>
         <div>
           <p class="text-label-md text-on-surface-variant">إجمالي الأقسام</p>
-          <h4 class="text-display-lg font-bold text-on-surface">{{ totalItems }}</h4>
+          <h4 class="text-display-lg font-bold text-on-surface">
+            {{ totalItems }}
+          </h4>
         </div>
       </div>
       <!-- Total Products Card -->
-      <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm">
-        <div class="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+      <div
+        class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm"
+      >
+        <div
+          class="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container"
+        >
           <Package class="w-7 h-7" />
         </div>
         <div>
-          <p class="text-label-md text-on-surface-variant">إجمالي المنتجات المدرجة</p>
-          <h4 class="text-display-lg font-bold text-on-surface">{{ totalProducts }}</h4>
+          <p class="text-label-md text-on-surface-variant">
+            إجمالي المنتجات المدرجة
+          </p>
+          <h4 class="text-display-lg font-bold text-on-surface">
+            {{ totalProducts }}
+          </h4>
         </div>
       </div>
       <!-- Shelf Efficiency Card -->
-      <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm">
-        <div class="w-14 h-14 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
+      <div
+        class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm"
+      >
+        <div
+          class="w-14 h-14 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container"
+        >
           <Gauge class="w-7 h-7" />
         </div>
         <div>
-          <p class="text-label-md text-on-surface-variant">كفاءة مساحات العرض</p>
+          <p class="text-label-md text-on-surface-variant">
+            كفاءة مساحات العرض
+          </p>
           <h4 class="text-display-lg font-bold text-on-surface">94%</h4>
         </div>
       </div>

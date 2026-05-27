@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const [countErr, totalCount] = await tryCatch(
-    odoo.execute_kw("pos.category", "search_count", [[domain]])
+    odoo.execute_kw("pos.category", "search_count", [[domain]]),
   );
 
   if (countErr) {
@@ -59,7 +59,10 @@ export default defineEventHandler(async (event) => {
       imageField = "image_medium";
     }
   } catch (e) {
-    console.warn("fields_get failed for pos.category, defaulting to image_128", e);
+    console.warn(
+      "fields_get failed for pos.category, defaulting to image_128",
+      e,
+    );
   }
 
   const fields = ["id", "name", "parent_id", "sequence", imageField];
@@ -73,7 +76,7 @@ export default defineEventHandler(async (event) => {
         offset,
         order: "sequence, id desc",
       },
-    ])
+    ]),
   );
 
   if (err) {
@@ -85,9 +88,9 @@ export default defineEventHandler(async (event) => {
 
   const [productsErr, productsData] = await tryCatch(
     odoo.execute_kw("product.product", "search_read", [
-      [[[" id", "not in", [1, 2, 3]]]],
+      [],
       { fields: ["pos_categ_ids"] },
-    ])
+    ]),
   );
 
   const categoryCountMap: Record<number, number> = {};
@@ -115,10 +118,16 @@ export default defineEventHandler(async (event) => {
     };
   });
 
+  const totalProducts = Object.values(categoryCountMap).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
+
   if (page) {
     return {
       success: true,
       totalItems: totalCount,
+      totalProducts,
       totalPages: Math.ceil(totalCount / limit),
       currentPage: page,
       itemsPerPage: limit,

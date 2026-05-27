@@ -37,7 +37,7 @@ const emit = defineEmits<{
       sequence: number;
       parent_id: number | null;
       image: string | null;
-    }
+    },
   ): void;
   (e: "delete"): void;
 }>();
@@ -342,7 +342,7 @@ const saveCategory = () => {
         <button
           @click="saveCategory"
           :disabled="isSaving || !formName"
-          class="px-6 h-11 text-label-md font-bold rounded-full bg-primary text-on-primary hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+          class="px-6 h-11 text-white text-label-md font-bold rounded-full bg-primary text-on-primary hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
         >
           <RefreshCw v-if="isSaving" class="w-4 h-4 animate-spin" />
           <span>{{ mode === "add" ? "إضافة القسم" : "حفظ التعديلات" }}</span>

@@ -57,8 +57,7 @@ export default defineEventHandler(async (event) => {
     if (isEditMode) {
       categoryId = Number(body.id);
       await odoo.execute_kw("pos.category", "write", [
-        [categoryId],
-        categoryValues,
+        [[categoryId], categoryValues],
       ]);
     } else {
       categoryId = await odoo.execute_kw("pos.category", "create", [

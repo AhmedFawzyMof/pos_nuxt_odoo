@@ -22,8 +22,7 @@ export default defineEventHandler(async (event) => {
   try {
     await odoo.connect();
     await odoo.execute_kw("product.product", "write", [
-      [body.id],
-      { active: false },
+      [[body.id], { active: false }],
     ]);
 
     return { success: true, message: "تم أرشفة المنتج بنجاح" };
