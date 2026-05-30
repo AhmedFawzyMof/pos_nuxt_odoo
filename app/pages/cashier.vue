@@ -1,0 +1,371 @@
+<script setup lang="ts">
+import { ref, computed, watch } from "vue";
+import { AlertCircle, ShoppingCart, Plus, MapPin } from "@lucide/vue";
+import PosSearchBar from "~/components/pos/PosSearchBar.vue";
+import PosCategoryFilter from "~/components/pos/PosCategoryFilter.vue";
+import PosProductGrid from "~/components/pos/PosProductGrid.vue";
+import PosCartPanel from "~/components/pos/PosCartPanel.vue";
+import PosProductDetailSheet from "~/components/pos/PosProductDetailSheet.vue";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { usePosCartStore } from "~~/stores/pos-cart";
+import type { POSProduct, POSCategory } from "~/types/pos";
+
+const route = useRoute();
+const configId = computed(() => {
+  const raw = route.query.config_id;
+  return Array.isArray(raw) ? raw[0] : (raw ?? "");
+});
+
+const cart = usePosCartStore();
+
+const selectedLocationId = ref<number | null>(cart.selectedLocationId);
+
+const searchQuery = ref("");
+const scannerActive = ref(false);
+const activeCategoryId = ref<number | null>(null);
+const currentPage = ref(1);
+const selectedProduct = ref<POSProduct | null>(null);
+const showProductDetail = ref(false);
+const showProductsDrawer = ref(false);
+
+const allProducts = ref<POSProduct[]>([]);
+const categories = ref<POSCategory[]>([]);
+const taxes = ref<any[]>([]);
+const locations = ref<any[]>([]);
+const loading = ref(false);
+const error = ref("");
+const totalPages = ref(1);
+
+const filteredProducts = computed(() => {
+  if (!activeCategoryId.value) return allProducts.value;
+  return allProducts.value.filter((p) =>
+    p.pos_categ_ids?.includes(activeCategoryId.value!),
+  );
+});
+
+const hasMore = computed(() => currentPage.value < totalPages.value);
+
+async function loadMasterData(page = 1) {
+  loading.value = true;
+  error.value = "";
+  try {
+    const query: Record<string, any> = {
+      config_id: configId.value,
+      page,
+      limit: 28,
+    };
+    if (activeCategoryId.value) query.category_id = activeCategoryId.value;
+    if (searchQuery.value) query.search = searchQuery.value;
+
+    const res = await $fetch<any>("/api/pos/master-data", { query });
+
+    if (res.success) {
+      if (page === 1) {
+        allProducts.value = res.products.data;
+      } else {
+        allProducts.value.push(...res.products.data);
+      }
+      totalPages.value = res.products.totalPages;
+      currentPage.value = page;
+
+      if (page === 1 && res.categories) {
+        categories.value = res.categories;
+      }
+      if (res.taxes) taxes.value = res.taxes;
+      if (res.locations) locations.value = res.locations;
+    }
+  } catch (err: any) {
+    error.value = err.statusMessage || err.message || "فشل تحميل البيانات";
+  } finally {
+    loading.value = false;
+  }
+}
+
+function handleLoadMore() {
+  if (hasMore.value && !loading.value) {
+    loadMasterData(currentPage.value + 1);
+  }
+}
+
+function handleCategorySelect(categoryId: number | null) {
+  activeCategoryId.value = categoryId;
+  currentPage.value = 1;
+  allProducts.value = [];
+  loadMasterData(1);
+}
+
+function handleSearch(val: string) {
+  searchQuery.value = val;
+  currentPage.value = 1;
+  allProducts.value = [];
+  loadMasterData(1);
+}
+
+function handleScan(barcode: string) {
+  searchQuery.value = barcode;
+  scannerActive.value = false;
+  currentPage.value = 1;
+  allProducts.value = [];
+  loadMasterData(1);
+}
+
+function handleLocationChange(event: Event) {
+  const target = event.target as HTMLSelectElement;
+  const val = target.value;
+  const id = val ? Number(val) : null;
+  const name = id
+    ? locations.value.find((l: any) => l.id === id)?.name || ""
+    : "";
+  selectedLocationId.value = id;
+  cart.setLocation(id, name);
+  currentPage.value = 1;
+  allProducts.value = [];
+  loadMasterData(1);
+}
+
+function handleProductClick(product: POSProduct) {
+  selectedProduct.value = product;
+  showProductDetail.value = true;
+}
+
+function handleAddToCart(product: POSProduct) {
+  const taxItem = taxes.value.find((t: any) =>
+    product.taxes_id?.includes(t.id),
+  );
+  cart.addItem(product, 1, taxItem?.amount || 0);
+}
+
+function handleAddToCartFromDetail(product: POSProduct) {
+  handleAddToCart(product);
+  showProductDetail.value = false;
+}
+
+watch(configId, (id) => {
+  if (id) {
+    currentPage.value = 1;
+    allProducts.value = [];
+    loadMasterData(1);
+  }
+}, { immediate: true });
+</script>
+
+<template>
+  <div
+    v-if="configId"
+    class="flex gap-0 overflow-hidden -m-6 h-[calc(100vh-4rem)]"
+  >
+    <!-- Desktop left panel: search + categories + products (hidden on mobile) -->
+    <div class="hidden lg:flex flex-1 flex-col min-w-0 overflow-hidden">
+      <div
+        class="px-4 py-3 border-b border-outline-variant/20 bg-card/50 sticky top-0 z-10"
+      >
+        <div class="flex items-center gap-2">
+          <PosSearchBar
+            v-model="searchQuery"
+            v-model:scanner-active="scannerActive"
+            class="flex-1"
+            @scan="handleScan"
+            @update:model-value="handleSearch"
+          />
+        </div>
+      </div>
+
+      <div class="px-4 py-2 border-b border-outline-variant/20 bg-card/40">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+            <MapPin class="w-3.5 h-3.5" />
+            <select
+              :value="selectedLocationId ?? ''"
+              @change="handleLocationChange"
+              class="bg-transparent border-none text-xs font-medium text-foreground cursor-pointer focus:outline-none"
+            >
+              <option value="">جميع المواقع</option>
+              <option
+                v-for="loc in locations"
+                :key="loc.id"
+                :value="loc.id"
+              >
+                {{ loc.name }}
+              </option>
+            </select>
+          </div>
+          <PosCategoryFilter
+            :categories="categories"
+            :active-category-id="activeCategoryId"
+            :horizontal="true"
+            @select="handleCategorySelect"
+          />
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3">
+        <div
+          v-if="error"
+          class="flex items-start gap-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20 mb-4"
+        >
+          <AlertCircle class="h-5 w-5 shrink-0" />
+          <p class="flex-1">{{ error }}</p>
+        </div>
+
+        <PosProductGrid
+          :products="filteredProducts"
+          :loading="loading"
+          :has-more="hasMore"
+          :selected-location-id="selectedLocationId"
+          @load-more="handleLoadMore"
+          @product-click="handleProductClick"
+          @add-to-cart="handleAddToCart"
+        />
+      </div>
+    </div>
+
+    <!-- Cart: always visible, full width on mobile, 50% on desktop -->
+    <aside
+      class="flex flex-col w-full lg:w-1/2 shrink-0 lg:border-l border-outline-variant/20 overflow-hidden"
+    >
+      <!-- Mobile: search + warehouse + categories at top of cart -->
+      <div class="lg:hidden">
+        <div
+          class="px-4 py-3 border-b border-outline-variant/20 bg-card/50"
+        >
+          <div class="flex items-center gap-2">
+            <PosSearchBar
+              v-model="searchQuery"
+              v-model:scanner-active="scannerActive"
+              class="flex-1"
+              @scan="handleScan"
+              @update:model-value="handleSearch"
+            />
+          </div>
+        </div>
+        <div class="px-4 py-2 border-b border-outline-variant/20 bg-card/40">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+              <MapPin class="w-3.5 h-3.5" />
+              <select
+                :value="selectedLocationId ?? ''"
+                @change="handleLocationChange"
+                class="bg-transparent border-none text-xs font-medium text-foreground cursor-pointer focus:outline-none"
+              >
+                <option value="">جميع المواقع</option>
+                <option
+                  v-for="loc in locations"
+                  :key="loc.id"
+                  :value="loc.id"
+                >
+                  {{ loc.name }}
+                </option>
+              </select>
+            </div>
+            <PosCategoryFilter
+              :categories="categories"
+              :active-category-id="activeCategoryId"
+              :horizontal="true"
+              @select="handleCategorySelect"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Cart panel fills remaining space -->
+      <PosCartPanel :bordered="false" />
+
+      <!-- Mobile: add products button -->
+      <div class="lg:hidden border-t border-outline-variant/20 bg-card">
+        <div class="px-4 py-3">
+          <Button
+            class="w-full gap-2 cursor-pointer"
+            size="lg"
+            @click="showProductsDrawer = true"
+          >
+            <Plus class="w-5 h-5" />
+            إضافة منتجات
+          </Button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile: products bottom sheet -->
+    <Sheet v-model:open="showProductsDrawer">
+      <SheetContent
+        side="bottom"
+        class="h-[85vh] p-0 flex flex-col rounded-t-2xl"
+      >
+        <div class="px-4 py-3 border-b border-outline-variant/20 bg-card/50 shrink-0">
+          <div class="flex items-center gap-2">
+            <PosSearchBar
+              v-model="searchQuery"
+              v-model:scanner-active="scannerActive"
+              class="flex-1"
+              @scan="handleScan"
+              @update:model-value="handleSearch"
+            />
+          </div>
+        </div>
+        <div class="px-4 py-2 border-b border-outline-variant/20 bg-card/40 shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+              <MapPin class="w-3.5 h-3.5" />
+              <select
+                :value="selectedLocationId ?? ''"
+                @change="handleLocationChange"
+                class="bg-transparent border-none text-xs font-medium text-foreground cursor-pointer focus:outline-none"
+              >
+                <option value="">جميع المواقع</option>
+                <option
+                  v-for="loc in locations"
+                  :key="loc.id"
+                  :value="loc.id"
+                >
+                  {{ loc.name }}
+                </option>
+              </select>
+            </div>
+            <PosCategoryFilter
+              :categories="categories"
+              :active-category-id="activeCategoryId"
+              :horizontal="true"
+              @select="handleCategorySelect"
+            />
+          </div>
+        </div>
+        <div class="flex-1 overflow-y-auto p-3">
+          <div
+            v-if="error"
+            class="flex items-start gap-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20 mb-4"
+          >
+            <AlertCircle class="h-5 w-5 shrink-0" />
+            <p class="flex-1">{{ error }}</p>
+          </div>
+
+          <PosProductGrid
+            :products="filteredProducts"
+            :loading="loading"
+            :has-more="hasMore"
+            :selected-location-id="selectedLocationId"
+            @load-more="handleLoadMore"
+            @product-click="handleProductClick"
+            @add-to-cart="handleAddToCart"
+          />
+        </div>
+      </SheetContent>
+    </Sheet>
+
+    <PosProductDetailSheet
+      :product="selectedProduct"
+      :open="showProductDetail"
+      @update:open="showProductDetail = $event"
+      @add-to-cart="handleAddToCartFromDetail"
+    />
+  </div>
+  <div
+    v-else
+    class="flex items-center justify-center h-[calc(100vh-8rem)]"
+  >
+    <div class="text-center space-y-3">
+      <ShoppingCart class="h-12 w-12 mx-auto text-muted-foreground/40" />
+      <p class="text-muted-foreground">لم يتم تحديد جهاز كاشير</p>
+    </div>
+  </div>
+</template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from "vue";
 import { ShoppingCart, Lock, Loader2 } from "@lucide/vue";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { POSRegister } from "~/types/pos";
 
-defineProps<{
+const props = defineProps<{
   register: POSRegister | null;
   openingCash: number;
   loading: boolean;
@@ -14,8 +15,19 @@ defineProps<{
 
 const emit = defineEmits<{
   "open-session": [configId: number];
+  "go-to-sales": [configId: number];
   "update:openingCash": [value: number];
 }>();
+
+const localCash = ref(props.openingCash);
+
+watch(() => props.openingCash, (v) => { localCash.value = v; });
+
+function syncCash() {
+  if (localCash.value !== props.openingCash) {
+    emit("update:openingCash", localCash.value);
+  }
+}
 </script>
 
 <template>
@@ -41,8 +53,8 @@ const emit = defineEmits<{
           <Input
             id="opening-cash-dashboard"
             type="number"
-            :value="openingCash"
-            @input="emit('update:openingCash', Number(($event.target as HTMLInputElement).value))"
+            v-model.number="localCash"
+            @blur="syncCash"
             class="bg-background"
             placeholder="0.00"
           />
@@ -60,7 +72,7 @@ const emit = defineEmits<{
   </Card>
 
   <Card v-else class="border-emerald-500/20 bg-muted/10">
-    <CardContent class="flex flex-col items-center justify-center py-16 text-center space-y-4">
+    <CardContent class="flex flex-col items-center justify-center py-12 text-center space-y-5">
       <div
         class="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600"
       >
@@ -68,13 +80,20 @@ const emit = defineEmits<{
       </div>
       <div class="space-y-2">
         <p class="text-lg font-bold text-foreground/80">
-          شاشة البيع السريع جاهزة لاستقبال المعاملات
+          الوردية مفتوحة رقم #{{ register?.session_id || "نشط" }}
         </p>
         <p class="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-          الدورة الحالية المفتوحة برقم #{{ register?.session_id || "نشط" }}
-          مرتبطة بقواعد البيانات. يمكنك تشغيل الكتالوج وبدء طباعة الإيصالات.
+          الدورة المالية الحالية نشطة. يمكنك بدء إدراج المنتجات وإصدار الفواتير.
         </p>
       </div>
+      <Button
+        @click="register && emit('go-to-sales', register.id)"
+        class="gap-2 cursor-pointer"
+        size="lg"
+      >
+        <ShoppingCart class="h-5 w-5" />
+        الدخول إلى شاشة البيع
+      </Button>
     </CardContent>
   </Card>
 </template>

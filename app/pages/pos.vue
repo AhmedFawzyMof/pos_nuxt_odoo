@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import {
-  RefreshCw,
-  Plus,
-  AlertCircle,
-} from "@lucide/vue";
+import { useRouter } from "vue-router";
+import { RefreshCw, Plus, AlertCircle } from "@lucide/vue";
 import { Button } from "@/components/ui/button";
 import PosRegisterForm from "~/components/pos/PosRegisterForm.vue";
 import PosTerminalList from "~/components/pos/PosTerminalList.vue";
@@ -13,6 +10,8 @@ import type { POSRegister } from "~/types/pos";
 
 const POS_CONFIG_KEY = "pos_config_id";
 const POS_NAME_KEY = "pos_config_name";
+
+const router = useRouter();
 
 const registers = ref<POSRegister[]>([]);
 const activeConfigId = ref<string | null>(null);
@@ -27,60 +26,39 @@ const hasSelectedTerminal = computed(() => !!activeConfigId.value);
 
 const currentActiveRegister = computed(() => {
   if (!activeConfigId.value) return null;
-  return registers.value.find((r) => String(r.id) === activeConfigId.value) || null;
+  return (
+    registers.value.find((r) => String(r.id) === activeConfigId.value) || null
+  );
 });
+
+async function fetchAllRegistersFromOdoo() {
+  globalLoading.value = true;
+  error.value = "";
+  try {
+    const res = await $fetch<{ success: boolean; data: POSRegister[] }>(
+      "/api/pos/registers",
+    );
+    console.log(res.data);
+    if (res.success) {
+      registers.value = res.data;
+    }
+  } catch (err: any) {
+    error.value = "فشل تحميل أجهزة الكاشير من النظام";
+  } finally {
+    globalLoading.value = false;
+  }
+}
 
 function loadFromStorage() {
   if (import.meta.client) {
     activeConfigId.value = localStorage.getItem(POS_CONFIG_KEY);
     activeConfigName.value = localStorage.getItem(POS_NAME_KEY) || "";
-    fetchAllRegisters();
-  }
-}
-
-async function fetchAllRegisters() {
-  globalLoading.value = true;
-  error.value = "";
-  try {
-    await refreshAllStatuses();
-  } catch (err: any) {
-    error.value = "فشل تحديث بيانات أجهزة الكاشير من النظام";
-  } finally {
-    globalLoading.value = false;
+    fetchAllRegistersFromOdoo();
   }
 }
 
 async function refreshAllStatuses() {
-  error.value = "";
-  globalLoading.value = true;
-  try {
-    if (activeConfigId.value) {
-      const data = await $fetch<{ success: boolean; session: any }>(
-        "/api/pos/status",
-        { query: { config_id: activeConfigId.value } },
-      );
-
-      const existingIdx = registers.value.findIndex(
-        (r) => String(r.id) === activeConfigId.value,
-      );
-      const stateObj: POSRegister = {
-        id: parseInt(activeConfigId.value),
-        name: activeConfigName.value,
-        session_id: data.session ? data.session.session_id : null,
-        session_state: data.session ? data.session.session_state : "closed",
-      };
-
-      if (existingIdx !== -1) {
-        registers.value[existingIdx] = stateObj;
-      } else {
-        registers.value.push(stateObj);
-      }
-    }
-  } catch (err: any) {
-    error.value = "فشل قراءة تفاصيل الاتصال الحالية";
-  } finally {
-    globalLoading.value = false;
-  }
+  await fetchAllRegistersFromOdoo();
 }
 
 function selectTerminal(reg: POSRegister) {
@@ -134,15 +112,30 @@ async function handleOpenSession(regId: number) {
   actionLoading.value[regId] = true;
   error.value = "";
   try {
-    await $fetch("/api/pos/session-control", {
-      method: "POST",
-      body: {
-        config_id: regId,
-        action: "open",
-        opening_cash: openingCash.value,
+    const sessionData = await $fetch<{ success: boolean; session: any }>(
+      "/api/pos/session-control",
+      {
+        method: "POST",
+        body: {
+          config_id: regId,
+          action: "open",
+          opening_cash: openingCash.value,
+        },
       },
-    });
-    await refreshAllStatuses();
+    );
+
+    const reg = registers.value.find((r) => r.id === regId);
+    if (reg) {
+      reg.session_state = "opened";
+      reg.session_id = sessionData.session?.session_id ?? null;
+    }
+
+    if (reg) {
+      activeConfigId.value = String(reg.id);
+      activeConfigName.value = reg.name;
+    }
+
+    router.push({ path: '/cashier', query: { config_id: regId } });
   } catch (err: any) {
     error.value = err.statusMessage || "فشل معالجة فتح صندوق اليومية";
   } finally {
@@ -211,10 +204,7 @@ onMounted(loadFromStorage);
         @close="showRegistrationForm = false"
       />
 
-      <PosTerminalList
-        :registers="registers"
-        @select="selectTerminal"
-      />
+      <PosTerminalList :registers="registers" @select="selectTerminal" />
     </div>
 
     <!-- Active Console -->
@@ -227,6 +217,7 @@ onMounted(loadFromStorage);
       :session-loading="actionLoading[activeConfigId!] || false"
       @change-terminal="changeActiveTerminal"
       @open-session="handleOpenSession"
+      @go-to-sales="(id: number) => router.push({ path: '/cashier', query: { config_id: id } })"
       @update:opening-cash="openingCash = $event"
     />
   </div>

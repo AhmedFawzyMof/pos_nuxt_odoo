@@ -15,6 +15,7 @@ defineProps<{
 const emit = defineEmits<{
   "change-terminal": [];
   "open-session": [configId: number];
+  "go-to-sales": [configId: number];
   "update:openingCash": [value: number];
 }>();
 </script>
@@ -68,6 +69,7 @@ const emit = defineEmits<{
       :opening-cash="openingCash"
       :loading="sessionLoading"
       @open-session="(id: number) => emit('open-session', id)"
+      @go-to-sales="(id: number) => emit('go-to-sales', id)"
       @update:opening-cash="(v: number) => emit('update:openingCash', v)"
     />
   </div>
