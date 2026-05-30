@@ -60,7 +60,7 @@ const {
   data: apiResponse,
   status,
   refresh,
-} = await useFetch<{
+} = useFetch<{
   success: boolean;
   totalItems: number;
   totalPages: number;
@@ -68,6 +68,7 @@ const {
   itemsPerPage: number;
   data: StockMovement[];
 }>("/api/stock-movements", {
+  lazy: true,
   query: {
     page: currentPage,
     limit: itemsPerPage,
@@ -143,7 +144,7 @@ const triggerExport = async () => {
   <div class="space-y-6 max-w-7xl mx-auto" dir="rtl">
     <!-- Top Breadcrumbs Header Navigation -->
     <div
-      class="flex items-center gap-2 text-label-md text-on-surface-variant mb-2"
+      class="flex items-center gap-2 text-label-md text-on-white-variant mb-2"
     >
       <NuxtLink
         to="/warehouse"
@@ -153,7 +154,7 @@ const triggerExport = async () => {
         المخازن والمواقع
       </NuxtLink>
       <ChevronLeft class="w-[14px] h-[14px]" />
-      <span class="text-on-surface">حركات المخزون الأخيرة</span>
+      <span class="text-on-white">حركات المخزون الأخيرة</span>
     </div>
 
     <!-- Main Header Action Bar -->
@@ -162,7 +163,7 @@ const triggerExport = async () => {
     >
       <div>
         <h1
-          class="text-headline-lg font-bold text-on-surface flex items-center gap-3"
+          class="text-headline-lg font-bold text-on-white flex items-center gap-3"
         >
           <span
             class="bg-primary/10 p-2.5 rounded-2xl inline-flex items-center justify-center"
@@ -170,7 +171,7 @@ const triggerExport = async () => {
           /></span>
           سجل حركات المخزون الكامل
         </h1>
-        <p class="text-label-md text-on-surface-variant mt-1">
+        <p class="text-label-md text-on-white-variant mt-1">
           دفتر الأستاذ وحركات جرد المستودعات الواردة، الصادرة والتحويلات
           الداخلية بالتفصيل
         </p>
@@ -180,7 +181,7 @@ const triggerExport = async () => {
       <div class="flex gap-2">
         <button
           @click="triggerExport"
-          class="h-11 px-4 border border-outline-variant bg-surface-container-lowest hover:bg-surface-container rounded-lg text-label-md font-bold flex items-center gap-2 transition-all active:scale-95 cursor-pointer text-on-surface"
+          class="h-11 px-4 border border-outline-variant bg-white-lowest hover:bg-white rounded-lg text-label-md font-bold flex items-center gap-2 transition-all active:scale-95 cursor-pointer text-on-white"
         >
           <Download class="w-[20px] h-[20px] text-primary" />
           تصدير التقرير
@@ -197,16 +198,16 @@ const triggerExport = async () => {
 
     <!-- Filter and Search Area -->
     <div
-      class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm"
+      class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-white-lowest p-4 rounded-xl border border-outline-variant shadow-sm"
     >
       <!-- Search Input -->
       <div class="relative lg:col-span-1">
         <Search
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-on-white-variant w-5 h-5"
         />
         <input
           v-model="searchQuery"
-          class="w-full h-11 pr-10 pl-4 bg-surface-container rounded-full border-none focus:ring-2 focus:ring-primary text-label-md outline-none text-right"
+          class="w-full h-11 pr-10 pl-4 bg-white rounded-full border-none focus:ring-2 focus:ring-primary text-label-md outline-none text-right"
           placeholder="بحث بالمنتج، الكود، الموقع أو المستودع..."
           type="text"
         />
@@ -222,7 +223,7 @@ const triggerExport = async () => {
           :class="
             selectedType === 'all'
               ? 'bg-primary text-white shadow-sm'
-              : 'bg-surface hover:bg-surface-container-high text-on-surface-variant border border-outline-variant'
+              : 'bg-white hover:bg-white-high text-on-white-variant border border-outline-variant'
           "
         >
           الكل
@@ -233,7 +234,7 @@ const triggerExport = async () => {
           :class="
             selectedType === 'incoming'
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'bg-surface hover:bg-surface-container-high text-on-surface-variant border border-outline-variant'
+              : 'bg-white hover:bg-white-high text-on-white-variant border border-outline-variant'
           "
         >
           <ArrowDownLeft class="w-[18px] h-[18px]" />
@@ -245,7 +246,7 @@ const triggerExport = async () => {
           :class="
             selectedType === 'outgoing'
               ? 'bg-error text-white shadow-sm'
-              : 'bg-surface hover:bg-surface-container-high text-on-surface-variant border border-outline-variant'
+              : 'bg-white hover:bg-white-high text-on-white-variant border border-outline-variant'
           "
         >
           <ArrowUpRight class="w-[18px] h-[18px]" />
@@ -257,7 +258,7 @@ const triggerExport = async () => {
           :class="
             selectedType === 'transfer'
               ? 'bg-primary-container text-primary shadow-sm border border-primary/20'
-              : 'bg-surface hover:bg-surface-container-high text-on-surface-variant border border-outline-variant'
+              : 'bg-white hover:bg-white-high text-on-white-variant border border-outline-variant'
           "
         >
           <ArrowLeftRight class="w-[18px] h-[18px]" />
@@ -269,22 +270,22 @@ const triggerExport = async () => {
       <div
         class="lg:col-span-3 flex flex-wrap items-center gap-3 pt-2 border-t border-outline-variant/50"
       >
-        <span class="text-label-md text-on-surface-variant font-bold"
+        <span class="text-label-md text-on-white-variant font-bold"
           >تصفية بالتاريخ:</span
         >
         <div class="relative">
           <input
             v-model="dateFrom"
             type="date"
-            class="h-10 px-3 bg-surface-container rounded-lg border border-outline-variant text-label-md outline-none focus:ring-2 focus:ring-primary text-right"
+            class="h-10 px-3 bg-white rounded-lg border border-outline-variant text-label-md outline-none focus:ring-2 focus:ring-primary text-right"
           />
         </div>
-        <span class="text-on-surface-variant">إلى</span>
+        <span class="text-on-white-variant">إلى</span>
         <div class="relative">
           <input
             v-model="dateTo"
             type="date"
-            class="h-10 px-3 bg-surface-container rounded-lg border border-outline-variant text-label-md outline-none focus:ring-2 focus:ring-primary text-right"
+            class="h-10 px-3 bg-white rounded-lg border border-outline-variant text-label-md outline-none focus:ring-2 focus:ring-primary text-right"
           />
         </div>
       </div>
@@ -292,13 +293,13 @@ const triggerExport = async () => {
 
     <!-- Ledger Movements Table Grid -->
     <div
-      class="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden flex flex-col shadow-sm"
+      class="bg-white-lowest rounded-2xl border border-outline-variant overflow-hidden flex flex-col shadow-sm"
     >
       <div class="overflow-x-auto custom-scrollbar">
         <table class="w-full text-right border-collapse">
           <thead>
             <tr
-              class="bg-surface-container text-on-surface-variant border-b border-outline-variant"
+              class="bg-white text-on-white-variant border-b border-outline-variant"
             >
               <th class="px-6 py-4 font-bold text-label-md">معرف الحركة</th>
               <th class="px-6 py-4 font-bold text-label-md">التاريخ والوقت</th>
@@ -315,7 +316,7 @@ const triggerExport = async () => {
             <tr
               v-for="mv in paginatedMovements"
               :key="mv.id"
-              class="hover:bg-surface-container-low transition-colors group"
+              class="hover:bg-white-low transition-colors group"
             >
               <!-- ID -->
               <td
@@ -326,20 +327,20 @@ const triggerExport = async () => {
 
               <!-- Date & Time -->
               <td class="px-6 py-4">
-                <p class="font-bold text-on-surface text-body-md">
+                <p class="font-bold text-on-white text-body-md">
                   {{ mv.date }}
                 </p>
-                <p class="text-[12px] text-on-surface-variant font-mono">
+                <p class="text-[12px] text-on-white-variant font-mono">
                   {{ mv.time }}
                 </p>
               </td>
 
               <!-- Product -->
               <td class="px-6 py-4">
-                <p class="font-bold text-on-surface text-body-md">
+                <p class="font-bold text-on-white text-body-md">
                   {{ mv.productName }}
                 </p>
-                <p class="text-[12px] text-on-surface-variant font-mono">
+                <p class="text-[12px] text-on-white-variant font-mono">
                   SKU: {{ mv.sku }}
                 </p>
               </td>
@@ -372,14 +373,14 @@ const triggerExport = async () => {
 
               <!-- From Location -->
               <td
-                class="px-6 py-4 text-on-surface-variant text-label-md font-mono"
+                class="px-6 py-4 text-on-white-variant text-label-md font-mono"
               >
                 {{ mv.fromLocation }}
               </td>
 
               <!-- To Location -->
               <td
-                class="px-6 py-4 text-on-surface-variant text-label-md font-mono"
+                class="px-6 py-4 text-on-white-variant text-label-md font-mono"
               >
                 {{ mv.toLocation }}
               </td>
@@ -392,7 +393,7 @@ const triggerExport = async () => {
               </td>
 
               <!-- Operator -->
-              <td class="px-6 py-4 text-on-surface text-label-md">
+              <td class="px-6 py-4 text-on-white text-label-md">
                 {{ mv.operator }}
               </td>
 
@@ -406,7 +407,7 @@ const triggerExport = async () => {
               </td>
             </tr>
             <tr v-if="status === 'pending' && !paginatedMovements.length">
-              <td colspan="9" class="p-12 text-center text-on-surface-variant">
+              <td colspan="9" class="p-12 text-center text-on-white-variant">
                 <RefreshCw
                   class="w-9 h-9 block mb-2 animate-spin text-primary mx-auto"
                 />
@@ -414,7 +415,7 @@ const triggerExport = async () => {
               </td>
             </tr>
             <tr v-else-if="paginatedMovements.length === 0">
-              <td colspan="9" class="p-12 text-center text-on-surface-variant">
+              <td colspan="9" class="p-12 text-center text-on-white-variant">
                 <FileX2 class="w-9 h-9 block mb-2 text-outline mx-auto" />
                 لا توجد حركات مخزون تطابق البحث المختار.
               </td>
@@ -425,9 +426,9 @@ const triggerExport = async () => {
 
       <!-- Pagination Footer Controls -->
       <div
-        class="px-8 py-4 bg-surface-container-low border-t border-outline-variant flex flex-col sm:flex-row gap-4 justify-between items-center shrink-0"
+        class="px-8 py-4 bg-white-low border-t border-outline-variant flex flex-col sm:flex-row gap-4 justify-between items-center shrink-0"
       >
-        <p class="text-label-md text-on-surface-variant">
+        <p class="text-label-md text-on-white-variant">
           عرض حركات {{ (currentPage - 1) * itemsPerPage + 1 }}-{{
             Math.min(currentPage * itemsPerPage, totalItems)
           }}
@@ -439,7 +440,7 @@ const triggerExport = async () => {
           <button
             @click="setPage(currentPage - 1)"
             :disabled="currentPage === 1"
-            class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white text-on-surface-variant disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer"
+            class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white text-on-white-variant disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer"
           >
             <ChevronLeft class="w-5 h-5" />
           </button>
@@ -453,7 +454,7 @@ const triggerExport = async () => {
             :class="
               currentPage === p
                 ? 'bg-primary text-white border-primary shadow-sm'
-                : 'border-outline-variant hover:bg-white text-on-surface'
+                : 'border-outline-variant hover:bg-white text-on-white'
             "
           >
             {{ p }}
@@ -463,7 +464,7 @@ const triggerExport = async () => {
           <button
             @click="setPage(currentPage + 1)"
             :disabled="currentPage === totalPages"
-            class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white text-on-surface-variant disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer"
+            class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white text-on-white-variant disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer"
           >
             <ChevronRight class="w-5 h-5" />
           </button>

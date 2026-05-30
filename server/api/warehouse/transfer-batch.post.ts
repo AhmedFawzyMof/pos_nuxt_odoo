@@ -57,6 +57,7 @@ export default defineEventHandler(async (event) => {
         product_uom: 1,
         location_id: Number(sourceLocationId),
         location_dest_id: Number(destinationLocationId),
+        state: "done",
       });
     });
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Edit, MoreVertical, ChevronRight, ChevronLeft } from '@lucide/vue';
+import { Edit, MoreVertical, ChevronRight, ChevronLeft } from "@lucide/vue";
 
 interface StockLevelItem {
   name: string;
@@ -51,7 +51,7 @@ const setPage = (page: number) => {
 
 <template>
   <div
-    class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden"
+    class="bg-white-lowest rounded-xl border border-outline-variant overflow-hidden"
     dir="rtl"
   >
     <div class="p-6 border-b border-outline-variant">
@@ -64,7 +64,7 @@ const setPage = (page: number) => {
       <table class="w-full text-right border-collapse">
         <thead>
           <tr
-            class="bg-surface-container-low text-on-surface-variant border-b border-outline-variant"
+            class="bg-white-low text-on-white-variant border-b border-outline-variant"
           >
             <th class="p-4 text-label-md font-bold">المنتج</th>
             <th class="p-4 text-label-md font-bold">الفئة</th>
@@ -76,7 +76,7 @@ const setPage = (page: number) => {
         </thead>
         <tbody class="divide-y divide-outline-variant">
           <tr v-if="!stockLevels || stockLevels.length === 0">
-            <td colspan="6" class="p-8 text-center text-on-surface-variant">
+            <td colspan="6" class="p-8 text-center text-on-white-variant">
               لا توجد مخزونات مسجلة لهذه الصفحة حالياً.
             </td>
           </tr>
@@ -85,30 +85,30 @@ const setPage = (page: number) => {
             v-else
             v-for="(item, idx) in stockLevels"
             :key="idx"
-            class="hover:bg-surface-container-low transition-colors"
+            class="hover:bg-white-low transition-colors"
           >
             <td class="p-4">
               <div class="flex items-center gap-3">
                 <img
                   :alt="item.name"
-                  class="w-10 h-10 rounded-md object-cover bg-surface-variant"
+                  class="w-10 h-10 rounded-md object-cover bg-white-variant"
                   :src="item.image || '/placeholder-product.png'"
                 />
                 <div>
-                  <p class="font-bold text-on-surface">{{ item.name }}</p>
-                  <p class="text-xs text-on-surface-variant">
+                  <p class="font-bold text-on-white">{{ item.name }}</p>
+                  <p class="text-xs text-on-white-variant">
                     SKU: {{ item.sku }}
                   </p>
                 </div>
               </div>
             </td>
-            <td class="p-4 text-body-md text-on-surface">
+            <td class="p-4 text-body-md text-on-white">
               {{ item.category }}
             </td>
-            <td class="p-4 text-body-md text-on-surface-variant">
+            <td class="p-4 text-body-md text-on-white-variant">
               {{ item.location }}
             </td>
-            <td class="p-4 font-bold text-on-surface">{{ item.qty }}</td>
+            <td class="p-4 font-bold text-on-white">{{ item.qty }}</td>
             <td class="p-4">
               <span
                 class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium"
@@ -120,12 +120,12 @@ const setPage = (page: number) => {
             <td class="p-4">
               <div class="flex gap-1">
                 <button
-                  class="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant"
+                  class="p-2 hover:bg-white-high rounded-full transition-colors text-on-white-variant"
                 >
                   <Edit class="w-5 h-5" />
                 </button>
                 <button
-                  class="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant"
+                  class="p-2 hover:bg-white-high rounded-full transition-colors text-on-white-variant"
                 >
                   <MoreVertical class="w-5 h-5" />
                 </button>
@@ -137,9 +137,9 @@ const setPage = (page: number) => {
     </div>
 
     <div
-      class="p-4 bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-outline-variant"
+      class="p-4 bg-white-low flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-outline-variant"
     >
-      <p class="text-label-md text-on-surface-variant">
+      <p class="text-label-md text-on-white-variant">
         عرض {{ startRange }}-{{ endRange }} من أصل {{ totalRecords }} منتج
       </p>
 
@@ -147,7 +147,7 @@ const setPage = (page: number) => {
         <button
           :disabled="currentPage === 1"
           @click="setPage(currentPage - 1)"
-          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-high transition-all text-on-surface-variant disabled:opacity-40 disabled:hover:bg-surface-container-lowest"
+          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-white-lowest hover:bg-white-high transition-all text-on-white-variant disabled:opacity-40 disabled:hover:bg-white-lowest"
         >
           <ChevronRight class="w-5 h-5" />
         </button>
@@ -160,7 +160,7 @@ const setPage = (page: number) => {
           :class="[
             currentPage === pageNumber
               ? 'bg-primary text-white border-primary'
-              : 'border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-high',
+              : 'border-outline-variant bg-white-lowest text-on-white hover:bg-white-high',
           ]"
         >
           {{ pageNumber }}
@@ -169,7 +169,7 @@ const setPage = (page: number) => {
         <button
           :disabled="currentPage >= totalPages"
           @click="setPage(currentPage + 1)"
-          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-high transition-all text-on-surface-variant disabled:opacity-40 disabled:hover:bg-surface-container-lowest"
+          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-white-lowest hover:bg-white-high transition-all text-on-white-variant disabled:opacity-40 disabled:hover:bg-white-lowest"
         >
           <ChevronLeft class="w-5 h-5" />
         </button>

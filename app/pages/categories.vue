@@ -8,6 +8,7 @@ import {
   Folder,
   Package,
   Gauge,
+  LoaderCircle,
 } from "@lucide/vue";
 import CategoriesTable from "~/components/categories/CategoriesTable.vue";
 import CategoryDrawer from "~/components/categories/CategoryDrawer.vue";
@@ -30,7 +31,8 @@ const {
   status,
   error,
   refresh,
-} = await useFetch<{
+  pending,
+} = useFetch<{
   success: boolean;
   totalItems: number;
   totalProducts: number;
@@ -39,6 +41,7 @@ const {
   itemsPerPage: number;
   data: Category[];
 }>("/api/pos/categories", {
+  lazy: true,
   query: { page: currentPage, search: searchQuery },
   watch: [currentPage, searchQuery],
   transform: (response) => {
@@ -155,15 +158,15 @@ const handleDeleteFromDrawer = async () => {
 <template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <div
-      class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm"
+      class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white-lowest p-4 rounded-xl border border-outline-variant shadow-sm"
     >
       <div class="relative flex-1 max-w-md">
         <Search
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-on-white-variant w-5 h-5"
         />
         <input
           v-model="searchQuery"
-          class="w-full h-11 pr-10 pl-4 bg-surface-container rounded-full border-none focus:ring-2 focus:ring-primary text-label-md outline-none"
+          class="w-full h-11 pr-10 pl-4 bg-white rounded-full border-none focus:ring-2 focus:ring-primary text-label-md outline-none"
           placeholder="بحث بالاسم..."
           type="text"
         />
@@ -171,7 +174,7 @@ const handleDeleteFromDrawer = async () => {
       <div class="flex items-center gap-2">
         <button
           @click="refresh()"
-          class="p-2.5 rounded-full border border-outline-variant hover:bg-surface-container transition-all active:scale-95 text-on-surface-variant cursor-pointer flex items-center justify-center"
+          class="p-2.5 rounded-full border border-outline-variant hover:bg-white transition-all active:scale-95 text-on-white-variant cursor-pointer flex items-center justify-center"
           title="تحديث البيانات"
         >
           <RefreshCw
@@ -181,7 +184,7 @@ const handleDeleteFromDrawer = async () => {
         </button>
         <button
           @click="openAddDrawer"
-          class="text-white flex items-center justify-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold hover:bg-primary/95 transition-all active:scale-95 cursor-pointer shadow-sm"
+          class="text-white flex items-center justify-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-bold hover:bg-primary/95 transition-all active:scale-95 cursor-pointer shadow-sm"
         >
           <Plus class="w-5 h-5" />
           إضافة قسم جديد
@@ -189,91 +192,104 @@ const handleDeleteFromDrawer = async () => {
       </div>
     </div>
 
+    <!-- Loading spinner -->
     <div
-      v-if="status === 'error'"
-      class="bg-error/10 border border-error text-error p-6 rounded-2xl text-center"
+      v-if="pending && categories.length === 0"
+      class="h-[calc(100vh-200px)] flex items-center justify-center"
     >
-      <CloudOff class="w-10 h-10 mb-2 inline-block" />
-      <p class="font-bold">فشل الاتصال بخادم</p>
-      <p class="text-sm opacity-80">{{ error?.message }}</p>
+      <div class="flex flex-col items-center gap-3 text-on-white-variant">
+        <LoaderCircle class="w-8 h-8 animate-spin text-primary" />
+        <span class="text-[13px]">جاري تحميل الأقسام...</span>
+      </div>
     </div>
 
-    <CategoriesTable
-      v-else
-      :categories="categories"
-      :status="status"
-      :all-categories-count="totalItems"
-      :current-page="currentPage"
-      :total-pages="totalPages"
-      @edit="handleEdit"
-      @delete="handleDelete"
-      @next-page="nextPage"
-      @prev-page="prevPage"
-    />
+    <template v-else>
+      <div
+        v-if="status === 'error'"
+        class="bg-error/10 border border-error text-error p-6 rounded-2xl text-center"
+      >
+        <CloudOff class="w-10 h-10 mb-2 inline-block" />
+        <p class="font-bold">فشل الاتصال بخادم</p>
+        <p class="text-sm opacity-80">{{ error?.message }}</p>
+      </div>
 
-    <CategoryDrawer
-      v-model:isOpen="drawerOpen"
-      :mode="drawerMode"
-      :category="selectedCategory"
-      :is-saving="isSaving"
-      @save="handleSave"
-      @delete="handleDeleteFromDrawer"
-    />
+      <CategoriesTable
+        v-else
+        :categories="categories"
+        :status="status"
+        :all-categories-count="totalItems"
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        @edit="handleEdit"
+        @delete="handleDelete"
+        @next-page="nextPage"
+        @prev-page="prevPage"
+      />
 
-    <!-- Analytics Section -->
-    <div
-      class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-outline-variant"
-    >
-      <!-- Total Categories Card -->
+      <CategoryDrawer
+        v-model:isOpen="drawerOpen"
+        :mode="drawerMode"
+        :category="selectedCategory"
+        :is-saving="isSaving"
+        @save="handleSave"
+        @delete="handleDeleteFromDrawer"
+      />
+
+      <!-- Analytics Section -->
       <div
-        class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm"
+        class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-outline-variant"
       >
+        <!-- Total Categories Card -->
         <div
-          class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container"
+          class="bg-white-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm"
         >
-          <Folder class="w-7 h-7" />
+          <div
+            class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container"
+          >
+            <Folder class="w-7 h-7" />
+          </div>
+          <div>
+            <p class="text-label-md text-on-white-variant">إجمالي الأقسام</p>
+            <h4 class="text-display-lg font-bold text-on-white">
+              {{ totalItems }}
+            </h4>
+          </div>
         </div>
-        <div>
-          <p class="text-label-md text-on-surface-variant">إجمالي الأقسام</p>
-          <h4 class="text-display-lg font-bold text-on-surface">
-            {{ totalItems }}
-          </h4>
+        <!-- Total Products Card -->
+        <div
+          class="bg-white-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm"
+        >
+          <div
+            class="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center text-white-container"
+          >
+            <Package class="w-7 h-7" />
+          </div>
+          <div>
+            <p class="text-label-md text-on-white-variant">
+              إجمالي المنتجات المدرجة
+            </p>
+            <h4 class="text-display-lg font-bold text-on-white">
+              {{ totalProducts }}
+            </h4>
+          </div>
+        </div>
+        <!-- Shelf Efficiency Card -->
+        <div
+          class="bg-white-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm"
+        >
+          <div
+            class="w-14 h-14 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container"
+          >
+            <Gauge class="w-7 h-7" />
+          </div>
+          <div>
+            <p class="text-label-md text-on-white-variant">
+              كفاءة مساحات العرض
+            </p>
+            <h4 class="text-display-lg font-bold text-on-white">94%</h4>
+          </div>
         </div>
       </div>
-      <!-- Total Products Card -->
-      <div
-        class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm"
-      >
-        <div
-          class="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container"
-        >
-          <Package class="w-7 h-7" />
-        </div>
-        <div>
-          <p class="text-label-md text-on-surface-variant">
-            إجمالي المنتجات المدرجة
-          </p>
-          <h4 class="text-display-lg font-bold text-on-surface">
-            {{ totalProducts }}
-          </h4>
-        </div>
-      </div>
-      <!-- Shelf Efficiency Card -->
-      <div
-        class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant flex items-center gap-6 shadow-sm"
-      >
-        <div
-          class="w-14 h-14 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container"
-        >
-          <Gauge class="w-7 h-7" />
-        </div>
-        <div>
-          <p class="text-label-md text-on-surface-variant">
-            كفاءة مساحات العرض
-          </p>
-          <h4 class="text-display-lg font-bold text-on-surface">94%</h4>
-        </div>
-      </div>
-    </div>
+    </template>
   </div>
 </template>

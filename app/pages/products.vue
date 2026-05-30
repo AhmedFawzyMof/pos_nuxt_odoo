@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { Search, RefreshCw, Plus, CloudOff, AlertCircle, X } from "@lucide/vue";
+import {
+  Search,
+  RefreshCw,
+  Plus,
+  CloudOff,
+  AlertCircle,
+  X,
+  LoaderCircle,
+} from "@lucide/vue";
 import ProductsTable from "~/components/products/ProductsTable.vue";
 import ProductDrawer from "~/components/products/ProductDrawer.vue";
 import type { Product } from "~/types/product";
@@ -11,7 +19,8 @@ const {
   status,
   error,
   refresh,
-} = await useFetch<{
+  pending,
+} = useFetch<{
   success: boolean;
   totalItems: number;
   totalPages: number;
@@ -19,6 +28,7 @@ const {
   itemsPerPage: number;
   data: Product[];
 }>("/api/products/all", {
+  lazy: true,
   query: { page: currentPage },
   watch: [currentPage],
   transform: (response) => {
@@ -174,15 +184,15 @@ const handleDeleteFromDrawer = async () => {
 <template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <div
-      class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm"
+      class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white-lowest p-4 rounded-xl border border-outline-variant shadow-sm"
     >
       <div class="relative flex-1 max-w-md">
         <Search
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-on-white-variant w-5 h-5"
         />
         <input
           v-model="searchQuery"
-          class="w-full h-11 pr-10 pl-4 bg-surface-container rounded-full border-none focus:ring-2 focus:ring-primary text-label-md outline-none"
+          class="w-full h-11 pr-10 pl-4 bg-white rounded-full border-none focus:ring-2 focus:ring-primary text-label-md outline-none"
           placeholder="بحث بالاسم، الباركود، أو التصنيف..."
           type="text"
         />
@@ -190,7 +200,7 @@ const handleDeleteFromDrawer = async () => {
       <div class="flex items-center gap-2">
         <button
           @click="refresh()"
-          class="p-2.5 rounded-full border border-outline-variant hover:bg-surface-container transition-all active:scale-95 text-on-surface-variant cursor-pointer flex items-center justify-center"
+          class="p-2.5 rounded-full border border-outline-variant hover:bg-white transition-all active:scale-95 text-on-white-variant cursor-pointer flex items-center justify-center"
           title="تحديث البيانات"
         >
           <RefreshCw
@@ -200,7 +210,7 @@ const handleDeleteFromDrawer = async () => {
         </button>
         <button
           @click="openAddDrawer"
-          class="text-white flex items-center justify-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold hover:bg-primary/95 transition-all active:scale-95 cursor-pointer shadow-sm"
+          class="text-white flex items-center justify-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-bold hover:bg-primary/95 transition-all active:scale-95 cursor-pointer shadow-sm"
         >
           <Plus class="w-5 h-5" />
           إضافة منتج جديد
@@ -208,52 +218,65 @@ const handleDeleteFromDrawer = async () => {
       </div>
     </div>
 
-    <!-- Fetch error banner -->
+    <!-- Loading spinner -->
     <div
-      v-if="status === 'error'"
-      class="bg-error/10 border border-error text-error p-6 rounded-2xl text-center"
+      v-if="pending && products.length === 0"
+      class="h-[calc(100vh-200px)] flex items-center justify-center"
     >
-      <CloudOff class="w-10 h-10 mb-2 inline-block" />
-      <p class="font-bold">فشل الاتصال بالخادم</p>
-      <p class="text-sm opacity-80">{{ error?.message }}</p>
+      <div class="flex flex-col items-center gap-3 text-on-white-variant">
+        <LoaderCircle class="w-8 h-8 animate-spin text-primary" />
+        <span class="text-[13px]">جاري تحميل المنتجات...</span>
+      </div>
     </div>
 
-    <!-- Action error toast (save / archive) -->
-    <Transition name="fade">
+    <template v-else>
+      <!-- Fetch error banner -->
       <div
-        v-if="actionError"
-        class="flex items-start gap-3 bg-error-container/20 border border-error/30 text-on-error-container px-4 py-3 rounded-xl"
+        v-if="status === 'error'"
+        class="bg-error/10 border border-error text-error p-6 rounded-2xl text-center"
       >
-        <AlertCircle class="w-5 h-5 text-error mt-0.5 shrink-0" />
-        <p class="text-sm flex-1">{{ actionError }}</p>
-        <button
-          @click="actionError = ''"
-          class="text-error hover:text-error/70 transition-colors"
-        >
-          <X class="w-4 h-4" />
-        </button>
+        <CloudOff class="w-10 h-10 mb-2 inline-block" />
+        <p class="font-bold">فشل الاتصال بالخادم</p>
+        <p class="text-sm opacity-80">{{ error?.message }}</p>
       </div>
-    </Transition>
 
-    <ProductsTable
-      :products="filteredProducts"
-      :status="status"
-      :all-products-count="totalItems"
-      :current-page="currentPage"
-      :total-pages="totalPages"
-      @edit="handleEdit"
-      @delete="handleDelete"
-      @next-page="nextPage"
-      @prev-page="prevPage"
-    />
+      <!-- Action error toast (save / archive) -->
+      <Transition name="fade">
+        <div
+          v-if="actionError"
+          class="flex items-start gap-3 bg-error-container/20 border border-error/30 text-on-error-container px-4 py-3 rounded-xl"
+        >
+          <AlertCircle class="w-5 h-5 text-error mt-0.5 shrink-0" />
+          <p class="text-sm flex-1">{{ actionError }}</p>
+          <button
+            @click="actionError = ''"
+            class="text-error hover:text-error/70 transition-colors"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+      </Transition>
 
-    <ProductDrawer
-      v-model:isOpen="drawerOpen"
-      :mode="drawerMode"
-      :product="selectedProduct"
-      :is-saving="isSaving"
-      @save="handleSave"
-      @delete="handleDeleteFromDrawer"
-    />
+      <ProductsTable
+        :products="filteredProducts"
+        :status="status"
+        :all-products-count="totalItems"
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        @edit="handleEdit"
+        @delete="handleDelete"
+        @next-page="nextPage"
+        @prev-page="prevPage"
+      />
+
+      <ProductDrawer
+        v-model:isOpen="drawerOpen"
+        :mode="drawerMode"
+        :product="selectedProduct"
+        :is-saving="isSaving"
+        @save="handleSave"
+        @delete="handleDeleteFromDrawer"
+      />
+    </template>
   </div>
 </template>

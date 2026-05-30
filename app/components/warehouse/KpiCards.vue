@@ -9,7 +9,7 @@ interface KpiItem {
   color: string;
 }
 
-import { Wallet, AlertTriangle, Package, Truck, Activity } from '@lucide/vue';
+import { Wallet, AlertTriangle, Package, Truck, Activity } from "@lucide/vue";
 
 defineProps<{
   kpis: KpiItem[];
@@ -17,11 +17,16 @@ defineProps<{
 
 const getIcon = (iconName: string) => {
   switch (iconName) {
-    case 'account_balance_wallet': return Wallet;
-    case 'warning': return AlertTriangle;
-    case 'inventory': return Package;
-    case 'local_shipping': return Truck;
-    default: return Activity;
+    case "account_balance_wallet":
+      return Wallet;
+    case "warning":
+      return AlertTriangle;
+    case "inventory":
+      return Package;
+    case "local_shipping":
+      return Truck;
+    default:
+      return Activity;
   }
 };
 </script>
@@ -31,7 +36,7 @@ const getIcon = (iconName: string) => {
     <div
       v-for="(kpi, idx) in kpis"
       :key="idx"
-      class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow"
+      class="bg-white-lowest p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow"
     >
       <div class="flex justify-between items-start mb-4">
         <div class="p-3 rounded-lg" :class="kpi.color">
@@ -45,12 +50,12 @@ const getIcon = (iconName: string) => {
           {{ kpi.change }}
         </span>
       </div>
-      <p class="text-on-surface-variant text-label-md font-label-md">
+      <p class="text-on-white-variant text-label-md font-label-md">
         {{ kpi.title }}
       </p>
-      <h3 class="text-display-lg font-bold mt-1 text-on-surface">
+      <h3 class="text-display-lg font-bold mt-1 text-on-white">
         {{ kpi.value }}
-        <span class="text-body-md font-normal text-on-surface-variant">{{
+        <span class="text-body-md font-normal text-on-white-variant">{{
           kpi.unit
         }}</span>
       </h3>

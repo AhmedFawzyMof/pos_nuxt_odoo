@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount, nextTick } from "vue";
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { ref, watch, nextTick } from "vue";
 import { GitMerge, X, AlertTriangle, RefreshCw, VideoOff, ScanBarcode, Trash2 } from '@lucide/vue';
 
 interface OdooLocation {
@@ -12,6 +11,7 @@ interface Product {
   id: number | string;
   name: string;
   barcode: string;
+  quantity?: number;
 }
 
 interface TransferItem {
@@ -41,15 +41,25 @@ const isSearching = ref(false);
 const showDropdown = ref(false);
 const isProductNotFound = ref(false);
 
-const isScannerActive = ref(false);
-let html5QrcodeInstance: Html5Qrcode | null = null;
-const isScanningPaused = ref(false);
+const {
+  isActive: isScannerActive,
+  isPaused: isScanningPaused,
+  start,
+  stop,
+} = useBarcodeScanner({
+  elementId: "camera-preview",
+  pauseDuration: 1800,
+  onScan: (barcode, done) => {
+    searchQuery.value = barcode.trim();
+    setTimeout(done, 1800);
+  },
+});
 
 let debounceTimeout: NodeJS.Timeout;
 
 watch(searchQuery, (newQuery) => {
   const cleanQuery = newQuery.trim();
-  if (!cleanQuery) {
+  if (!cleanQuery || !sourceLocation.value) {
     searchResults.value = [];
     showDropdown.value = false;
     return;
@@ -62,11 +72,17 @@ watch(searchQuery, (newQuery) => {
   clearTimeout(debounceTimeout);
   debounceTimeout = setTimeout(async () => {
     try {
-      const data = await $fetch<Product[]>("/api/products/search", {
-        params: { query: cleanQuery },
-      });
-      searchResults.value = data;
-      if (data.length === 0) isProductNotFound.value = true;
+      const res = await $fetch<{ success: boolean; data: Product[] }>(
+        "/api/products/search",
+        {
+          params: {
+            query: cleanQuery,
+            locationId: sourceLocation.value.id,
+          },
+        },
+      );
+      searchResults.value = res.data;
+      if (res.data.length === 0) isProductNotFound.value = true;
     } catch (err) {
       console.error(err);
     } finally {
@@ -77,112 +93,24 @@ watch(searchQuery, (newQuery) => {
 
 const toggleCameraScanner = async () => {
   if (isScannerActive.value) {
-    await stopScanner();
+    await stop();
   } else {
-    isScannerActive.value = true;
     await nextTick();
-    startScanner();
+    start();
   }
 };
 
-const startScanner = () => {
-  try {
-    html5QrcodeInstance = new Html5Qrcode("camera-preview");
 
-    const config = {
-      fps: 10,
-      qrbox: { width: 280, height: 140 },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.QR_CODE,
-      ],
-    };
-
-    html5QrcodeInstance
-      .start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          if (isScanningPaused.value) return;
-
-          handleSuccessfulScan(decodedText);
-        },
-        (errorMessage) => {},
-      )
-      .catch((err) => {
-        if (!window.isSecureContext) {
-          errorMessage.value =
-            "خطأ أمني: يجب تشغيل هذا النظام عبر رابط آمن HTTPS لتفعيل الكاميرا.";
-        } else if (
-          err?.name === "NotAllowedError" ||
-          err?.name === "PermissionDeniedError"
-        ) {
-          errorMessage.value =
-            "تم رفض صلاحية الكاميرا من قِبل المتصفح. يرجى تفعيلها من إعدادات القفل في شريط العنوان.";
-        } else if (
-          err?.name === "NotFoundError" ||
-          err?.name === "DevicesNotFoundError"
-        ) {
-          errorMessage.value =
-            "لم يتم العثور على كاميرا خلفية متوافقة في هذا الجهاز.";
-        } else {
-          errorMessage.value = `تعذر تشغيل الكاميرا: ${err?.message || err}`;
-        }
-        isScannerActive.value = false;
-        console.error("Detailed camera error:", err);
-      });
-  } catch (err) {
-    console.error("Scanner initialization failed", err);
-  }
-};
-
-const handleSuccessfulScan = (barcodeValue: string) => {
-  isScanningPaused.value = true;
-
-  try {
-    const audioCtx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
-    const osc = audioCtx.createOscillator();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-    osc.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.12);
-  } catch (e) {
-    console.warn("Audio feedback context failed to execute:", e);
-  }
-
-  searchQuery.value = barcodeValue.trim();
-
-  setTimeout(() => {
-    isScanningPaused.value = false;
-  }, 1800);
-};
-
-const stopScanner = async () => {
-  if (html5QrcodeInstance && html5QrcodeInstance.isScanning) {
-    try {
-      await html5QrcodeInstance.stop();
-    } catch (err) {
-      console.error("Failed to safely stop stream tracks", err);
-    }
-  }
-  html5QrcodeInstance = null;
-  isScannerActive.value = false;
-};
 
 const addProductToCart = (prod: Product, autoCreate = false) => {
   const existingLine = transferCart.value.find(
     (item) => item.product.id === prod.id && !autoCreate,
   );
 
+  const maxQty = (prod.quantity !== undefined ? prod.quantity : Infinity) as number;
+
   if (existingLine) {
-    existingLine.quantity += 1;
+    existingLine.quantity = Math.min(existingLine.quantity + 1, maxQty);
   } else {
     transferCart.value.push({
       product: { ...prod },
@@ -234,11 +162,11 @@ const handleSubmitBatchTransfer = async () => {
   }
 
   isSaving.value = true;
-  await stopScanner();
+  await stop();
 
   try {
     const response = await $fetch<{ success: boolean }>(
-      "/api/locations/transfer-batch",
+      "/api/warehouse/transfer-batch",
       {
         method: "POST",
         body: {
@@ -268,16 +196,12 @@ const handleSubmitBatchTransfer = async () => {
 };
 
 const closeModal = async () => {
-  await stopScanner();
+  await stop();
   transferCart.value = [];
   searchQuery.value = "";
   errorMessage.value = "";
   emit("update:open", false);
 };
-
-onBeforeUnmount(async () => {
-  await stopScanner();
-});
 </script>
 
 <template>
@@ -397,8 +321,13 @@ onBeforeUnmount(async () => {
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="امسح الباركود أو ابحث باسم المادة لإضافتها للشحنة..."
-                class="w-full h-11 bg-slate-50 border border-slate-200 rounded-lg pr-4 pl-12 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                :disabled="!sourceLocation"
+                :placeholder="
+                  sourceLocation
+                    ? 'امسح الباركود أو ابحث باسم المادة لإضافتها للشحنة...'
+                    : 'يرجى اختيار موقع المصدر أولاً'
+                "
+                class="w-full h-11 bg-slate-50 border border-slate-200 rounded-lg pr-4 pl-12 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 @keydown.enter.prevent="
                   if (isProductNotFound) handleAddNewProductFallback();
                 "
@@ -412,11 +341,14 @@ onBeforeUnmount(async () => {
               <button
                 type="button"
                 @click="toggleCameraScanner"
+                :disabled="!sourceLocation"
                 :class="[
                   'absolute left-1.5 h-8 w-9 flex items-center justify-center rounded-md transition-all border outline-hidden',
-                  isScannerActive
-                    ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
+                  !sourceLocation
+                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                    : isScannerActive
+                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
                 ]"
                 title="تشغيل كاميرا مسح الباركود"
               >
@@ -437,10 +369,18 @@ onBeforeUnmount(async () => {
                 class="w-full px-4 py-2.5 text-right text-xs hover:bg-slate-50 flex justify-between items-center"
               >
                 <span class="font-bold text-slate-800">{{ prod.name }}</span>
-                <span
-                  class="text-[10px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded"
-                >
-                  كود: {{ prod.barcode || "N/A" }}
+                <span class="flex items-center gap-2">
+                  <span
+                    v-if="prod.quantity !== undefined"
+                    class="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded"
+                  >
+                    متوفر: {{ prod.quantity }}
+                  </span>
+                  <span
+                    class="text-[10px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded"
+                  >
+                    كود: {{ prod.barcode || "N/A" }}
+                  </span>
                 </span>
               </button>
             </div>
@@ -494,13 +434,23 @@ onBeforeUnmount(async () => {
                 >
                   {{ item.product.name }}
                 </div>
-                <div class="col-span-3 flex justify-center">
+                <div class="col-span-3 flex flex-col items-center gap-0.5">
                   <input
                     v-model.number="item.quantity"
                     type="number"
                     min="1"
+                    :max="item.product.quantity ?? 99999"
                     class="w-16 h-8 text-center font-mono border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 focus:outline-none bg-white text-xs"
                   />
+                  <span
+                    v-if="
+                      item.product.quantity !== undefined &&
+                      item.quantity > item.product.quantity
+                    "
+                    class="text-[10px] text-red-600 font-bold"
+                  >
+                    يتجاوز المتوفر ({{ item.product.quantity }})
+                  </span>
                 </div>
                 <div class="col-span-2 text-center">
                   <span

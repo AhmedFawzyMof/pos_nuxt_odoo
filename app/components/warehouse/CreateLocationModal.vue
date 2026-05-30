@@ -1,6 +1,22 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { FolderArchive, X, Link, ChevronDown, Folder, Search, Check, FolderOpen, AlertTriangle, Warehouse, Trash2, ScanBarcode, CheckCircle, RefreshCw, CheckCheck } from '@lucide/vue';
+import {
+  FolderArchive,
+  X,
+  Link,
+  ChevronDown,
+  Folder,
+  Search,
+  Check,
+  FolderOpen,
+  AlertTriangle,
+  Warehouse,
+  Trash2,
+  ScanBarcode,
+  CheckCircle,
+  RefreshCw,
+  CheckCheck,
+} from "@lucide/vue";
 
 interface OdooLocation {
   id: number;
@@ -188,19 +204,21 @@ const handleSaveLocation = async () => {
     >
       <!-- Form Dialog Container Card: Simple standard modal matching the app's clean primary layout -->
       <div
-        class="relative bg-white w-full max-w-lg bg-surface border border-outline-variant rounded-2xl shadow-xl overflow-hidden flex flex-col font-sans text-on-surface"
+        class="relative bg-white w-full max-w-lg bg-white border border-outline-variant rounded-2xl shadow-xl overflow-hidden flex flex-col font-sans text-on-white"
       >
         <!-- Form Header Section -->
         <div
-          class="p-6 pb-4 border-b border-outline-variant bg-surface-container-low flex items-center justify-between"
+          class="p-6 pb-4 border-b border-outline-variant bg-white-low flex items-center justify-between"
         >
           <div class="flex items-center gap-3">
-            <FolderArchive class="text-primary bg-primary/10 p-2 rounded-lg w-10 h-10" />
+            <FolderArchive
+              class="text-primary bg-primary/10 p-2 rounded-lg w-10 h-10"
+            />
             <div>
               <h3 class="text-headline-sm font-bold text-primary">
                 إنشاء موقع تخزين جديد
               </h3>
-              <p class="text-label-md text-on-surface-variant">
+              <p class="text-label-md text-on-white-variant">
                 موقع تخزين جديد في الهيكل التنظيمي
               </p>
             </div>
@@ -209,7 +227,7 @@ const handleSaveLocation = async () => {
           <!-- Close Button -->
           <button
             @click="emit('update:open', false)"
-            class="p-2 hover:bg-surface-container rounded-full transition-colors flex items-center justify-center text-on-surface-variant hover:text-foreground"
+            class="p-2 hover:bg-white rounded-full transition-colors flex items-center justify-center text-on-white-variant hover:text-foreground"
           >
             <X class="w-6 h-6" />
           </button>
@@ -220,11 +238,9 @@ const handleSaveLocation = async () => {
           class="p-6 space-y-5 overflow-y-auto max-h-[60vh] custom-scrollbar text-right"
         >
           <!-- Monospace Dynamic Real-Time Breadcrumb Path Preview -->
-          <div
-            class="p-3.5 bg-surface-container rounded-xl border border-outline-variant"
-          >
+          <div class="p-3.5 bg-white rounded-xl border border-outline-variant">
             <p
-              class="text-[11px] font-bold text-on-surface-variant mb-1 text-right"
+              class="text-[11px] font-bold text-on-white-variant mb-1 text-right"
             >
               مسار موقع التخزين المحدث:
             </p>
@@ -239,7 +255,7 @@ const handleSaveLocation = async () => {
 
           <!-- Field 1: Parent Location Selector (Searchable Dropdown) -->
           <div class="space-y-2">
-            <label class="block text-label-md font-bold text-on-surface-variant"
+            <label class="block text-label-md font-bold text-on-white-variant"
               >الموقع الأب / Parent Location</label
             >
 
@@ -248,10 +264,10 @@ const handleSaveLocation = async () => {
               <button
                 type="button"
                 @click="isSearchDropdownOpen = !isSearchDropdownOpen"
-                class="h-11 w-full bg-background border border-outline rounded-lg px-4 flex items-center justify-between text-on-surface hover:bg-muted/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary text-right font-mono"
+                class="h-11 w-full bg-background border border-outline rounded-lg px-4 flex items-center justify-between text-on-white hover:bg-muted/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary text-right font-mono"
                 dir="ltr"
               >
-                <ChevronDown class="text-on-surface-variant w-6 h-6" />
+                <ChevronDown class="text-on-white-variant w-6 h-6" />
                 <span class="flex items-center gap-2">
                   {{
                     selectedParentLocation
@@ -264,17 +280,17 @@ const handleSaveLocation = async () => {
 
               <div
                 v-if="isSearchDropdownOpen"
-                class="absolute bg-white left-0 right-0 mt-2 z-50 bg-surface border border-outline-variant rounded-xl shadow-xl overflow-hidden flex flex-col"
+                class="absolute bg-white left-0 right-0 mt-2 z-50 bg-white border border-outline-variant rounded-xl shadow-xl overflow-hidden flex flex-col"
               >
                 <div
-                  class="p-3 border-b border-outline-variant bg-surface-container flex items-center gap-2"
+                  class="p-3 border-b border-outline-variant bg-white flex items-center gap-2"
                 >
-                  <Search class="text-on-surface-variant w-5 h-5" />
+                  <Search class="text-on-white-variant w-5 h-5" />
                   <input
                     v-model="parentSearchQuery"
                     type="text"
                     placeholder="بحث عن موقع..."
-                    class="w-full bg-transparent border-0 text-on-surface text-sm font-sans focus:outline-none focus:ring-0 placeholder-on-surface-variant/50 py-1 text-right"
+                    class="w-full bg-transparent border-0 text-on-white text-sm font-sans focus:outline-none focus:ring-0 placeholder-on-white-variant/50 py-1 text-right"
                     @click.stop
                   />
                   <button
@@ -295,7 +311,7 @@ const handleSaveLocation = async () => {
                     :key="loc.id"
                     type="button"
                     @click="selectParent(loc)"
-                    class="w-full h-11 px-4 hover:bg-surface-container-low flex items-center justify-between text-right text-xs font-mono text-on-surface transition-colors"
+                    class="w-full h-11 px-4 hover:bg-white-low flex items-center justify-between text-right text-xs font-mono text-on-white transition-colors"
                     dir="ltr"
                   >
                     <Check
@@ -309,12 +325,12 @@ const handleSaveLocation = async () => {
 
                     <span class="flex items-center gap-2">
                       {{ loc.name }}
-                      <FolderOpen class="text-on-surface-variant w-4 h-4" />
+                      <FolderOpen class="text-on-white-variant w-4 h-4" />
                     </span>
                   </button>
                   <div
                     v-if="filteredParentLocations.length === 0"
-                    class="p-4 text-center text-on-surface-variant font-sans text-xs"
+                    class="p-4 text-center text-on-white-variant font-sans text-xs"
                   >
                     لا توجد نتائج مطابقة
                   </div>
@@ -325,14 +341,14 @@ const handleSaveLocation = async () => {
 
           <!-- Field 2: Location Name Input -->
           <div class="space-y-2">
-            <label class="block text-label-md font-bold text-on-surface-variant"
+            <label class="block text-label-md font-bold text-on-white-variant"
               >اسم الموقع المحدد / Location Name</label
             >
             <input
               v-model="newLocationName"
               type="text"
               placeholder="مثال: Shelf-B4 أو Cold-Room"
-              class="h-11 w-full bg-background border rounded-lg px-4 text-on-surface font-mono text-sm tracking-wide placeholder-on-surface-variant/40 focus:outline-none focus:ring-2 focus:ring-primary text-right"
+              class="h-11 w-full bg-background border rounded-lg px-4 text-on-white font-mono text-sm tracking-wide placeholder-on-white-variant/40 focus:outline-none focus:ring-2 focus:ring-primary text-right"
               :class="
                 validationError
                   ? 'border-error focus:ring-error bg-error/5'
@@ -350,7 +366,7 @@ const handleSaveLocation = async () => {
 
           <!-- Field 3: Location Type Selection (Simplified segment chips matching primary colors) -->
           <div class="space-y-2">
-            <label class="block text-label-md font-bold text-on-surface-variant"
+            <label class="block text-label-md font-bold text-on-white-variant"
               >نوع التخزين / Location Type</label
             >
 
@@ -363,7 +379,7 @@ const handleSaveLocation = async () => {
                 :class="
                   newLocationType === 'internal'
                     ? 'border-primary bg-primary text-white font-bold shadow-sm shadow-primary/20'
-                    : 'border-outline bg-background hover:bg-muted text-on-surface-variant'
+                    : 'border-outline bg-background hover:bg-muted text-on-white-variant'
                 "
               >
                 <Warehouse class="w-5 h-5" />
@@ -378,7 +394,7 @@ const handleSaveLocation = async () => {
                 :class="
                   newLocationType === 'scrap'
                     ? 'border-primary bg-primary text-white font-bold shadow-sm shadow-primary/20'
-                    : 'border-outline bg-background hover:bg-muted text-on-surface-variant'
+                    : 'border-outline bg-background hover:bg-muted text-on-white-variant'
                 "
               >
                 <Trash2 class="w-5 h-5" />
@@ -393,7 +409,7 @@ const handleSaveLocation = async () => {
                 :class="
                   newLocationType === 'view'
                     ? 'border-primary bg-primary text-white font-bold shadow-sm shadow-primary/20'
-                    : 'border-outline bg-background hover:bg-muted text-on-surface-variant'
+                    : 'border-outline bg-background hover:bg-muted text-on-white-variant'
                 "
               >
                 <FolderArchive class="w-5 h-5" />
@@ -404,7 +420,7 @@ const handleSaveLocation = async () => {
 
           <!-- Field 4: Barcode Configurations -->
           <div class="space-y-3">
-            <label class="block text-label-md font-bold text-on-surface-variant"
+            <label class="block text-label-md font-bold text-on-white-variant"
               >الباركود المخصص / Barcode</label
             >
             <div class="flex gap-2">
@@ -412,7 +428,7 @@ const handleSaveLocation = async () => {
               <button
                 type="button"
                 @click="autoGenerateBarcode"
-                class="h-11 px-4 bg-muted hover:bg-muted/80 border border-outline rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer text-on-surface shrink-0"
+                class="h-11 px-4 bg-muted hover:bg-muted/80 border border-outline rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer text-on-white shrink-0"
               >
                 <ScanBarcode class="text-primary w-5 h-5" />
                 توليد تلقائي
@@ -423,7 +439,7 @@ const handleSaveLocation = async () => {
                 v-model="newLocationBarcode"
                 type="text"
                 placeholder="الرمز الشريطي للرف..."
-                class="h-11 w-full bg-background border border-outline rounded-lg px-4 text-on-surface font-mono text-sm tracking-wider placeholder-on-surface-variant/40 focus:outline-none focus:ring-2 focus:ring-primary text-right"
+                class="h-11 w-full bg-background border border-outline rounded-lg px-4 text-on-white font-mono text-sm tracking-wider placeholder-on-white-variant/40 focus:outline-none focus:ring-2 focus:ring-primary text-right"
               />
             </div>
           </div>
@@ -431,13 +447,13 @@ const handleSaveLocation = async () => {
 
         <!-- Dialog Footer Actions Row -->
         <div
-          class="p-6 bg-surface-container-low border-t border-outline-variant flex items-center justify-end gap-3"
+          class="p-6 bg-white-low border-t border-outline-variant flex items-center justify-end gap-3"
         >
           <!-- Muted Cancel Action Button -->
           <button
             type="button"
             @click="emit('update:open', false)"
-            class="h-11 px-5 border border-outline hover:bg-muted text-on-surface font-bold rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer text-sm"
+            class="h-11 px-5 border border-outline hover:bg-muted text-on-white font-bold rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer text-sm"
           >
             إلغاء
           </button>
@@ -457,10 +473,7 @@ const handleSaveLocation = async () => {
               v-else-if="isSaving"
               class="w-5 h-5 text-white animate-spin"
             />
-            <CheckCheck
-              v-else
-              class="w-5 h-5 text-white"
-            />
+            <CheckCheck v-else class="w-5 h-5 text-white" />
 
             <span>
               {{

@@ -5,16 +5,14 @@ import { AlertCircle, RefreshCcw } from "@lucide/vue";
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
 
-const { data, error, pending, refresh } = await useFetch(
-  "/api/warehouse/dashboard",
-  {
-    query: {
-      page: currentPage,
-      limit: itemsPerPage,
-    },
-    watch: [currentPage],
+const { data, error, pending, refresh } = useFetch("/api/warehouse/dashboard", {
+  lazy: true,
+  query: {
+    page: currentPage,
+    limit: itemsPerPage,
   },
-);
+  watch: [currentPage],
+});
 
 const isError = computed(() => !!error.value || data.value?.success === false);
 const errorMessage = computed(() => {
@@ -54,7 +52,7 @@ const openCreateLoctaion = ref(false);
             <p class="font-bold text-sm">
               عذراً، حدث خطأ أثناء تحديث بيانات المستودع
             </p>
-            <p class="text-xs text-on-surface-variant font-mono mt-0.5">
+            <p class="text-xs text-on-white-variant font-mono mt-0.5">
               {{ errorMessage }}
             </p>
           </div>
@@ -74,19 +72,19 @@ const openCreateLoctaion = ref(false);
         <div
           v-for="i in 4"
           :key="i"
-          class="h-28 bg-surface-container-low rounded-xl border border-outline-variant"
+          class="h-28 bg-white-low rounded-xl border border-outline-variant"
         ></div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div
-          class="lg:grid-cols-1 lg:col-span-2 h-80 bg-surface-container-low rounded-xl border border-outline-variant"
+          class="lg:grid-cols-1 lg:col-span-2 h-80 bg-white-low rounded-xl border border-outline-variant"
         ></div>
         <div
-          class="h-80 bg-surface-container-low rounded-xl border border-outline-variant"
+          class="h-80 bg-white-low rounded-xl border border-outline-variant"
         ></div>
       </div>
       <div
-        class="h-96 bg-surface-container-low rounded-xl border border-outline-variant"
+        class="h-96 bg-white-low rounded-xl border border-outline-variant"
       ></div>
     </div>
 

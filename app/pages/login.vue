@@ -50,7 +50,6 @@ const handleLogin = async () => {
   }
 
   try {
-    console.log(usernameVal.value, passwordVal.value);
     await auth.login({
       username: usernameVal.value,
       password: passwordVal.value,
@@ -59,7 +58,9 @@ const handleLogin = async () => {
   } catch (err: any) {
     localError.value =
       err.message || "فشل الاتصال بنظام المبيعات أو بيانات الاعتماد خاطئة.";
+    return;
   }
+  await navigateTo("/");
 };
 </script>
 

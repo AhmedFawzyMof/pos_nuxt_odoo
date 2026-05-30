@@ -147,12 +147,12 @@ const saveCategory = () => {
     @click="closeDrawer"
   >
     <div
-      class="h-full w-full max-w-[480px] bg-surface shadow-2xl flex flex-col relative transition-transform duration-300 bg-white"
+      class="h-full w-full max-w-[480px] bg-white shadow-2xl flex flex-col relative transition-transform duration-300 bg-white"
       @click.stop
     >
       <!-- Header -->
       <div
-        class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low"
+        class="p-6 border-b border-outline-variant flex justify-between items-center bg-white-low"
       >
         <div class="flex items-center gap-3">
           <Folder class="text-primary bg-primary/10 p-2 rounded-lg w-10 h-10" />
@@ -160,14 +160,14 @@ const saveCategory = () => {
             <h2 class="text-headline-sm font-bold text-primary">
               {{ mode === "add" ? "إضافة قسم جديد" : "تعديل بيانات القسم" }}
             </h2>
-            <p class="text-label-md text-on-surface-variant">
+            <p class="text-label-md text-on-white-variant">
               تخصيص خصائص وترتيب وأبوة القسم
             </p>
           </div>
         </div>
         <button
           @click="closeDrawer"
-          class="p-2 hover:bg-surface-container rounded-full transition-colors"
+          class="p-2 hover:bg-white rounded-full transition-colors"
         >
           <X class="w-5 h-5" />
         </button>
@@ -181,7 +181,7 @@ const saveCategory = () => {
         >
           <div
             @click="triggerFileInput"
-            class="relative group w-32 h-32 rounded-2xl border-2 border-dashed border-outline-variant hover:border-primary bg-surface-container-low hover:bg-surface-container transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-sm"
+            class="relative group w-32 h-32 rounded-2xl border-2 border-dashed border-outline-variant hover:border-primary bg-white-low hover:bg-white transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-sm"
           >
             <input
               id="category-image-input"
@@ -203,10 +203,10 @@ const saveCategory = () => {
               class="flex flex-col items-center justify-center p-4 text-center"
             >
               <Image
-                class="w-8 h-8 text-on-surface-variant mb-1 group-hover:text-primary transition-colors"
+                class="w-8 h-8 text-on-white-variant mb-1 group-hover:text-primary transition-colors"
               />
               <span
-                class="text-[11px] text-on-surface-variant group-hover:text-primary transition-colors"
+                class="text-[11px] text-on-white-variant group-hover:text-primary transition-colors"
                 >رفع صورة القسم</span
               >
             </div>
@@ -224,7 +224,7 @@ const saveCategory = () => {
 
         <div class="space-y-4">
           <h3
-            class="text-label-md font-bold text-on-surface-variant flex items-center gap-2"
+            class="text-label-md font-bold text-on-white-variant flex items-center gap-2"
           >
             <span class="w-1.5 h-4 bg-primary rounded-full"></span>
             محددات القسم
@@ -241,7 +241,7 @@ const saveCategory = () => {
                 required
               />
               <label
-                class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                 >اسم القسم</label
               >
             </div>
@@ -256,7 +256,7 @@ const saveCategory = () => {
                 min="0"
               />
               <label
-                class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                 >ترتيب العرض (Sequence)</label
               >
             </div>
@@ -274,11 +274,11 @@ const saveCategory = () => {
                   readonly
                 />
                 <label
-                  class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                  class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                   >القسم الأب (Parent Category)</label
                 >
                 <ChevronDown
-                  class="absolute left-4 top-3.5 w-5 h-5 text-on-surface-variant pointer-events-none"
+                  class="absolute left-4 top-3.5 w-5 h-5 text-on-white-variant pointer-events-none"
                 />
                 <!-- Clear Button -->
                 <button
@@ -305,7 +305,7 @@ const saveCategory = () => {
                     formParentName = cat.name;
                     showParentDropdown = false;
                   "
-                  class="w-full text-right px-4 py-2 hover:bg-surface-container text-body-md text-on-surface"
+                  class="w-full text-right px-4 py-2 hover:bg-white text-body-md text-on-white"
                 >
                   {{ cat.name }}
                 </button>
@@ -331,18 +331,18 @@ const saveCategory = () => {
 
       <!-- Action Buttons Footer -->
       <div
-        class="p-6 border-t border-outline-variant bg-surface-container-low flex items-center justify-end gap-3 shrink-0"
+        class="p-6 border-t border-outline-variant bg-white-low flex items-center justify-end gap-3 shrink-0"
       >
         <button
           @click="closeDrawer"
-          class="px-6 h-11 text-label-md font-bold rounded-full border border-outline-variant hover:bg-surface-container active:scale-95 transition-all cursor-pointer"
+          class="px-6 h-11 text-label-md font-bold rounded-full border border-outline-variant hover:bg-white active:scale-95 transition-all cursor-pointer"
         >
           إلغاء
         </button>
         <button
           @click="saveCategory"
           :disabled="isSaving || !formName"
-          class="px-6 h-11 text-white text-label-md font-bold rounded-full bg-primary text-on-primary hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+          class="px-6 h-11 text-white text-label-md font-bold rounded-full bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
         >
           <RefreshCw v-if="isSaving" class="w-4 h-4 animate-spin" />
           <span>{{ mode === "add" ? "إضافة القسم" : "حفظ التعديلات" }}</span>

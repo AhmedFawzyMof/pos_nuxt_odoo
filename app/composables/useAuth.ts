@@ -22,13 +22,10 @@ export const useAuth = () => {
       if (!creds.username || !creds.password) {
         throw new Error("يرجى ملء جميع الحقول المطلوبة.");
       }
-
       await store.login({
         username: creds.username,
         password: creds.password,
       });
-
-      await navigateTo("/");
       return true;
     } catch (err: any) {
       console.log(err);

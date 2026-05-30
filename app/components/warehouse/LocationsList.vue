@@ -10,7 +10,14 @@ interface LocationItem {
   progressBarColor: string;
 }
 
-import { Warehouse, Plus, ArrowRightLeft, Store, Building2, MapPin } from '@lucide/vue';
+import {
+  Warehouse,
+  Plus,
+  ArrowRightLeft,
+  Store,
+  Building2,
+  MapPin,
+} from "@lucide/vue";
 
 defineProps<{
   locations: LocationItem[];
@@ -24,7 +31,7 @@ defineEmits<{
 
 <template>
   <div
-    class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden"
+    class="lg:col-span-2 bg-white-lowest rounded-xl border border-outline-variant overflow-hidden"
   >
     <div
       class="p-6 border-b border-outline-variant flex flex-col md:flex-row justify-between items-center md:items-start bg-white/50 backdrop-blur-sm sticky top-0"
@@ -55,20 +62,23 @@ defineEmits<{
       <div
         v-for="(loc, idx) in locations"
         :key="idx"
-        class="p-6 hover:bg-surface-container-low transition-colors group cursor-pointer"
+        class="p-6 hover:bg-white-low transition-colors group cursor-pointer"
       >
         <div class="flex justify-between items-start">
           <div class="flex gap-4">
             <div
-              class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container/30 transition-colors"
+              class="w-12 h-12 rounded-lg bg-white-high flex items-center justify-center text-primary group-hover:bg-primary-container/30 transition-colors"
             >
-              <component :is="idx === 0 ? Store : idx === 1 ? Building2 : MapPin" class="w-6 h-6" />
+              <component
+                :is="idx === 0 ? Store : idx === 1 ? Building2 : MapPin"
+                class="w-6 h-6"
+              />
             </div>
             <div>
-              <h4 class="font-bold text-body-lg text-on-surface">
+              <h4 class="font-bold text-body-lg text-on-white">
                 {{ loc.name }}
               </h4>
-              <p class="text-on-surface-variant text-label-md">
+              <p class="text-on-white-variant text-label-md">
                 {{ loc.address }}
               </p>
             </div>
@@ -82,22 +92,20 @@ defineEmits<{
             </span>
             <p class="text-price-display font-bold text-primary">
               {{ loc.qty }}
-              <span class="text-body-md font-normal text-on-surface-variant"
+              <span class="text-body-md font-normal text-on-white-variant"
                 >قطعة</span
               >
             </p>
           </div>
         </div>
-        <div
-          class="mt-4 w-full bg-surface-container-high h-2 rounded-full overflow-hidden"
-        >
+        <div class="mt-4 w-full bg-white-high h-2 rounded-full overflow-hidden">
           <div
             class="h-full rounded-full"
             :class="[loc.progressBarColor, loc.capacityWidth]"
           ></div>
         </div>
         <div
-          class="flex justify-between mt-2 text-label-md text-on-surface-variant"
+          class="flex justify-between mt-2 text-label-md text-on-white-variant"
         >
           <span>سعة التخزين المستهلكة</span>
           <span>{{ loc.capacity }}</span>

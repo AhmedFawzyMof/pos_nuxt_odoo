@@ -39,7 +39,7 @@ const getIcon = (typeClass: string) => {
 
 <template>
   <div
-    class="bg-surface-container-lowest rounded-xl border border-outline-variant flex flex-col h-full"
+    class="bg-white-lowest rounded-xl border border-outline-variant flex flex-col h-full"
   >
     <div
       class="p-6 border-b border-outline-variant bg-white/50 backdrop-blur-sm"
@@ -54,7 +54,7 @@ const getIcon = (typeClass: string) => {
       <div
         v-for="(mv, idx) in movements"
         :key="idx"
-        class="flex flex-col items-start gap-4 p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer"
+        class="flex flex-col items-start gap-4 p-3 rounded-lg hover:bg-white-low transition-colors cursor-pointer"
       >
         <div class="flex w-full">
           <div
@@ -64,10 +64,10 @@ const getIcon = (typeClass: string) => {
             <component :is="getIcon(mv.typeClass)" class="w-5 h-5" />
           </div>
           <div class="flex-1">
-            <p class="text-label-md font-bold text-on-surface">
+            <p class="text-label-md font-bold text-on-white">
               {{ mv.destination }}
             </p>
-            <p class="text-xs text-on-surface-variant">{{ mv.product }}</p>
+            <p class="text-xs text-on-white-variant">{{ mv.product }}</p>
           </div>
           <div class="text-left">
             <p
@@ -76,7 +76,7 @@ const getIcon = (typeClass: string) => {
             >
               {{ mv.qty }}
             </p>
-            <p class="text-[10px] text-on-surface-variant">
+            <p class="text-[10px] text-on-white-variant">
               {{ mv.reference }}
             </p>
           </div>
@@ -84,7 +84,7 @@ const getIcon = (typeClass: string) => {
         <p class="text-sm">{{ new Date(mv.time).toLocaleString("ar-eg") }}</p>
       </div>
     </div>
-    <div class="p-4 border-t border-outline-variant bg-surface-container-low">
+    <div class="p-4 border-t border-outline-variant bg-white-low">
       <NuxtLink
         to="/stock-movements"
         class="block w-full text-center text-label-md text-primary font-bold hover:underline"

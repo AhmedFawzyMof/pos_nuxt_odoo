@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount, nextTick, computed } from "vue";
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { ref, watch, nextTick, computed } from "vue";
 import type { Product } from "~/types/product";
 import {
   Package,
@@ -114,13 +113,32 @@ const removeVariantField = (index: number) => {
   formVariants.value.splice(index, 1);
 };
 
-const isScannerActive = ref(false);
-let html5QrcodeInstance: Html5Qrcode | null = null;
-const isScanningPaused = ref(false);
-const errorMessage = ref("");
-// لتحديد مخرجات كاميرا الباركود (هل تكتب في الباركود الرئيسي أم باركود متغير معين)
 const activeBarcodeTarget = ref<{ type: "main" | "variant"; index?: number }>({
   type: "main",
+});
+
+const {
+  isActive: isScannerActive,
+  isPaused: isScanningPaused,
+  errorMessage: scannerErrorMessage,
+  start,
+  stop,
+} = useBarcodeScanner({
+  elementId: "barcode-camera-preview",
+  pauseDuration: 1800,
+  onScan: (barcode, done) => {
+    if (activeBarcodeTarget.value.type === "main") {
+      formBarcode.value = barcode.trim();
+    } else if (
+      activeBarcodeTarget.value.type === "variant" &&
+      activeBarcodeTarget.value.index !== undefined
+    ) {
+      const idx = activeBarcodeTarget.value.index;
+      formVariants.value[idx]!.barcode = barcode.trim();
+    }
+    stop();
+    setTimeout(done, 1800);
+  },
 });
 
 watch(
@@ -208,105 +226,17 @@ const toggleCameraScanner = async (
 ) => {
   activeBarcodeTarget.value = { type: target, index };
   if (isScannerActive.value) {
-    await stopScanner();
+    await stop();
   } else {
-    isScannerActive.value = true;
-    errorMessage.value = "";
     await nextTick();
-    startScanner();
+    start();
   }
-};
-
-const startScanner = () => {
-  try {
-    html5QrcodeInstance = new Html5Qrcode("barcode-camera-preview");
-
-    const config = {
-      fps: 10,
-      qrbox: { width: 280, height: 140 },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.QR_CODE,
-      ],
-    };
-
-    html5QrcodeInstance
-      .start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          if (isScanningPaused.value) return;
-          handleSuccessfulScan(decodedText);
-        },
-        (err) => {},
-      )
-      .catch((err) => {
-        errorMessage.value = "تعذر تشغيل الكاميرا. يرجى التأكد من الصلاحيات.";
-        isScannerActive.value = false;
-      });
-  } catch (err) {
-    console.error("Scanner initialization failed", err);
-  }
-};
-
-const handleSuccessfulScan = (barcodeValue: string) => {
-  isScanningPaused.value = true;
-
-  try {
-    const audioCtx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
-    const osc = audioCtx.createOscillator();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-    osc.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.12);
-  } catch (e) {
-    console.warn("Audio feedback context failed to execute:", e);
-  }
-
-  if (activeBarcodeTarget.value.type === "main") {
-    formBarcode.value = barcodeValue.trim();
-  } else if (
-    activeBarcodeTarget.value.type === "variant" &&
-    activeBarcodeTarget.value.index !== undefined
-  ) {
-    const idx = activeBarcodeTarget.value.index;
-    formVariants.value[idx]!.barcode = barcodeValue.trim();
-  }
-
-  stopScanner();
-
-  setTimeout(() => {
-    isScanningPaused.value = false;
-  }, 1800);
-};
-
-const stopScanner = async () => {
-  if (html5QrcodeInstance && html5QrcodeInstance.isScanning) {
-    try {
-      await html5QrcodeInstance.stop();
-    } catch (err) {
-      console.error("Failed to safely stop stream tracks", err);
-    }
-  }
-  html5QrcodeInstance = null;
-  isScannerActive.value = false;
 };
 
 const closeDrawer = async () => {
-  await stopScanner();
+  await stop();
   emit("update:isOpen", false);
 };
-
-onBeforeUnmount(async () => {
-  await stopScanner();
-});
 
 const hideCategoryDropdown = () => {
   setTimeout(() => {
@@ -360,11 +290,11 @@ const saveProduct = () => {
     @click="closeDrawer"
   >
     <div
-      class="h-full w-full max-w-[480px] bg-surface shadow-2xl flex flex-col relative transition-transform duration-300 bg-white"
+      class="h-full w-full max-w-[480px] bg-white shadow-2xl flex flex-col relative transition-transform duration-300 bg-white"
       @click.stop
     >
       <div
-        class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low"
+        class="p-6 border-b border-outline-variant flex justify-between items-center bg-white-low"
       >
         <div class="flex items-center gap-3">
           <Package
@@ -374,14 +304,14 @@ const saveProduct = () => {
             <h2 class="text-headline-sm font-bold text-primary">
               {{ mode === "add" ? "إضافة منتج جديد" : "تعديل بيانات المنتج" }}
             </h2>
-            <p class="text-label-md text-on-surface-variant">
+            <p class="text-label-md text-on-white-variant">
               تخصيص الخواص والمقاييس والبدائل
             </p>
           </div>
         </div>
         <button
           @click="closeDrawer"
-          class="p-2 hover:bg-surface-container rounded-full transition-colors"
+          class="p-2 hover:bg-white rounded-full transition-colors"
         >
           <X class="w-5 h-5" />
         </button>
@@ -394,7 +324,7 @@ const saveProduct = () => {
         >
           <div
             @click="triggerFileInput"
-            class="relative group w-32 h-32 rounded-2xl border-2 border-dashed border-outline-variant hover:border-primary bg-surface-container-low hover:bg-surface-container transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-sm"
+            class="relative group w-32 h-32 rounded-2xl border-2 border-dashed border-outline-variant hover:border-primary bg-white-low hover:bg-white transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-sm"
           >
             <input
               id="product-image-input"
@@ -416,10 +346,10 @@ const saveProduct = () => {
               class="flex flex-col items-center justify-center p-4 text-center"
             >
               <Image
-                class="w-8 h-8 text-on-surface-variant mb-1 group-hover:text-primary transition-colors"
+                class="w-8 h-8 text-on-white-variant mb-1 group-hover:text-primary transition-colors"
               />
               <span
-                class="text-[11px] text-on-surface-variant group-hover:text-primary transition-colors"
+                class="text-[11px] text-on-white-variant group-hover:text-primary transition-colors"
                 >رفع صورة المنتج</span
               >
             </div>
@@ -444,16 +374,16 @@ const saveProduct = () => {
             class="w-full mx-auto max-w-[450px]"
           ></div>
           <div
-            v-if="errorMessage"
+            v-if="scannerErrorMessage"
             class="absolute inset-0 bg-black/80 flex items-center justify-center p-4 text-center text-error text-xs"
           >
-            {{ errorMessage }}
+            {{ scannerErrorMessage }}
           </div>
         </div>
 
         <div class="space-y-4">
           <h3
-            class="text-label-md font-bold text-on-surface-variant flex items-center gap-2"
+            class="text-label-md font-bold text-on-white-variant flex items-center gap-2"
           >
             <span class="w-1.5 h-4 bg-primary rounded-full"></span>
             محددات المنتج الشاملة
@@ -468,7 +398,7 @@ const saveProduct = () => {
                 type="text"
               />
               <label
-                class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                 >اسم المنتج الأساسي</label
               >
             </div>
@@ -482,7 +412,7 @@ const saveProduct = () => {
                   type="text"
                 />
                 <label
-                  class="absolute right-12 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                  class="absolute right-12 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                   >الباركود الأساسي للأب</label
                 >
                 <button
@@ -492,7 +422,7 @@ const saveProduct = () => {
                     'absolute right-1 h-8 w-9 flex items-center justify-center rounded-md transition-all border outline-none',
                     isScannerActive && activeBarcodeTarget.type === 'main'
                       ? 'bg-error-container text-on-error-container border-error/20'
-                      : 'bg-surface text-on-surface-variant border-outline-variant hover:bg-surface-container',
+                      : 'bg-white text-on-white-variant border-outline-variant hover:bg-white',
                   ]"
                 >
                   <VideoOff
@@ -515,7 +445,7 @@ const saveProduct = () => {
                   type="number"
                 />
                 <label
-                  class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                  class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                   >السعر البيعي الرئيسي</label
                 >
               </div>
@@ -527,7 +457,7 @@ const saveProduct = () => {
                   type="number"
                 />
                 <label
-                  class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                  class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                   >تكلفة الشراء (Cost)</label
                 >
               </div>
@@ -542,7 +472,7 @@ const saveProduct = () => {
                 min="0"
               />
               <label
-                class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                 >الكمية المتوفرة في المستودع (الكمية الحالية)</label
               >
             </div>
@@ -569,9 +499,9 @@ const saveProduct = () => {
 
               <div
                 v-if="formVariants.length === 0"
-                class="text-center p-4 bg-surface-container rounded-xl border border-dashed border-outline-variant"
+                class="text-center p-4 bg-white rounded-xl border border-dashed border-outline-variant"
               >
-                <p class="text-xs text-on-surface-variant">
+                <p class="text-xs text-on-white-variant">
                   لا توجد متغيرات منشأة لهذا المنتج حالياً، يباع كمنتج منفرد
                   موحد السعر.
                 </p>
@@ -584,12 +514,12 @@ const saveProduct = () => {
                 <div
                   v-for="(variant, idx) in formVariants"
                   :key="idx"
-                  class="p-3 bg-surface-container rounded-xl border border-outline-variant space-y-2 relative group"
+                  class="p-3 bg-white rounded-xl border border-outline-variant space-y-2 relative group"
                 >
                   <button
                     type="button"
                     @click="removeVariantField(idx)"
-                    class="absolute top-2 left-2 text-on-surface-variant hover:text-error transition-colors p-1 rounded-full hover:bg-error/10 cursor-pointer"
+                    class="absolute top-2 left-2 text-on-white-variant hover:text-error transition-colors p-1 rounded-full hover:bg-error/10 cursor-pointer"
                   >
                     <X class="w-3.5 h-3.5" />
                   </button>
@@ -603,7 +533,7 @@ const saveProduct = () => {
                         type="text"
                       />
                       <span
-                        class="absolute -top-2 right-2 text-[9px] bg-white px-1 text-on-surface-variant"
+                        class="absolute -top-2 right-2 text-[9px] bg-white px-1 text-on-white-variant"
                         >اسم المتغير</span
                       >
                     </div>
@@ -631,7 +561,7 @@ const saveProduct = () => {
                       type="text"
                     />
                     <span
-                      class="absolute -top-2 right-2 text-[9px] bg-white px-1 text-on-surface-variant"
+                      class="absolute -top-2 right-2 text-[9px] bg-white px-1 text-on-white-variant"
                       >باركود المتغير</span
                     >
                     <button
@@ -643,7 +573,7 @@ const saveProduct = () => {
                         activeBarcodeTarget.type === 'variant' &&
                         activeBarcodeTarget.index === idx
                           ? 'bg-error-container text-on-error-container border-error/20'
-                          : 'bg-white text-on-surface-variant border-outline-variant hover:bg-surface-container',
+                          : 'bg-white text-on-white-variant border-outline-variant hover:bg-white',
                       ]"
                     >
                       <ScanBarcode class="w-3.5 h-3.5" />
@@ -654,10 +584,10 @@ const saveProduct = () => {
             </div>
 
             <div
-              class="bg-surface-container-low rounded-xl p-3 border border-outline-variant space-y-2"
+              class="bg-white-low rounded-xl p-3 border border-outline-variant space-y-2"
             >
               <label
-                class="flex items-center gap-3 text-label-md text-on-surface cursor-pointer"
+                class="flex items-center gap-3 text-label-md text-on-white cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -666,7 +596,7 @@ const saveProduct = () => {
                 />
                 <div class="flex flex-col">
                   <span>المنتج يباع بالوزن</span>
-                  <span class="text-[10px] text-on-surface-variant"
+                  <span class="text-[10px] text-on-white-variant"
                     >تفعيل هذا الخيار لإظهار حقول الوزن والحجم الخاصة
                     بالمنتج</span
                   >
@@ -684,7 +614,7 @@ const saveProduct = () => {
                   step="0.01"
                 />
                 <label
-                  class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                  class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                   >الوزن الصافي (كجم)</label
                 >
               </div>
@@ -697,7 +627,7 @@ const saveProduct = () => {
                   step="0.001"
                 />
                 <label
-                  class="absolute right-4 top-1 text-[10px] text-on-surface-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                  class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
                   >الحجم الكلي (م³)</label
                 >
               </div>
@@ -714,7 +644,7 @@ const saveProduct = () => {
                 </option>
               </select>
               <label
-                class="absolute right-4 -top-3 text-[10px] text-on-surface-variant transition-all pointer-events-none bg-white px-1"
+                class="absolute right-4 -top-3 text-[10px] text-on-white-variant transition-all pointer-events-none bg-white px-1"
                 >موقع التخزين (Storage Location)</label
               >
             </div>
@@ -742,11 +672,11 @@ const saveProduct = () => {
                 </span>
                 <span
                   v-if="selectedCategoryNames.length === 0"
-                  class="text-on-surface-variant text-body-md"
+                  class="text-on-white-variant text-body-md"
                   >فئات نقاط البيع</span
                 >
                 <ChevronDown
-                  class="absolute left-4 top-3.5 w-5 h-5 text-on-surface-variant pointer-events-none"
+                  class="absolute left-4 top-3.5 w-5 h-5 text-on-white-variant pointer-events-none"
                 />
               </div>
               <div
@@ -757,7 +687,7 @@ const saveProduct = () => {
                   v-for="cat in posCategories"
                   :key="cat.id"
                   @mousedown.prevent="toggleCategory(cat.id)"
-                  class="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-surface-container text-body-md text-on-surface"
+                  class="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-white text-body-md text-on-white"
                 >
                   <span
                     class="w-4 h-4 border rounded flex items-center justify-center shrink-0"
@@ -778,10 +708,10 @@ const saveProduct = () => {
             </div>
 
             <div
-              class="bg-surface-container-low rounded-xl p-3 border border-outline-variant space-y-2"
+              class="bg-white-low rounded-xl p-3 border border-outline-variant space-y-2"
             >
               <label
-                class="flex items-start gap-3 text-label-md text-on-surface cursor-pointer"
+                class="flex items-start gap-3 text-label-md text-on-white cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -790,14 +720,14 @@ const saveProduct = () => {
                 />
                 <div class="flex flex-col">
                   <span>تفعيل الإتاحة المباشرة على شاشات كاشير الـ POS</span>
-                  <span class="text-[10px] text-on-surface-variant"
+                  <span class="text-[10px] text-on-white-variant"
                     >يسمح بظهور هذا المنتج وبيعه مباشرة في واجهة نقاط البيع
                     للكاشير.</span
                   >
                 </div>
               </label>
               <label
-                class="flex items-start gap-3 text-label-md text-on-surface cursor-pointer"
+                class="flex items-start gap-3 text-label-md text-on-white cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -806,14 +736,14 @@ const saveProduct = () => {
                 />
                 <div class="flex flex-col">
                   <span>يمكن بيعه (Can be Sold)</span>
-                  <span class="text-[10px] text-on-surface-variant"
+                  <span class="text-[10px] text-on-white-variant"
                     >تفعيل هذا الخيار لإتاحة المنتج في أوامر البيع
                     والفواتير.</span
                   >
                 </div>
               </label>
               <label
-                class="flex items-start gap-3 text-label-md text-on-surface cursor-pointer"
+                class="flex items-start gap-3 text-label-md text-on-white cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -822,14 +752,14 @@ const saveProduct = () => {
                 />
                 <div class="flex flex-col">
                   <span>يمكن شراؤه وتوريده (Can be Purchased)</span>
-                  <span class="text-[10px] text-on-surface-variant"
+                  <span class="text-[10px] text-on-white-variant"
                     >تفعيل هذا الخيار لإتاحة المنتج في أوامر الشراء من
                     الموردين.</span
                   >
                 </div>
               </label>
               <label
-                class="flex items-start gap-3 text-label-md text-on-surface cursor-pointer"
+                class="flex items-start gap-3 text-label-md text-on-white cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -838,7 +768,7 @@ const saveProduct = () => {
                 />
                 <div class="flex flex-col">
                   <span>المنتج نشط وغير مؤرشف (Active Status)</span>
-                  <span class="text-[10px] text-on-surface-variant"
+                  <span class="text-[10px] text-on-white-variant"
                     >إلغاء التفعيل سيقوم بإخفاء المنتج من القوائم وأرشفته دون
                     حذفه نهائياً.</span
                   >
@@ -862,17 +792,17 @@ const saveProduct = () => {
         </div>
       </div>
 
-      <div class="p-6 bg-surface-container-high grid grid-cols-2 gap-4">
+      <div class="p-6 bg-white-high grid grid-cols-2 gap-4">
         <button
           @click="closeDrawer"
-          class="h-12 rounded-xl border border-outline font-bold text-on-surface hover:bg-surface transition-all active:scale-95 cursor-pointer"
+          class="h-12 rounded-xl border border-outline font-bold text-on-white hover:bg-white transition-all active:scale-95 cursor-pointer"
         >
           إلغاء
         </button>
         <button
           @click="saveProduct"
           :disabled="isSaving"
-          class="text-white h-12 rounded-xl bg-primary text-on-primary font-bold shadow-lg hover:bg-primary/95 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+          class="text-white h-12 rounded-xl bg-primary text-white font-bold shadow-lg hover:bg-primary/95 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
         >
           <RefreshCw v-if="isSaving" class="w-5 h-5 animate-spin" />
           {{ isSaving ? "جاري المزامنة..." : "حفظ للـ ERP" }}

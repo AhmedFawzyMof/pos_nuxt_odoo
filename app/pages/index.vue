@@ -14,6 +14,7 @@ import {
   Wallet,
   ShoppingCart,
   Circle,
+  LoaderCircle,
 } from "@lucide/vue";
 
 const kpiIconMap: Record<string, any> = {
@@ -32,7 +33,9 @@ const kpiIconMap: Record<string, any> = {
 
 const getKpiIcon = (name: string) => kpiIconMap[name] || Circle;
 
-const { data, error, status } = await useFetch("/api/kpi/dashboard");
+const { data, error, status, pending } = useFetch("/api/kpi/dashboard", {
+  lazy: true,
+});
 
 const kpis = computed(() => data.value?.kpis || []);
 
@@ -98,132 +101,142 @@ const modules = [
 
 <template>
   <div class="space-y-8">
-    <!-- Connection error banner -->
-    <Transition name="fade">
-      <div
-        v-if="status === 'error' || status === 'success' && !data?.kpis"
-        class="flex items-center gap-3 bg-error/10 border border-error/30 text-error px-5 py-4 rounded-xl"
-      >
-        <CloudOff class="w-6 h-6 shrink-0" />
-        <div>
-          <p class="font-bold text-sm">فشل جلب بيانات لوحة التحكم</p>
-          <p class="text-xs opacity-75 font-mono mt-0.5">{{ error?.message || 'تعذر الاتصال بأودو' }}</p>
-        </div>
-      </div>
-    </Transition>
-    <!-- Welcome Header Banner -->
     <div
-      class="bg-primary text-white p-8 rounded-2xl relative overflow-hidden shadow-md"
+      v-if="pending && !data?.kpis"
+      class="h-[calc(100vh-200px)] flex items-center justify-center"
     >
-      <div class="relative z-10 max-w-xl">
-        <h3 class="text-display-lg font-bold mb-2">
-          مرحباً بك في لوحة تحكم Odoo
-        </h3>
-        <p class="text-body-lg opacity-90">
-          من هنا يمكنك الوصول إلى جميع الأدوات الذكية لإدارة البيع بالتجزئة،
-          المحاسبة، وتحديث المستودعات بكفاءة وسرعة.
-        </p>
-      </div>
-      <div
-        class="absolute -bottom-6 left-6 opacity-10 text-[160px] select-none font-black hidden md:block"
-      >
-        Odoo
+      <div class="flex flex-col items-center gap-3 text-on-white-variant">
+        <LoaderCircle class="w-8 h-8 animate-spin text-primary" />
+        <span class="text-[13px]">جاري تحميل البيانات...</span>
       </div>
     </div>
 
-    <!-- KPI Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div
-        v-for="kpi in kpis"
-        :key="kpi.title"
-        class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-between hover:shadow-md transition-all group"
-      >
-        <div class="flex justify-between items-start">
-          <div
-            class="w-12 h-12 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
-            :class="[
-              kpi.color === 'primary'
-                ? 'bg-primary-container/20 text-primary'
-                : '',
-              kpi.color === 'error' ? 'bg-error-container/20 text-error' : '',
-              kpi.color === 'secondary'
-                ? 'bg-secondary-container/20 text-secondary'
-                : '',
-              kpi.color === 'tertiary'
-                ? 'bg-tertiary-container/20 text-tertiary'
-                : '',
-            ]"
-          >
-            <component :is="getKpiIcon(kpi.icon)" class="w-7 h-7" />
-          </div>
-          <span
-            class="text-label-md font-bold px-2 py-1 rounded"
-            :class="[
-              kpi.changeType === 'positive'
-                ? 'bg-primary-container/10 text-primary'
-                : '',
-              kpi.changeType === 'negative'
-                ? 'bg-error-container/10 text-error'
-                : '',
-              kpi.changeType === 'warning'
-                ? 'bg-amber-500/10 text-amber-600'
-                : '',
-            ]"
-          >
-            {{ kpi.change }}
-          </span>
-        </div>
-        <div class="mt-4">
-          <p class="text-on-surface-variant font-label-md text-label-md">
-            {{ kpi.title }}
-          </p>
-          <h3
-            class="text-price-display font-bold mt-1"
-            :class="
-              kpi.color === 'primary' ? 'text-primary' : 'text-on-surface'
-            "
-          >
-            {{ kpi.value }}
-          </h3>
-        </div>
-      </div>
-    </div>
-
-    <!-- Navigation Hub Grid -->
-    <div>
-      <h3 class="text-headline-md font-bold mb-6 flex items-center gap-2">
-        <LayoutGrid class="w-6 h-6 text-primary" />
-        الوصول السريع للأقسام
-      </h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <NuxtLink
-          v-for="mod in modules"
-          :key="mod.name"
-          :to="mod.path"
-          class="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-98 flex gap-4 group"
+    <template v-else>
+      <!-- Connection error banner -->
+      <Transition name="fade">
+        <div
+          v-if="status === 'error' || (status === 'success' && !data?.kpis)"
+          class="flex items-center gap-3 bg-error/10 border border-error/30 text-error px-5 py-4 rounded-xl"
         >
-          <div
-            class="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
-            :class="mod.bg"
-          >
-            <component
-              :is="mod.icon"
-              class="w-7 h-7"
-              :class="mod.color"
-            />
-          </div>
-          <div class="space-y-1">
-            <h4
-              class="font-bold text-body-lg text-on-surface group-hover:text-primary transition-colors"
-            >
-              {{ mod.name }}
-            </h4>
-            <p class="text-label-md text-on-surface-variant leading-relaxed">
-              {{ mod.description }}
+          <CloudOff class="w-6 h-6 shrink-0" />
+          <div>
+            <p class="font-bold text-sm">فشل جلب بيانات لوحة التحكم</p>
+            <p class="text-xs opacity-75 font-mono mt-0.5">
+              {{ error?.message || "تعذر الاتصال بأودو" }}
             </p>
           </div>
-        </NuxtLink>
+        </div>
+      </Transition>
+      <!-- Welcome Header Banner -->
+      <div
+        class="bg-primary text-white p-8 rounded-2xl relative overflow-hidden shadow-md"
+      >
+        <div class="relative z-10 max-w-xl">
+          <h3 class="text-display-lg font-bold mb-2">
+            مرحباً بك في لوحة تحكم Odoo
+          </h3>
+          <p class="text-body-lg opacity-90">
+            من هنا يمكنك الوصول إلى جميع الأدوات الذكية لإدارة البيع بالتجزئة،
+            المحاسبة، وتحديث المستودعات بكفاءة وسرعة.
+          </p>
+        </div>
+        <div
+          class="absolute -bottom-6 left-6 opacity-10 text-[160px] select-none font-black hidden md:block"
+        >
+          Odoo
+        </div>
       </div>
-    </div>
+
+      <!-- KPI Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div
+          v-for="kpi in kpis"
+          :key="kpi.title"
+          class="bg-white-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-between hover:shadow-md transition-all group"
+        >
+          <div class="flex justify-between items-start">
+            <div
+              class="w-12 h-12 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
+              :class="[
+                kpi.color === 'primary'
+                  ? 'bg-primary-container/20 text-primary'
+                  : '',
+                kpi.color === 'error' ? 'bg-error-container/20 text-error' : '',
+                kpi.color === 'secondary'
+                  ? 'bg-secondary-container/20 text-secondary'
+                  : '',
+                kpi.color === 'tertiary'
+                  ? 'bg-tertiary-container/20 text-tertiary'
+                  : '',
+              ]"
+            >
+              <component :is="getKpiIcon(kpi.icon)" class="w-7 h-7" />
+            </div>
+            <span
+              class="text-label-md font-bold px-2 py-1 rounded"
+              :class="[
+                kpi.changeType === 'positive'
+                  ? 'bg-primary-container/10 text-primary'
+                  : '',
+                kpi.changeType === 'negative'
+                  ? 'bg-error-container/10 text-error'
+                  : '',
+                kpi.changeType === 'warning'
+                  ? 'bg-amber-500/10 text-amber-600'
+                  : '',
+              ]"
+            >
+              {{ kpi.change }}
+            </span>
+          </div>
+          <div class="mt-4">
+            <p class="text-on-white-variant font-label-md text-label-md">
+              {{ kpi.title }}
+            </p>
+            <h3
+              class="text-price-display font-bold mt-1"
+              :class="
+                kpi.color === 'primary' ? 'text-primary' : 'text-on-white'
+              "
+            >
+              {{ kpi.value }}
+            </h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Hub Grid -->
+      <div>
+        <h3 class="text-headline-md font-bold mb-6 flex items-center gap-2">
+          <LayoutGrid class="w-6 h-6 text-primary" />
+          الوصول السريع للأقسام
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <NuxtLink
+            v-for="mod in modules"
+            :key="mod.name"
+            :to="mod.path"
+            class="bg-white-lowest border border-outline-variant p-6 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-98 flex gap-4 group"
+          >
+            <div
+              class="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
+              :class="mod.bg"
+            >
+              <component :is="mod.icon" class="w-7 h-7" :class="mod.color" />
+            </div>
+            <div class="space-y-1">
+              <h4
+                class="font-bold text-body-lg text-on-white group-hover:text-primary transition-colors"
+              >
+                {{ mod.name }}
+              </h4>
+              <p class="text-label-md text-on-white-variant leading-relaxed">
+                {{ mod.description }}
+              </p>
+            </div>
+          </NuxtLink>
+        </div>
+      </div>
+    </template>
   </div>
 </template>

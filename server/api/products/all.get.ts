@@ -21,65 +21,27 @@ export default defineEventHandler(async (event) => {
   try {
     await odoo.connect();
 
-    const totalCount = await odoo.execute_kw(
-      "product.product",
-      "search_count",
-      [[[["id", "not in", [1, 2, 3]]]]],
-    );
-
-    const categoriesData = await odoo.searchRead(
-      "pos.category",
-      [],
-      ["id", "name"],
-    );
-    const categoryMap: any = categoriesData.reduce((acc: any, cat: any) => {
-      acc[cat.id] = cat.name;
-      return acc;
-    }, {});
-
-    const locationsData = await odoo.searchRead(
-      "stock.location",
-      [["usage", "=", "internal"]],
-      ["id", "name"],
-    );
-    const locationMap: any = locationsData.reduce((acc: any, loc: any) => {
-      acc[loc.id] = loc.name;
-      return acc;
-    }, {});
-
     const productFields = [
-      "id",
-      "name",
-      "display_name",
-      "barcode",
-      "type",
-      "categ_id",
-      "lst_price",
-      "standard_price",
-      "qty_available",
-      "virtual_available",
-      "incoming_qty",
-      "outgoing_qty",
-      "weight",
-      "volume",
-      "sale_ok",
-      "purchase_ok",
-      "active",
-      "available_in_pos",
-      "pos_categ_ids",
-      "image_1920",
+      "id", "name", "display_name", "barcode", "type", "categ_id",
+      "lst_price", "standard_price", "qty_available", "virtual_available",
+      "incoming_qty", "outgoing_qty", "weight", "volume", "sale_ok",
+      "purchase_ok", "active", "available_in_pos", "pos_categ_ids", "image_1920",
     ];
 
-    const products = await odoo.searchRead(
-      "product.product",
-      [["id", "not in", [1, 2, 3]]],
-      productFields,
-      {
-        limit: limit,
-        offset: offset,
-        order: "id desc",
-      },
-    );
+    const [totalCount, categoriesData, locationsData, products] = await Promise.all([
+      odoo.execute_kw("product.product", "search_count", [[[["id", "not in", [1, 2, 3]]]]]),
+      odoo.searchRead("pos.category", [], ["id", "name"]),
+      odoo.searchRead("stock.location", [["usage", "=", "internal"]], ["id", "name"]),
+      odoo.searchRead("product.product", [["id", "not in", [1, 2, 3]]], productFields, {
+        limit, offset, order: "id desc",
+      }),
+    ]);
+
+    const categoryMap: Record<number, string> = {};
+    for (const cat of categoriesData) categoryMap[cat.id] = cat.name;
+
+    const locationMap: Record<number, string> = {};
+    for (const loc of locationsData) locationMap[loc.id] = loc.name;
 
     const productIds = products.map((p: any) => p.id);
     let productLocationMap: Record<number, number> = {};
