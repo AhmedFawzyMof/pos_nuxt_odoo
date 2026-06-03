@@ -16,6 +16,7 @@ import { usePosCartStore } from "~~/stores/pos-cart";
 import type { POSProduct, POSCategory, PaymentMethod } from "~/types/pos";
 
 const route = useRoute();
+const router = useRouter();
 const configId = computed(() => {
   const raw = route.query.config_id;
   return Array.isArray(raw) ? raw[0] : (raw ?? "");
@@ -177,6 +178,13 @@ function handleOrderCompleted() {
   showPaymentSheet.value = false;
 }
 
+function handleSessionClosed() {
+  sessionId.value = null;
+  showCloseSessionModal.value = false;
+  cart.clearCart();
+  router.push("/pos");
+}
+
 function tryAutoAddFirstResult(customWeightKg?: number | null) {
   if (searchQuery.value && allProducts.value.length > 0) {
     const product = allProducts.value[0];
@@ -200,7 +208,16 @@ watch(
       }
       currentPage.value = 1;
       allProducts.value = [];
-      loadMasterData(1);
+      await loadMasterData(1);
+
+      if (!selectedLocationId.value && locations.value.length > 0) {
+        const first = locations.value[0];
+        selectedLocationId.value = first.id;
+        cart.setLocation(first.id, first.name);
+        currentPage.value = 1;
+        allProducts.value = [];
+        await loadMasterData(1);
+      }
     }
   },
   { immediate: true },
@@ -513,6 +530,7 @@ watch(
       v-model:open="showCloseSessionModal"
       :session-id="sessionId"
       :config-id="configId"
+      @session-closed="handleSessionClosed"
     />
   </div>
   <div v-else class="flex items-center justify-center h-[calc(100vh-8rem)]">

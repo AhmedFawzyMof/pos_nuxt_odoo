@@ -77,6 +77,32 @@ function clearCustomer() {
   cart.customerId = null;
 }
 
+const showCustomerDrawer = ref(false);
+const customerDrawerSaving = ref(false);
+const customerDrawerError = ref("");
+
+async function saveCustomer(payload: Record<string, any>) {
+  customerDrawerSaving.value = true;
+  customerDrawerError.value = "";
+  try {
+    const res = await $fetch<{ success: boolean; id: number }>("/api/customers/save", {
+      method: "POST",
+      body: payload,
+    });
+    if (res.success) {
+      showCustomerDrawer.value = false;
+      customerDrawerError.value = "";
+      await fetchCustomers(customerSearchQuery.value);
+      const newCustomer = customers.value.find((c) => c.id === res.id);
+      if (newCustomer) selectCustomer(newCustomer);
+    }
+  } catch (err: any) {
+    customerDrawerError.value = err.statusMessage || "خطأ في الاتصال";
+  } finally {
+    customerDrawerSaving.value = false;
+  }
+}
+
 onMounted(() => fetchCustomers());
 
 const isSaving = ref(false);
@@ -611,9 +637,15 @@ function printReceipt() {
                   </div>
                   <div
                     v-else-if="customers.length === 0"
-                    class="text-center text-xs text-slate-400 py-4"
+                    class="text-center py-4"
                   >
-                    لا يوجد عملاء
+                    <p class="text-xs text-slate-400 mb-2">لا يوجد عملاء بهذا الاسم</p>
+                    <button
+                      @click="showCustomerDrawer = true"
+                      class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      + إضافة عميل جديد
+                    </button>
                   </div>
                   <div v-else class="max-h-40 overflow-y-auto space-y-1">
                     <button
@@ -783,4 +815,14 @@ function printReceipt() {
       </div>
     </div>
   </Transition>
+
+  <CustomersCustomerDrawer
+    v-model:isOpen="showCustomerDrawer"
+    mode="add"
+    :customer="null"
+    :is-saving="customerDrawerSaving"
+    :action-error="customerDrawerError"
+    @save="saveCustomer"
+    @update:actionError="customerDrawerError = $event"
+  />
 </template>

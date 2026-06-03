@@ -128,6 +128,7 @@ const openCreateLoctaion = ref(false);
         :existing-locations="locations"
         :open="openTransfer"
         v-on:update:open="(val) => (openTransfer = val)"
+        @transfer-completed="refresh"
       />
     </div>
   </div>

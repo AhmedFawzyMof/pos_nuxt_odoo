@@ -5,98 +5,131 @@ import {
   Receipt,
   CloudCog,
   Search,
-  Filter,
   CheckCircle,
   XCircle,
   RefreshCw,
   Trash2,
-  Download,
   ChevronLeft,
   ChevronRight,
   Store,
   CheckCheck,
+  Eye,
+  LoaderCircle,
+  CloudOff,
+  AlertCircle,
 } from "@lucide/vue";
-
-interface Order {
-  id: string;
-  time: string;
-  customer: string;
-  customerInitials: string;
-  total: number;
-  syncStatus: "تمت" | "جاري المزامنة" | "ملغاة";
-}
+import type { POSOrder, OrderListResponse } from "~/types/pos";
 
 const searchQuery = ref("");
+const statusFilter = ref("");
+const currentPage = ref(1);
+const limit = 20;
+
 const showToast = ref(false);
+const toastMessage = ref("");
+const toastType = ref<"success" | "error">("success");
 const shiftOpen = ref(true);
+const selectedOrderId = ref<number | null>(null);
+const drawerOpen = ref(false);
 
-const ordersList = ref<Order[]>([
-  {
-    id: "ORD-2023-8942",
-    time: "14:32:10",
-    customer: "ياسين محمود",
-    customerInitials: "YM",
-    total: 450.0,
-    syncStatus: "تمت",
-  },
-  {
-    id: "ORD-2023-8941",
-    time: "14:28:45",
-    customer: "عميل مجهول",
-    customerInitials: "نقدي",
-    total: 89.25,
-    syncStatus: "تمت",
-  },
-  {
-    id: "ORD-2023-8940",
-    time: "14:25:01",
-    customer: "أميرة مصطفى",
-    customerInitials: "AM",
-    total: 1240.0,
-    syncStatus: "جاري المزامنة",
-  },
-  {
-    id: "ORD-2023-8939",
-    time: "14:15:22",
-    customer: "عميل مجهول",
-    customerInitials: "نقدي",
-    total: 30.0,
-    syncStatus: "تمت",
-  },
-]);
-
-const filteredOrders = computed(() => {
-  if (!searchQuery.value) return ordersList.value;
-  const query = searchQuery.value.toLowerCase();
-  return ordersList.value.filter(
-    (o) =>
-      o.id.toLowerCase().includes(query) ||
-      o.customer.toLowerCase().includes(query),
-  );
+const todayStr = computed(() => {
+  const d = new Date();
+  return d.toLocaleDateString("ar-EG", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 });
 
-const totalSales = computed(() => {
-  return ordersList.value
-    .filter((o) => o.syncStatus !== "ملغاة")
-    .reduce((sum, o) => sum + o.total, 0);
+const {
+  data: apiResponse,
+  status,
+  error,
+  refresh,
+} = useFetch<OrderListResponse>("/api/orders", {
+  lazy: true,
+  query: {
+    page: currentPage,
+    limit,
+    search: searchQuery,
+    status: statusFilter,
+  },
+  watch: [currentPage, searchQuery, statusFilter],
+  transform: (response) => {
+    if (!response.data) response.data = [];
+    return response;
+  },
 });
 
-const completedCount = computed(() => {
-  return ordersList.value.filter((o) => o.syncStatus !== "ملغاة").length;
-});
+const ordersList = computed<POSOrder[]>(() => apiResponse.value?.data || []);
+const totalItems = computed(() => apiResponse.value?.totalItems || 0);
+const totalPages = computed(() => apiResponse.value?.totalPages || 1);
 
-const voidOrder = (id: string) => {
-  if (confirm(`هل أنت متأكد من رغبتك في إلغاء الطلب رقم #${id}؟`)) {
-    const order = ordersList.value.find((o) => o.id === id);
-    if (order) {
-      order.syncStatus = "ملغاة";
-      showToast.value = true;
-      setTimeout(() => {
-        showToast.value = false;
-      }, 3000);
-    }
+const startItem = computed(() =>
+  ordersList.value.length ? (currentPage.value - 1) * limit + 1 : 0,
+);
+const endItem = computed(() =>
+  Math.min(currentPage.value * limit, totalItems.value),
+);
+
+const totalSales = computed(() =>
+  ordersList.value
+    .filter((o) => o.state !== "cancelled")
+    .reduce((sum, o) => sum + o.amount_total, 0),
+);
+
+const completedCount = computed(() =>
+  ordersList.value.filter((o) => o.state !== "cancelled").length,
+);
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
   }
 };
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+function openDetail(orderId: number) {
+  selectedOrderId.value = orderId;
+  drawerOpen.value = true;
+}
+
+function closeDetail() {
+  drawerOpen.value = false;
+  selectedOrderId.value = null;
+}
+
+async function voidOrder(orderId: number, orderName: string) {
+  if (!confirm(`هل أنت متأكد من رغبتك في إلغاء الطلب رقم #${orderName}؟`)) return;
+  try {
+    const res = await $fetch<any>("/api/orders/status", {
+      method: "POST",
+      body: { order_id: orderId, state: "cancelled" },
+    });
+    if (res.success) {
+      showToastMessage("تم إلغاء الطلب بنجاح", "success");
+      refresh();
+    } else {
+      showToastMessage(res.message || "فشل إلغاء الطلب", "error");
+    }
+  } catch (err: any) {
+    showToastMessage(err.statusMessage || "خطأ في الاتصال بالخادم", "error");
+  }
+}
+
+function showToastMessage(message: string, type: "success" | "error") {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+}
 
 const toggleShift = () => {
   if (shiftOpen.value) {
@@ -111,356 +144,455 @@ const toggleShift = () => {
     shiftOpen.value = true;
   }
 };
+
+const formatTime = (dateStr: string) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString("ar-EG", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const statusLabels: Record<string, string> = {
+  draft: "مسودة",
+  paid: "مدفوع",
+  done: "منتهي",
+  cancelled: "ملغي",
+  invoiced: "مفوتر",
+};
+
+const statusColors: Record<string, string> = {
+  draft: "bg-secondary-container text-secondary",
+  paid: "bg-primary/10 text-primary",
+  done: "bg-tertiary-container/30 text-tertiary",
+  cancelled: "bg-error-container text-error",
+  invoiced: "bg-secondary-fixed text-on-secondary-fixed",
+};
+
+const statusIcons: Record<string, any> = {
+  draft: RefreshCw,
+  paid: CheckCircle,
+  done: CheckCircle,
+  cancelled: XCircle,
+  invoiced: CheckCircle,
+};
 </script>
 
 <template>
   <div class="space-y-8 max-w-7xl mx-auto relative">
-    <!-- Top KPI Dashboard -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Total Sales -->
-      <div
-        class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
-      >
-        <div class="space-y-1">
-          <p class="text-label-md text-on-white-variant">إجمالي مبيعات اليوم</p>
-          <h2 class="text-display-sm font-bold text-primary">
-            {{ totalSales.toLocaleString("ae-EG") }} ج.م
-          </h2>
-          <p class="text-xs text-primary font-bold">↑ ١٢٪ عن الأمس</p>
-        </div>
-        <div
-          class="w-14 h-14 bg-primary-container/10 rounded-full flex items-center justify-center text-primary"
-        >
-          <Banknote class="w-7 h-7" />
-        </div>
-      </div>
-
-      <!-- Completed count -->
-      <div
-        class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
-      >
-        <div class="space-y-1">
-          <p class="text-label-md text-on-white-variant">الطلبات المكتملة</p>
-          <h2 class="text-display-sm font-bold text-on-white">
-            {{ completedCount }} طلب
-          </h2>
-          <p class="text-xs text-on-white-variant">
-            متوسط سلة المشتريات:
-            {{ (totalSales / (completedCount || 1)).toFixed(2) }} ج.م
-          </p>
-        </div>
-        <div
-          class="w-14 h-14 bg-secondary-container/20 rounded-full flex items-center justify-center text-secondary"
-        >
-          <Receipt class="w-7 h-7" />
-        </div>
-      </div>
-
-      <!-- Cloud status -->
-      <div
-        class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
-      >
-        <div class="space-y-1">
-          <p class="text-label-md text-on-white-variant">
-            حالة السحابة والمزامنة
-          </p>
-          <div class="flex items-center gap-2">
-            <span
-              class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"
-            ></span>
-            <h2 class="text-headline-sm font-bold text-on-white">
-              جميع البيانات متزامنة
-            </h2>
-          </div>
-          <p class="text-xs text-on-white-variant">
-            تحديث تلقائي للمبيعات مفعل
-          </p>
-        </div>
-        <div
-          class="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center text-primary"
-        >
-          <CloudCog class="w-7 h-7" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Orders Table Section -->
+    <!-- Loading State -->
     <div
-      class="bg-white-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden"
+      v-if="status === 'pending' && ordersList.length === 0"
+      class="h-[calc(100vh-200px)] flex items-center justify-center"
     >
+      <div class="flex flex-col items-center gap-3 text-on-white-variant">
+        <LoaderCircle class="w-8 h-8 animate-spin text-primary" />
+        <span class="text-[13px]">جاري تحميل الطلبات...</span>
+      </div>
+    </div>
+
+    <template v-else>
+      <!-- Error State -->
       <div
-        class="p-6 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4"
+        v-if="status === 'error'"
+        class="bg-error/10 border border-error text-error p-6 rounded-2xl text-center"
       >
-        <h3 class="text-headline-sm font-bold text-on-white">
-          معاملات اليوم
-          <span class="text-label-md text-on-white-variant font-normal"
-            >(١٥ أكتوبر ٢٠٢٣)</span
-          >
-        </h3>
-        <div class="flex gap-2">
-          <div class="relative">
-            <Search
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-on-white-variant w-5 h-5"
-            />
-            <input
-              v-model="searchQuery"
-              class="bg-white text-on-white border-none rounded-xl pr-10 pl-4 py-2 w-full md:w-64 focus:ring-2 focus:ring-primary outline-none"
-              placeholder="البحث برقم الطلب أو العميل..."
-              type="text"
-            />
-          </div>
-          <button
-            class="bg-white-high text-on-white-variant p-2.5 rounded-xl hover:bg-outline-variant transition-colors cursor-pointer"
-          >
-            <Filter class="w-5 h-5" />
-          </button>
-        </div>
+        <CloudOff class="w-10 h-10 mb-2 inline-block" />
+        <p class="font-bold">فشل الاتصال بالخادم</p>
+        <p class="text-sm opacity-80">{{ error?.message }}</p>
+        <button
+          @click="refresh()"
+          class="mt-4 px-6 py-2 bg-error text-on-error rounded-full font-bold active:scale-95 transition-all cursor-pointer"
+        >
+          إعادة المحاولة
+        </button>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-right border-collapse">
-          <thead>
-            <tr
-              class="bg-white-low text-on-white-variant border-b border-outline-variant"
+      <template v-if="status !== 'error'">
+        <!-- Top KPI Dashboard -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div
+            class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
+          >
+            <div class="space-y-1">
+              <p class="text-label-md text-on-white-variant">إجمالي المبيعات</p>
+              <h2 class="text-display-sm font-bold text-primary">
+                {{ totalSales.toLocaleString("ar-EG") }} ج.م
+              </h2>
+              <p class="text-xs text-on-white-variant">
+                إجمالي المبيعات المعروضة
+              </p>
+            </div>
+            <div
+              class="w-14 h-14 bg-primary-container/10 rounded-full flex items-center justify-center text-primary"
             >
-              <th class="px-6 py-4 font-bold text-label-md">
-                رقم الطلب (Order ID)
-              </th>
-              <th class="px-6 py-4 font-bold text-label-md">الوقت (Time)</th>
-              <th class="px-6 py-4 font-bold text-label-md">
-                العميل (Customer)
-              </th>
-              <th class="px-6 py-4 font-bold text-label-md">
-                الإجمالي (Total)
-              </th>
-              <th class="px-6 py-4 font-bold text-label-md">المزامنة (Sync)</th>
-              <th class="px-6 py-4 font-bold text-label-md">
-                إجراءات (Actions)
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-outline-variant/40">
-            <tr
-              v-for="order in filteredOrders"
-              :key="order.id"
-              class="hover:bg-white-low transition-colors group"
+              <Banknote class="w-7 h-7" />
+            </div>
+          </div>
+
+          <div
+            class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
+          >
+            <div class="space-y-1">
+              <p class="text-label-md text-on-white-variant">الطلبات المكتملة</p>
+              <h2 class="text-display-sm font-bold text-on-white">
+                {{ completedCount }} طلب
+              </h2>
+              <p class="text-xs text-on-white-variant">
+                إجمالي {{ totalItems }} طلب في قاعدة البيانات
+              </p>
+            </div>
+            <div
+              class="w-14 h-14 bg-secondary-container/20 rounded-full flex items-center justify-center text-secondary"
             >
-              <td class="px-6 py-5">
-                <span class="font-bold text-on-white">{{ order.id }}</span>
-              </td>
-              <td class="px-6 py-5 text-on-white-variant">
-                {{ order.time }}
-              </td>
-              <td class="px-6 py-5">
-                <div class="flex items-center gap-2">
-                  <span
-                    class="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed text-xs font-bold"
-                  >
-                    {{ order.customerInitials }}
-                  </span>
-                  <span class="text-on-white">{{ order.customer }}</span>
-                </div>
-              </td>
-              <td class="px-6 py-5 font-bold text-primary">
-                {{ order.total.toLocaleString("ae-EG") }} ج.م
-              </td>
-              <td class="px-6 py-5">
+              <Receipt class="w-7 h-7" />
+            </div>
+          </div>
+
+          <div
+            class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
+          >
+            <div class="space-y-1">
+              <p class="text-label-md text-on-white-variant">
+                حالة السحابة والمزامنة
+              </p>
+              <div class="flex items-center gap-2">
+                <span
+                  class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"
+                ></span>
+                <h2 class="text-headline-sm font-bold text-on-white">
+                  متصل بـ Odoo
+                </h2>
+              </div>
+              <p class="text-xs text-on-white-variant">
+                بيانات حية من الخادم
+              </p>
+            </div>
+            <div
+              class="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center text-primary"
+            >
+              <CloudCog class="w-7 h-7" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Orders Table Section -->
+        <div
+          class="bg-white-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden"
+        >
+          <div
+            class="p-6 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4"
+          >
+            <h3 class="text-headline-sm font-bold text-on-white">
+              سجل الطلبات
+              <span class="text-label-md text-on-white-variant font-normal"
+                >({{ todayStr }})</span
+              >
+            </h3>
+            <div class="flex gap-2 flex-wrap">
+              <div class="relative">
+                <Search
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-on-white-variant w-5 h-5"
+                />
+                <input
+                  v-model="searchQuery"
+                  class="bg-white text-on-white border border-outline-variant rounded-xl pr-10 pl-4 py-2 w-full md:w-56 focus:ring-2 focus:ring-primary outline-none"
+                  placeholder="البحث برقم الطلب..."
+                  type="text"
+                />
+              </div>
+              <select
+                v-model="statusFilter"
+                class="bg-white text-on-white border border-outline-variant rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+              >
+                <option value="">جميع الحالات</option>
+                <option value="draft">مسودة</option>
+                <option value="paid">مدفوع</option>
+                <option value="done">منتهي</option>
+                <option value="cancelled">ملغي</option>
+                <option value="invoiced">مفوتر</option>
+              </select>
+              <button
+                @click="refresh()"
+                class="bg-white-high text-on-white-variant p-2.5 rounded-xl hover:bg-outline-variant transition-colors cursor-pointer"
+                title="تحديث"
+              >
+                <RefreshCw
+                  class="w-5 h-5"
+                  :class="{ 'animate-spin': status === 'pending' }"
+                />
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-right border-collapse">
+              <thead>
+                <tr
+                  class="bg-white-low text-on-white-variant border-b border-outline-variant"
+                >
+                  <th class="px-6 py-4 font-bold text-label-md">
+                    رقم الطلب
+                  </th>
+                  <th class="px-6 py-4 font-bold text-label-md">الوقت</th>
+                  <th class="px-6 py-4 font-bold text-label-md">العميل</th>
+                  <th class="px-6 py-4 font-bold text-label-md">الإجمالي</th>
+                  <th class="px-6 py-4 font-bold text-label-md">الحالة</th>
+                  <th class="px-6 py-4 font-bold text-label-md">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-outline-variant/40">
+                <tr
+                  v-for="order in ordersList"
+                  :key="order.id"
+                  class="hover:bg-white-low transition-colors group cursor-pointer"
+                  @click="openDetail(order.id)"
+                >
+                  <td class="px-6 py-5">
+                    <span class="font-bold text-on-white">{{
+                      order.name
+                    }}</span>
+                  </td>
+                  <td class="px-6 py-5 text-on-white-variant">
+                    {{ formatTime(order.date_order) }}
+                  </td>
+                  <td class="px-6 py-5">
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed text-xs font-bold"
+                      >
+                        {{
+                          order.partner_id
+                            ? order.partner_id[1].slice(0, 2)
+                            : "ن"
+                        }}
+                      </span>
+                      <span class="text-on-white">{{
+                        order.partner_id ? order.partner_id[1] : "عميل نقدي"
+                      }}</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-5 font-bold text-primary">
+                    {{ Number(order.amount_total).toLocaleString("ar-EG") }}
+                    ج.م
+                  </td>
+                  <td class="px-6 py-5">
+                    <div
+                      class="flex items-center gap-1.5 px-3 py-1 rounded-full w-fit text-[12px] font-bold"
+                      :class="
+                        statusColors[order.state] ||
+                        'bg-white-low text-on-white-variant'
+                      "
+                    >
+                      <component
+                        :is="
+                          statusIcons[order.state] || RefreshCw
+                        "
+                        class="w-[14px] h-[14px]"
+                      />
+                      <span>{{
+                        statusLabels[order.state] || order.state
+                      }}</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-5" @click.stop>
+                    <div class="flex items-center gap-2">
+                      <button
+                        @click="openDetail(order.id)"
+                        class="p-2 rounded-lg hover:bg-white text-primary transition-colors cursor-pointer"
+                        title="عرض التفاصيل"
+                      >
+                        <Eye class="w-[18px] h-[18px]" />
+                      </button>
+                      <button
+                        v-if="order.state !== 'cancelled'"
+                        @click="voidOrder(order.id, order.name)"
+                        class="text-error border border-error/20 px-3 py-1.5 rounded-lg hover:bg-error/10 transition-colors flex items-center gap-2 text-label-md font-bold cursor-pointer"
+                      >
+                        <Trash2 class="w-[14px] h-[14px]" />
+                        إلغاء
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Empty State -->
+                <tr v-if="ordersList.length === 0 && status !== 'pending'">
+                  <td colspan="6" class="p-16 text-center text-on-white-variant">
+                    <AlertCircle class="w-10 h-10 block mb-2 mx-auto text-outline" />
+                    <p class="font-bold">لا توجد طلبات مطابقة</p>
+                    <p class="text-sm mt-1">حاول تغيير معايير البحث أو التصفية</p>
+                  </td>
+                </tr>
+
+                <!-- Loading rows -->
+                <tr v-if="status === 'pending' && ordersList.length > 0">
+                  <td colspan="6" class="p-8 text-center">
+                    <LoaderCircle class="w-6 h-6 animate-spin inline-block text-primary" />
+                    <span class="mr-2 text-on-white-variant text-sm">جاري التحديث...</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div
+            class="p-4 border-t border-outline-variant flex items-center justify-between bg-white-low"
+          >
+            <p class="text-label-md text-on-white-variant">
+              عرض {{ startItem }}-{{ endItem }} من أصل {{ totalItems }} طلب
+            </p>
+            <div class="flex gap-2" v-if="totalPages > 1">
+              <button
+                @click="prevPage"
+                :disabled="currentPage <= 1"
+                class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white transition-all text-on-white-variant disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <ChevronLeft class="w-5 h-5" />
+              </button>
+              <button
+                v-for="p in totalPages"
+                :key="p"
+                @click="currentPage = p"
+                class="w-10 h-10 flex items-center justify-center rounded-lg font-bold cursor-pointer"
+                :class="
+                  currentPage === p
+                    ? 'bg-primary text-white shadow-md'
+                    : 'hover:bg-white text-on-white border border-outline-variant'
+                "
+              >
+                {{ p }}
+              </button>
+              <button
+                @click="nextPage"
+                :disabled="currentPage >= totalPages"
+                class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white transition-all text-on-white-variant disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <ChevronRight class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Asymmetric Detail Section (Bento Grid) -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div
+            class="lg:col-span-3 bg-white-highest/30 rounded-3xl p-8 border border-outline-variant backdrop-blur-sm shadow-sm flex flex-col justify-between"
+          >
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                <h4 class="text-headline-md font-bold text-on-white mb-2">
+                  تحليل المبيعات الفوري
+                </h4>
+                <p class="text-body-md text-on-white-variant">
+                  مراقبة أداء المبيعات والأوامر المنفذة
+                </p>
+              </div>
+            </div>
+            <div class="h-64 flex items-end gap-4 px-4 pt-6">
+              <div
+                class="flex-1 bg-primary/20 rounded-t-xl h-[30%] relative group"
+              >
                 <div
-                  class="flex items-center gap-1.5 px-3 py-1 rounded-full w-fit text-[12px] font-bold"
-                  :class="
-                    order.syncStatus === 'تمت'
-                      ? 'bg-primary/10 text-primary'
-                      : order.syncStatus === 'ملغاة'
-                        ? 'bg-error-container text-error'
-                        : 'bg-secondary-container text-secondary'
-                  "
+                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <component
-                    :is="
-                      order.syncStatus === 'تمت'
-                        ? CheckCircle
-                        : order.syncStatus === 'ملغاة'
-                          ? XCircle
-                          : RefreshCw
-                    "
-                    class="w-[14px] h-[14px]"
-                    :class="{
-                      'animate-spin': order.syncStatus === 'جاري المزامنة',
-                    }"
-                  />
-                  <span>{{ order.syncStatus }}</span>
+                  {{ (totalSales * 0.3).toFixed(0) }} ج.م
                 </div>
-              </td>
-              <td class="px-6 py-5">
-                <button
-                  v-if="order.syncStatus !== 'ملغاة'"
-                  @click="voidOrder(order.id)"
-                  class="text-error border border-error/20 px-3 py-1.5 rounded-lg hover:bg-error/10 transition-colors flex items-center gap-2 text-label-md font-bold cursor-pointer"
+              </div>
+              <div
+                class="flex-1 bg-primary/40 rounded-t-xl h-[50%] relative group"
+              >
+                <div
+                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <Trash2 class="w-[14px] h-[14px]" />
-                  إلغاء الطلب
-                </button>
-                <span v-else class="text-on-white-variant text-label-md"
-                  >-</span
+                  {{ (totalSales * 0.5).toFixed(0) }} ج.م
+                </div>
+              </div>
+              <div
+                class="flex-1 bg-primary/60 rounded-t-xl h-[85%] relative group"
+              >
+                <div
+                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-              </td>
-            </tr>
-            <tr v-if="filteredOrders.length === 0">
-              <td colspan="6" class="p-12 text-center text-on-white-variant">
-                لم يتم العثور على أي طلبات مطابقة للبحث.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  {{ (totalSales * 0.85).toFixed(0) }} ج.م
+                </div>
+              </div>
+              <div
+                class="flex-1 bg-primary-container rounded-t-xl h-[65%] relative group"
+              >
+                <div
+                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  {{ (totalSales * 0.65).toFixed(0) }} ج.م
+                </div>
+              </div>
+              <div
+                class="flex-1 bg-primary/30 rounded-t-xl h-[40%] relative group border-2 border-dashed border-primary"
+              >
+                <div
+                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  {{ (totalSales * 0.4).toFixed(0) }} ج.م
+                </div>
+              </div>
+            </div>
+          </div>
 
-      <!-- Pagination -->
-      <div
-        class="p-4 border-t border-outline-variant flex items-center justify-between bg-white-low"
-      >
-        <p class="text-label-md text-on-white-variant">
-          عرض 1 - {{ filteredOrders.length }} من أصل {{ ordersList.length }} طلب
-        </p>
-        <div class="flex gap-2">
-          <button
-            class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white transition-all text-on-white-variant cursor-pointer"
-          >
-            <ChevronLeft class="w-5 h-5" />
-          </button>
-          <button
-            class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-white font-bold shadow-md"
-          >
-            1
-          </button>
-          <button
-            class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white transition-all text-on-white cursor-pointer"
-          >
-            2
-          </button>
-          <button
-            class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white transition-all text-on-white-variant cursor-pointer"
-          >
-            <ChevronRight class="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Asymmetric Detail Section (Bento Grid) -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <div
-        class="lg:col-span-3 bg-white-highest/30 rounded-3xl p-8 border border-outline-variant backdrop-blur-sm shadow-sm flex flex-col justify-between"
-      >
-        <div class="flex justify-between items-start mb-6">
-          <div>
-            <h4 class="text-headline-md font-bold text-on-white mb-2">
-              تحليل المبيعات الفوري لحركة المشتريات
-            </h4>
-            <p class="text-body-md text-on-white-variant">
-              مراقبة الأداء لكل ساعة لفرع القاهرة بالتفصيل
-            </p>
-          </div>
-          <button
-            class="bg-primary-container text-white-container px-6 py-2 rounded-full font-bold flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
-          >
-            <Download class="w-5 h-5" />
-            تصدير كشف اليوم
-          </button>
-        </div>
-
-        <!-- Hourly Chart Visual -->
-        <div class="h-64 flex items-end gap-4 px-4 pt-6">
-          <div class="flex-1 bg-primary/20 rounded-t-xl h-[30%] relative group">
+          <div class="lg:col-span-1">
             <div
-              class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              ١,٢٠٠ ج.م
-            </div>
-          </div>
-          <div class="flex-1 bg-primary/40 rounded-t-xl h-[50%] relative group">
-            <div
-              class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              ٢,٥٠٠ ج.م
-            </div>
-          </div>
-          <div class="flex-1 bg-primary/60 rounded-t-xl h-[85%] relative group">
-            <div
-              class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              ٤,٨٠٠ ج.م
-            </div>
-          </div>
-          <div
-            class="flex-1 bg-primary-container rounded-t-xl h-[65%] relative group"
-          >
-            <div
-              class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              ٣,٩٠٠ ج.م
-            </div>
-          </div>
-          <div
-            class="flex-1 bg-primary/30 rounded-t-xl h-[40%] relative group border-2 border-dashed border-primary"
-          >
-            <div
-              class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              توقعات
-            </div>
-          </div>
-        </div>
-        <div
-          class="flex justify-between mt-4 px-4 text-label-md text-on-white-variant font-bold"
-        >
-          <span>٠٩:٠٠ ص</span>
-          <span>١١:٠٠ ص</span>
-          <span>٠١:٠٠ م</span>
-          <span>٠٣:٠٠ م</span>
-          <span>٠٥:٠٠ م</span>
-        </div>
-      </div>
-
-      <div class="lg:col-span-1">
-        <div
-          class="p-6 rounded-3xl shadow-xl flex flex-col justify-between aspect-square transition-all"
-          :class="
-            shiftOpen
-              ? 'bg-primary text-white shadow-primary/20'
-              : 'bg-white-variant text-on-white-variant border border-outline-variant shadow-sm'
-          "
-        >
-          <div>
-            <Store class="w-9 h-9 mb-4" />
-            <h5 class="text-headline-sm font-bold">
-              {{ shiftOpen ? "الوردية مفتوحة حالياً" : "الوردية مغلقة" }}
-            </h5>
-            <p class="text-body-md opacity-80 mt-1">
-              {{
+              class="p-6 rounded-3xl shadow-xl flex flex-col justify-between aspect-square transition-all"
+              :class="
                 shiftOpen
-                  ? "بدأت منذ ٥ ساعات بمبيعات مستقرة"
-                  : "يرجى فتح وردية جديدة لبدء البيع"
-              }}
-            </p>
+                  ? 'bg-primary text-white shadow-primary/20'
+                  : 'bg-white-variant text-on-white-variant border border-outline-variant shadow-sm'
+              "
+            >
+              <div>
+                <Store class="w-9 h-9 mb-4" />
+                <h5 class="text-headline-sm font-bold">
+                  {{
+                    shiftOpen ? "الوردية مفتوحة حالياً" : "الوردية مغلقة"
+                  }}
+                </h5>
+                <p class="text-body-md opacity-80 mt-1">
+                  {{
+                    shiftOpen
+                      ? "يمكنك إدارة الطلبات من هنا"
+                      : "يرجى فتح وردية جديدة لبدء البيع"
+                  }}
+                </p>
+              </div>
+              <button
+                @click="toggleShift"
+                class="w-full py-3 rounded-2xl font-bold border transition-colors cursor-pointer active:scale-95 text-center"
+                :class="
+                  shiftOpen
+                    ? 'bg-white/20 hover:bg-white/30 border-white/30 text-white'
+                    : 'bg-primary text-white hover:bg-primary/95 border-none'
+                "
+              >
+                {{
+                  shiftOpen ? "إغلاق الوردية الحالية" : "فتح وردية جديدة"
+                }}
+              </button>
+            </div>
           </div>
-          <button
-            @click="toggleShift"
-            class="w-full py-3 rounded-2xl font-bold border transition-colors cursor-pointer active:scale-95 text-center"
-            :class="
-              shiftOpen
-                ? 'bg-white/20 hover:bg-white/30 border-white/30 text-white'
-                : 'bg-primary text-white hover:bg-primary/95 border-none'
-            "
-          >
-            {{ shiftOpen ? "إغلاق الوردية الحالية" : "فتح وردية جديدة" }}
-          </button>
         </div>
-      </div>
-    </div>
+      </template>
+    </template>
 
-    <!-- Success Feedback Toast -->
+    <!-- Order Detail Drawer -->
+    <OrdersOrderDetailDrawer
+      v-model:isOpen="drawerOpen"
+      :order-id="selectedOrderId"
+      @refresh="refresh"
+    />
+
+    <!-- Feedback Toast -->
     <div
-      class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-on-white text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 transition-transform duration-500 z-[100]"
+      class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500"
       :class="
         showToast
           ? 'translate-y-0 opacity-100'
@@ -468,15 +600,20 @@ const toggleShift = () => {
       "
     >
       <div
-        class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center"
+        class="px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3"
+        :class="
+          toastType === 'success'
+            ? 'bg-on-white text-white'
+            : 'bg-error text-on-error'
+        "
       >
-        <CheckCheck class="w-5 h-5" />
-      </div>
-      <div>
-        <p class="font-bold">تم إلغاء الطلب بنجاح</p>
-        <p class="text-xs opacity-75 font-normal">
-          سيتم تحديث رصيد المخزن ومزامنة التغييرات تلقائياً
-        </p>
+        <component
+          :is="toastType === 'success' ? CheckCheck : AlertCircle"
+          class="w-5 h-5 shrink-0"
+        />
+        <div>
+          <p class="font-bold text-sm">{{ toastMessage }}</p>
+        </div>
       </div>
     </div>
   </div>

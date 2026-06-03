@@ -37,7 +37,6 @@ const emit = defineEmits<{
             <th class="px-6 py-4 font-bold text-label-md">الباركود</th>
             <th class="px-6 py-4 font-bold text-label-md">السعر البيعي</th>
             <th class="px-6 py-4 font-bold text-label-md">التكلفة</th>
-            <th class="px-6 py-4 font-bold text-label-md">الوزن / الحجم</th>
             <th class="px-6 py-4 font-bold text-label-md">المخزون الحالي</th>
             <th class="px-6 py-4 font-bold text-label-md">موقع التخزين</th>
             <th class="px-6 py-4 font-bold text-label-md text-center">
@@ -48,7 +47,7 @@ const emit = defineEmits<{
 
         <tbody class="divide-y divide-outline-variant">
           <tr v-if="status === 'pending' && !products.length">
-            <td colspan="9" class="p-16 text-center text-on-white-variant">
+            <td colspan="8" class="p-16 text-center text-on-white-variant">
               <RefreshCw
                 class="w-10 h-10 block mb-2 mx-auto animate-spin text-primary"
               />
@@ -131,9 +130,6 @@ const emit = defineEmits<{
               }}
               ج.m
             </td>
-            <td class="px-6 py-4 text-label-md text-on-white-variant font-mono">
-              {{ prod.weight || 0 }} كجم / {{ prod.volume || 0 }} م³
-            </td>
             <td class="px-6 py-4">
               <span
                 class="px-3 py-1 rounded-full text-label-md font-bold whitespace-nowrap"
@@ -143,12 +139,22 @@ const emit = defineEmits<{
                     : 'bg-primary/10 text-primary'
               "
               >
-                {{ prod.qty_available || 0 }} قطعة
+                {{ prod.qty_available || 0 }} {{ prod.to_weight ? "كجم" : "قطعة" }}
                 {{ (prod.qty_available || 0) <= 5 ? "(منخفض)" : "" }}
               </span>
             </td>
             <td class="px-6 py-4 text-label-md text-on-white-variant">
-              {{ prod.location?.name || "-" }}
+              <div v-if="prod.stock_locations?.length" class="space-y-1">
+                <div
+                  v-for="loc in prod.stock_locations.filter(l => l.location_name !== 'Unknown')"
+                  :key="loc.location_id"
+                  class="flex justify-between gap-2"
+                >
+                  <span>{{ loc.location_name }}</span>
+                  <span class="font-mono whitespace-nowrap">{{ loc.qty }} {{ prod.to_weight ? "كجم" : "قطعة" }}</span>
+                </div>
+              </div>
+              <span v-else>-</span>
             </td>
             <td class="px-6 py-4 text-center" @click.stop>
               <div class="flex items-center justify-center gap-2">
@@ -171,7 +177,7 @@ const emit = defineEmits<{
           </tr>
 
           <tr v-if="products.length === 0 && status !== 'pending'">
-            <td colspan="9" class="p-12 text-center text-on-white-variant">
+            <td colspan="8" class="p-12 text-center text-on-white-variant">
               <SearchX class="w-10 h-10 block mb-2 mx-auto text-outline" />
               لا توجد منتجات مطابقة في كتالوج المستودع.
             </td>

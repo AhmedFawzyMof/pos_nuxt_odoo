@@ -9,15 +9,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
-  const configId = parseInt(body.config_id as string, 10);
-  const action = String(body.action || "").trim();
-  const openingCash = parseFloat(body.opening_cash as string) || 0.0;
+  const orderId = Number(body?.order_id) || 0;
+  const lineId = Number(body?.line_id) || 0;
 
-  if (!configId || !["open", "close", "status"].includes(action)) {
+  if (!orderId) {
+    throw createError({ statusCode: 400, statusMessage: "معرّف الطلب مطلوب" });
+  }
+  if (!lineId) {
     throw createError({
       statusCode: 400,
-      statusMessage:
-        "Invalid request: config_id and action (open/close/status) required",
+      statusMessage: "معرّف الصنف المطلوب حذفه مطلوب",
     });
   }
 
@@ -30,33 +31,34 @@ export default defineEventHandler(async (event) => {
   if (connectErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to connect: ${connectErr.message}`,
+      statusMessage: `فشل الاتصال بـ Odoo: ${connectErr.message}`,
     });
   }
 
-  const [rpcErr, rpcResult] = await tryCatch(
-    odoo.execute_kw("pos.session", "control_pos_session_rpc", [
-      [configId, action, openingCash],
+  const [rpcErr, result] = await tryCatch(
+    odoo.execute_kw("pos.order", "remove_order_line_rpc", [
+      [orderId, lineId],
     ]),
   );
 
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `RPC failed: ${rpcErr.message}`,
+      statusMessage: `فشل حذف الصنف من الطلب: ${rpcErr.message}`,
     });
   }
 
-  if (rpcResult.status === "error") {
+  if (result?.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: rpcResult.message || "Session control failed",
+      statusMessage: result.message || "فشل حذف الصنف من الطلب",
     });
   }
 
   return {
     success: true,
-    session: rpcResult.session || null,
-    message: rpcResult.message || `Session ${action} successful`,
+    message: result?.message || "تم حذف الصنف من الطلب بنجاح",
+    order_id: orderId,
+    line_id: lineId,
   };
 });

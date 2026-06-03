@@ -84,7 +84,6 @@ watch(searchQuery, (newQuery) => {
         },
       );
       searchResults.value = res.data;
-      if (res.data.length === 0) isProductNotFound.value = true;
     } catch (err) {
       console.error(err);
     } finally {
@@ -330,10 +329,7 @@ const closeModal = async () => {
                     : 'يرجى اختيار موقع المصدر أولاً'
                 "
                 class="w-full h-11 bg-slate-50 border border-slate-200 rounded-lg pr-4 pl-12 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                @keydown.enter.prevent="
-                  if (isProductNotFound) handleAddNewProductFallback();
-                "
-              />
+      />
 
               <RefreshCw
                 v-if="isSearching"
@@ -387,22 +383,7 @@ const closeModal = async () => {
               </button>
             </div>
 
-            <div
-              v-if="isProductNotFound && !isSearching && searchQuery.trim()"
-              class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between"
-            >
-              <p class="text-xs text-amber-800">
-                ⚠️ لم يتم العثور على المنتج
-                <strong>"{{ searchQuery }}"</strong> في قاعدة أودو.
-              </p>
-              <button
-                @click="handleAddNewProductFallback"
-                type="button"
-                class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[11px] font-bold"
-              >
-                إدراج كمنتج جديد بالنظام
-              </button>
-            </div>
+
           </div>
 
           <div class="border border-slate-200 rounded-xl overflow-hidden">

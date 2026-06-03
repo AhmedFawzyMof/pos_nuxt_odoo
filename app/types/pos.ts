@@ -111,3 +111,69 @@ export interface SessionSummary {
   cash_balance: number;
   cash_movements: CashMovement[];
 }
+
+export interface POSOrder {
+  id: number;
+  name: string;
+  date_order: string;
+  partner_id: [number, string] | null;
+  user_id: [number, string];
+  session_id: [number, string];
+  amount_total: number;
+  amount_paid: number;
+  amount_tax: number;
+  amount_return: number;
+  state: "draft" | "paid" | "done" | "cancelled" | "invoiced";
+  pos_reference?: string;
+  company_id?: [number, string];
+  lines?: OrderLine[];
+  statement_ids?: OrderPayment[];
+}
+
+export interface OrderLine {
+  id: number;
+  product_id: [number, string];
+  qty: number;
+  price_unit: number;
+  price_subtotal: number;
+  discount: number;
+}
+
+export interface OrderPayment {
+  id: number;
+  payment_method_id: [number, string];
+  amount: number;
+  payment_date: string;
+  payment_status: "pending" | "paid" | "reversed";
+}
+
+export interface OrderListResponse {
+  success: boolean;
+  data: POSOrder[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  itemsPerPage: number;
+}
+
+export interface OrderDetailResponse {
+  success: boolean;
+  order: POSOrder;
+  lines: OrderLine[];
+  payments: OrderPayment[];
+}
+
+export interface OrderStatusPayload {
+  order_id: number;
+  state: string;
+}
+
+export interface OrderPaymentsPayload {
+  order_id: number;
+  payments: { id: number | null; method_id: number; amount: number }[];
+}
+
+export interface OrderRemoveItemPayload {
+  order_id: number;
+  line_id: number;
+}

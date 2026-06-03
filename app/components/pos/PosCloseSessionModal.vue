@@ -102,7 +102,7 @@ async function handleCloseSession() {
       body: {
         config_id: parseInt(props.configId, 10),
         action: "close",
-        opening_cash: 0,
+        opening_cash: closingCash.value,
       },
     });
 
@@ -111,7 +111,6 @@ async function handleCloseSession() {
       setTimeout(() => {
         emit("session-closed");
         emit("update:open", false);
-        router.push("/pos");
       }, 1500);
     }
   } catch (err: any) {

@@ -32,7 +32,26 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const positionalParams = [sessionId, body];
+  const sanitizedPayload = {
+    items: (body.items || []).map((item: any) => ({
+      product_id: Number(item.product_id || item.productId) || 0,
+      quantity: Number(item.quantity) || 0,
+      price: Number(item.price) || 0,
+      discount: Number(item.discount) || 0,
+    })),
+    payments: (body.payments || []).map((pay: any) => ({
+      amount: Number(pay.amount) || 0,
+      method_id: Number(pay.method_id || pay.methodId) || 0,
+    })),
+    customer_id: Number(body.customer_id || body.customerId) || false,
+    order_discount: Number(body.order_discount) || 0,
+    order_discount_type: body.order_discount_type || "amount",
+    service_fee: Number(body.service_fee) || 0,
+    service_fee_type: body.service_fee_type || "amount",
+    note: body.note || "",
+  };
+
+  const positionalParams = [sessionId, sanitizedPayload];
 
   const [rpcErr, rpcResult] = await tryCatch(
     odoo.execute_kw("pos.session", "create_pos_order_rpc", [positionalParams]),
