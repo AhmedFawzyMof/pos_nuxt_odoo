@@ -183,13 +183,10 @@ export default defineEventHandler(async (event) => {
         ? body.id
         : await getVariantIdFromTemplate(odoo, templateId);
 
-      if (finalProductId && body.qty_available !== undefined) {
-        await updateOdooStock(
-          odoo,
-          finalProductId,
-          Number(body.qty_available),
-          body.location_id,
-        );
+      if (finalProductId && body.location_qty?.length) {
+        for (const lq of body.location_qty) {
+          await updateOdooStock(odoo, finalProductId, Number(lq.qty), lq.location_id);
+        }
       }
     }
 

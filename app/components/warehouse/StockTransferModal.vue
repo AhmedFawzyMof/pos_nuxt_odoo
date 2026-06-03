@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
 import { GitMerge, X, AlertTriangle, RefreshCw, VideoOff, ScanBarcode, Trash2 } from '@lucide/vue';
+import { tryWeightBarcodeSearch } from "~/utils/weightBarcode";
 
 interface OdooLocation {
   id: number;
@@ -72,11 +73,12 @@ watch(searchQuery, (newQuery) => {
   clearTimeout(debounceTimeout);
   debounceTimeout = setTimeout(async () => {
     try {
+      const { searchQuery: actualQuery } = tryWeightBarcodeSearch(cleanQuery);
       const res = await $fetch<{ success: boolean; data: Product[] }>(
         "/api/products/search",
         {
           params: {
-            query: cleanQuery,
+            query: actualQuery,
             locationId: sourceLocation.value.id,
           },
         },

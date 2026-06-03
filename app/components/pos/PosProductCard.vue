@@ -72,6 +72,13 @@ const productImage = computed(() => {
       </h4>
       <div class="flex items-center gap-1 flex-wrap">
         <Badge
+          v-if="product.to_weight"
+          variant="outline"
+          class="text-[10px] px-1.5 py-0 text-amber-600 border-amber-200"
+        >
+          وزن
+        </Badge>
+        <Badge
           v-if="stockOut"
           variant="destructive"
           class="text-[10px] px-1.5 py-0"

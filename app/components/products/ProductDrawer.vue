@@ -52,7 +52,7 @@ const emit = defineEmits<{
     payload: Partial<Product> & {
       variants?: ProductVariantLocal[];
       pos_categ_ids?: number[];
-      location_id?: number | null;
+      location_qty?: { location_id: number; qty: number }[];
     },
   ): void;
   (e: "delete"): void;
@@ -71,9 +71,9 @@ const formActive = ref(true);
 const formAvailableInPos = ref(true);
 const formPosCategoryIds = ref<number[]>([]);
 const formIsWeight = ref(false);
-const formLocation = ref<number | null>(null);
+const formLocationQty = ref<{ locationId: number; locationName: string; quantity: number }[]>([]);
+const showLocationDropdown = ref(false);
 const showCategoryDropdown = ref(false);
-const formQtyAvailable = ref<number>(0);
 const formImage1920 = ref<string | null>(null);
 
 // مصفوفة إدارة المتغيرات الديناميكية
@@ -159,9 +159,8 @@ watch(
         formAvailableInPos.value = true;
         formIsWeight.value = false;
         formPosCategoryIds.value = [];
-        formLocation.value = locations.value?.[0]?.id || null;
-        formVariants.value = []; // تصفية المتغيرات عند الإضافة الجديدة
-        formQtyAvailable.value = 0;
+        formLocationQty.value = [];
+        formVariants.value = [];
         formImage1920.value = null;
       } else if (props.mode === "edit" && props.product) {
         formName.value = props.product.name;
@@ -180,8 +179,13 @@ watch(
           props.product.pos_categories?.map((c) => c.id) ||
           [];
         formIsWeight.value = (props.product as any).to_weight || false;
-        formLocation.value = null;
-        formQtyAvailable.value = props.product.qty_available || 0;
+        formLocationQty.value = ((props.product as any).stock_locations || []).map(
+          (sl: any) => ({
+            locationId: sl.location_id,
+            locationName: sl.location_name,
+            quantity: sl.qty || 0,
+          }),
+        );
 
         // Handling image data URLs or raw base64. Odoo returns base64, so prepend standard PNG header if needed or keep raw.
         // Usually if it's already a full data url from Odoo, we use it directly, or prepend helper.
@@ -259,6 +263,24 @@ const toggleCategory = (catId: number) => {
   }
 };
 
+const selectedLocationNames = computed(() => {
+  return formLocationQty.value.map((lq) => lq.locationName);
+});
+
+const addLocation = (loc: any) => {
+  if (!formLocationQty.value.find((lq) => lq.locationId === loc.id)) {
+    formLocationQty.value.push({
+      locationId: loc.id,
+      locationName: loc.display_name || loc.name,
+      quantity: 0,
+    });
+  }
+};
+
+const removeLocation = (index: number) => {
+  formLocationQty.value.splice(index, 1);
+};
+
 const saveProduct = () => {
   emit("save", {
     id: props.product?.id,
@@ -274,8 +296,10 @@ const saveProduct = () => {
     active: formActive.value,
     available_in_pos: formAvailableInPos.value,
     to_weight: formIsWeight.value,
-    location_id: formLocation.value,
-    qty_available: Number(formQtyAvailable.value),
+    location_qty: formLocationQty.value.map((lq) => ({
+      location_id: lq.locationId,
+      qty: Number(lq.quantity),
+    })),
     image_1920: formImage1920.value,
     variants: formVariants.value,
     pos_categ_ids: formPosCategoryIds.value,
@@ -463,18 +487,97 @@ const saveProduct = () => {
               </div>
             </div>
 
-            <div v-if="formVariants.length === 0" class="relative">
-              <input
-                v-model.number="formQtyAvailable"
-                class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
-                placeholder=" "
-                type="number"
-                min="0"
-              />
-              <label
-                class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
-                >الكمية المتوفرة في المستودع (الكمية الحالية)</label
+            <!-- Multi-location quantity section -->
+            <div class="space-y-3" v-if="formVariants.length === 0">
+              <h3
+                class="text-label-md font-bold text-on-white-variant flex items-center gap-2"
               >
+                <span class="w-1.5 h-4 bg-primary rounded-full"></span>
+                المواقع المخزنية والكميات
+              </h3>
+
+              <div class="relative">
+                <div
+                  class="relative min-h-12 border-b-2 border-outline-variant focus-within:border-primary transition-colors px-4 pt-4 pb-1 flex flex-wrap items-center gap-1 cursor-text"
+                  @click="showLocationDropdown = !showLocationDropdown"
+                >
+                  <span
+                    v-for="(lq, idx) in formLocationQty"
+                    class="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full"
+                  >
+                    {{ lq.locationName }}
+                    <button
+                      type="button"
+                      @click.stop="removeLocation(idx)"
+                      class="hover:bg-primary/20 rounded-full p-0.5"
+                    >
+                      <X class="w-3 h-3" />
+                    </button>
+                  </span>
+                  <span
+                    v-if="formLocationQty.length === 0"
+                    class="text-on-white-variant text-body-md"
+                    >اختر مواقع التخزين</span
+                  >
+                  <ChevronDown
+                    class="absolute left-4 top-3.5 w-5 h-5 text-on-white-variant pointer-events-none"
+                  />
+                </div>
+                <div
+                  v-if="showLocationDropdown && locations.length > 0"
+                  class="absolute z-10 w-full mt-1 bg-white border border-outline-variant rounded-xl shadow-lg max-h-40 overflow-y-auto"
+                >
+                  <button
+                    v-for="loc in locations"
+                    :key="loc.id"
+                    @mousedown.prevent="addLocation(loc)"
+                    class="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-white text-body-md text-on-white"
+                  >
+                    <span
+                      class="w-4 h-4 border rounded flex items-center justify-center shrink-0"
+                      :class="
+                        formLocationQty.find(
+                          (lq) => lq.locationId === loc.id,
+                        )
+                          ? 'bg-primary border-primary'
+                          : 'border-outline'
+                      "
+                    >
+                      <Check
+                        v-if="
+                          formLocationQty.find(
+                            (lq) => lq.locationId === loc.id,
+                          )
+                        "
+                        class="w-3 h-3 text-white"
+                      />
+                    </span>
+                    {{ loc.display_name || loc.name }}
+                  </button>
+                </div>
+              </div>
+
+              <div
+                v-for="(lq, idx) in formLocationQty"
+                :key="lq.locationId"
+                class="relative"
+              >
+                <input
+                  v-model.number="lq.quantity"
+                  class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
+                  placeholder=" "
+                  type="number"
+                  min="0"
+                />
+                <label
+                  class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                  >{{
+                    formIsWeight
+                      ? `الموقع ${idx + 1} الكمية (كجم)`
+                      : `الموقع ${idx + 1} الكمية`
+                  }}</label
+                >
+              </div>
             </div>
 
             <div
@@ -597,56 +700,10 @@ const saveProduct = () => {
                 <div class="flex flex-col">
                   <span>المنتج يباع بالوزن</span>
                   <span class="text-[10px] text-on-white-variant"
-                    >تفعيل هذا الخيار لإظهار حقول الوزن والحجم الخاصة
-                    بالمنتج</span
+                    >تفعيل هذا الخيار لتظهر الكمية بالكيلوجرام بدلاً من القطع</span
                   >
                 </div>
               </label>
-            </div>
-
-            <div v-if="formIsWeight" class="grid grid-cols-2 gap-4">
-              <div class="relative">
-                <input
-                  v-model="formWeight"
-                  class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
-                  placeholder=" "
-                  type="number"
-                  step="0.01"
-                />
-                <label
-                  class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
-                  >الوزن الصافي (كجم)</label
-                >
-              </div>
-              <div class="relative">
-                <input
-                  v-model="formVolume"
-                  class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
-                  placeholder=" "
-                  type="number"
-                  step="0.001"
-                />
-                <label
-                  class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
-                  >الحجم الكلي (م³)</label
-                >
-              </div>
-            </div>
-
-            <div class="relative mt-4" v-if="props.mode !== 'edit'">
-              <select
-                v-model="formLocation"
-                class="peer w-full h-12 px-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all appearance-none"
-              >
-                <option :value="null" disabled>اختر موقع التخزين</option>
-                <option v-for="loc in locations" :key="loc.id" :value="loc.id">
-                  {{ loc.display_name || loc.name }}
-                </option>
-              </select>
-              <label
-                class="absolute right-4 -top-3 text-[10px] text-on-white-variant transition-all pointer-events-none bg-white px-1"
-                >موقع التخزين (Storage Location)</label
-              >
             </div>
 
             <div class="relative mt-4">

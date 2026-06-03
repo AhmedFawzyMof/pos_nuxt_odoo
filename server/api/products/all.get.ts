@@ -44,12 +44,12 @@ export default defineEventHandler(async (event) => {
     for (const loc of locationsData) locationMap[loc.id] = loc.name;
 
     const productIds = products.map((p: any) => p.id);
-    let productLocationMap: Record<number, number> = {};
+    let productStockLocations: Record<number, { location_id: number; location_name: string; qty: number }[]> = {};
     if (productIds.length > 0) {
       const quants = await odoo.searchRead(
         "stock.quant",
         [["product_id", "in", productIds]],
-        ["product_id", "location_id"],
+        ["product_id", "location_id", "quantity"],
       );
       for (const q of quants) {
         const pid = Array.isArray((q as any).product_id)
@@ -58,8 +58,13 @@ export default defineEventHandler(async (event) => {
         const lid = Array.isArray((q as any).location_id)
           ? (q as any).location_id[0]
           : (q as any).location_id;
-        if (lid && !productLocationMap[pid]) {
-          productLocationMap[pid] = lid;
+        if (lid) {
+          if (!productStockLocations[pid]) productStockLocations[pid] = [];
+          productStockLocations[pid].push({
+            location_id: lid,
+            location_name: locationMap[lid] || "Unknown",
+            qty: (q as any).quantity || 0,
+          });
         }
       }
     }
@@ -72,7 +77,8 @@ export default defineEventHandler(async (event) => {
         }),
       );
 
-      const locId = productLocationMap[product.id];
+      const stockLocs = productStockLocations[product.id] || [];
+      const firstLoc = stockLocs[0];
       return {
         ...product,
         list_price: product.lst_price || product.list_price || 0,
@@ -81,9 +87,10 @@ export default defineEventHandler(async (event) => {
           ? { id: product.categ_id[0], name: product.categ_id[1] }
           : null,
         location:
-          locId && locationMap[locId]
-            ? { id: locId, name: locationMap[locId] }
+          firstLoc && locationMap[firstLoc.location_id]
+            ? { id: firstLoc.location_id, name: firstLoc.location_name }
             : null,
+        stock_locations: stockLocs,
       };
     });
 

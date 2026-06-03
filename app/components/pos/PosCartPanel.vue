@@ -11,6 +11,10 @@ const props = withDefaults(defineProps<{
   bordered: true,
 });
 
+const emit = defineEmits<{
+  checkout: [];
+}>();
+
 const cart = usePosCartStore();
 
 const isEmpty = computed(() => cart.items.length === 0);
@@ -65,12 +69,6 @@ const isEmpty = computed(() => cart.items.length === 0);
             {{ cart.subtotal.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
           </span>
         </div>
-        <div class="flex justify-between text-muted-foreground">
-          <span>الضريبة</span>
-          <span class="tabular-nums font-medium">
-            {{ cart.taxTotal.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
-          </span>
-        </div>
         <div class="flex justify-between text-base font-bold pt-1 border-t border-outline-variant/20">
           <span>الإجمالي</span>
           <span class="tabular-nums text-primary">
@@ -83,6 +81,7 @@ const isEmpty = computed(() => cart.items.length === 0);
         class="w-full gap-2 cursor-pointer"
         :disabled="isEmpty"
         size="lg"
+        @click="emit('checkout')"
       >
         <Receipt class="w-4 h-4" />
         إتمام الطلب

@@ -13,6 +13,9 @@ const emit = defineEmits<{
 }>();
 
 const localQty = ref(props.item.quantity);
+const isWeight = computed(() => props.item.product.to_weight);
+const step = computed(() => (isWeight.value ? 0.01 : 1));
+const min = computed(() => (isWeight.value ? 0.01 : 1));
 
 const lineTotal = computed(() => {
   const total = props.item.price * localQty.value;
@@ -21,13 +24,22 @@ const lineTotal = computed(() => {
 });
 
 function increment() {
-  localQty.value++;
+  localQty.value = Math.round((localQty.value + step.value) * 100) / 100;
   emit("updateQuantity", localQty.value);
 }
 
 function decrement() {
-  if (localQty.value > 1) {
-    localQty.value--;
+  if (localQty.value > min.value) {
+    localQty.value = Math.round((localQty.value - step.value) * 100) / 100;
+    emit("updateQuantity", localQty.value);
+  }
+}
+
+function onInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const val = parseFloat(target.value);
+  if (!isNaN(val) && val >= min.value) {
+    localQty.value = Math.round(val * 100) / 100;
     emit("updateQuantity", localQty.value);
   }
 }
@@ -45,17 +57,27 @@ function decrement() {
       <div class="flex items-center gap-2 mt-1.5">
         <button
           @click="decrement"
-          class="h-7 w-7 rounded-full border border-outline-variant/50 flex items-center justify-center hover:bg-muted/70 transition-colors cursor-pointer"
+          class="h-7 w-7 rounded-full border border-outline-variant/50 flex items-center justify-center hover:bg-muted/70 transition-colors cursor-pointer shrink-0"
         >
           <Minus class="w-3.5 h-3.5" />
         </button>
-        <span class="text-sm font-bold tabular-nums w-6 text-center">{{ localQty }}</span>
+        <input
+          v-if="isWeight"
+          type="number"
+          :value="localQty"
+          @input="onInput"
+          step="0.01"
+          min="0.01"
+          class="w-16 text-sm font-bold tabular-nums text-center bg-transparent border border-outline-variant/50 rounded-md px-1 py-0.5"
+        />
+        <span v-else class="text-sm font-bold tabular-nums w-6 text-center">{{ localQty }}</span>
         <button
           @click="increment"
-          class="h-7 w-7 rounded-full border border-outline-variant/50 flex items-center justify-center hover:bg-muted/70 transition-colors cursor-pointer"
+          class="h-7 w-7 rounded-full border border-outline-variant/50 flex items-center justify-center hover:bg-muted/70 transition-colors cursor-pointer shrink-0"
         >
           <Plus class="w-3.5 h-3.5" />
         </button>
+        <span v-if="isWeight" class="text-xs text-muted-foreground">كجم</span>
       </div>
     </div>
     <div class="flex flex-col items-end gap-1 shrink-0">

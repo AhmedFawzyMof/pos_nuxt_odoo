@@ -50,12 +50,64 @@ export interface CartItem {
   quantity: number;
   price: number;
   discount: number;
-  tax_ids?: number[];
-  tax_percentage?: number;
 }
 
 export interface Cart {
   items: CartItem[];
   note: string;
   customer_id?: number | null;
+}
+
+export interface PaymentMethod {
+  id: number;
+  name: string;
+  is_cash_count: boolean;
+}
+
+export interface PaymentLine {
+  method_id: number;
+  method_name: string;
+  amount: number;
+}
+
+export interface OrderPayload {
+  session_id: number;
+  items: CartItem[];
+  payments: PaymentLine[];
+  note: string;
+  order_discount: number;
+  order_discount_type: "fixed" | "percent";
+  service_fee: number;
+  service_fee_type: "fixed" | "percent";
+  customer_id: number | null;
+  location_id: number | null;
+}
+
+export interface OrderResponse {
+  success: boolean;
+  order_id: number;
+  name: string;
+  message: string;
+}
+
+export interface CashMovementResponse {
+  success: boolean;
+  new_balance: number;
+  message: string;
+}
+
+export interface CashMovement {
+  type: "cash_in" | "cash_out";
+  amount: number;
+  reason: string;
+  date?: string;
+}
+
+export interface SessionSummary {
+  session_name: string;
+  orders_count: number;
+  total_sales: number;
+  opening_cash: number;
+  cash_balance: number;
+  cash_movements: CashMovement[];
 }

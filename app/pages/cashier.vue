@@ -1,21 +1,40 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import { AlertCircle, ShoppingCart, Plus, MapPin } from "@lucide/vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { parseWeightBarcode } from "~/utils/weightBarcode";
+import { AlertCircle, ShoppingCart, Plus, MapPin, Wallet, LogOut } from "@lucide/vue";
 import PosSearchBar from "~/components/pos/PosSearchBar.vue";
 import PosCategoryFilter from "~/components/pos/PosCategoryFilter.vue";
 import PosProductGrid from "~/components/pos/PosProductGrid.vue";
 import PosCartPanel from "~/components/pos/PosCartPanel.vue";
 import PosProductDetailSheet from "~/components/pos/PosProductDetailSheet.vue";
+import PosVaultModal from "~/components/pos/PosVaultModal.vue";
+import PosPaymentSheet from "~/components/pos/PosPaymentSheet.vue";
+import PosCloseSessionModal from "~/components/pos/PosCloseSessionModal.vue";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { usePosCartStore } from "~~/stores/pos-cart";
-import type { POSProduct, POSCategory } from "~/types/pos";
+import type { POSProduct, POSCategory, PaymentMethod } from "~/types/pos";
 
 const route = useRoute();
 const configId = computed(() => {
   const raw = route.query.config_id;
   return Array.isArray(raw) ? raw[0] : (raw ?? "");
 });
+
+const sessionId = ref<number | null>(null);
+
+async function fetchSessionFromApi(configIdVal: string) {
+  try {
+    const res = await $fetch<{ success: boolean; session: any }>("/api/pos/status", {
+      params: { config_id: configIdVal },
+    });
+    if (res.success && res.session?.session_id) {
+      sessionId.value = res.session.session_id;
+    }
+  } catch {
+    sessionId.value = null;
+  }
+}
 
 const cart = usePosCartStore();
 
@@ -28,21 +47,17 @@ const currentPage = ref(1);
 const selectedProduct = ref<POSProduct | null>(null);
 const showProductDetail = ref(false);
 const showProductsDrawer = ref(false);
+const showVaultModal = ref(false);
+const showCloseSessionModal = ref(false);
+const showPaymentSheet = ref(false);
 
 const allProducts = ref<POSProduct[]>([]);
 const categories = ref<POSCategory[]>([]);
-const taxes = ref<any[]>([]);
+const paymentMethods = ref<PaymentMethod[]>([]);
 const locations = ref<any[]>([]);
 const loading = ref(false);
 const error = ref("");
 const totalPages = ref(1);
-
-const filteredProducts = computed(() => {
-  if (!activeCategoryId.value) return allProducts.value;
-  return allProducts.value.filter((p) =>
-    p.pos_categ_ids?.includes(activeCategoryId.value!),
-  );
-});
 
 const hasMore = computed(() => currentPage.value < totalPages.value);
 
@@ -57,6 +72,7 @@ async function loadMasterData(page = 1) {
     };
     if (activeCategoryId.value) query.category_id = activeCategoryId.value;
     if (searchQuery.value) query.search = searchQuery.value;
+    if (selectedLocationId.value) query.location_id = selectedLocationId.value;
 
     const res = await $fetch<any>("/api/pos/master-data", { query });
 
@@ -72,7 +88,7 @@ async function loadMasterData(page = 1) {
       if (page === 1 && res.categories) {
         categories.value = res.categories;
       }
-      if (res.taxes) taxes.value = res.taxes;
+      if (res.paymentMethods) paymentMethods.value = res.paymentMethods;
       if (res.locations) locations.value = res.locations;
     }
   } catch (err: any) {
@@ -95,19 +111,32 @@ function handleCategorySelect(categoryId: number | null) {
   loadMasterData(1);
 }
 
+let searchDebounce: NodeJS.Timeout;
+
 function handleSearch(val: string) {
-  searchQuery.value = val;
-  currentPage.value = 1;
-  allProducts.value = [];
-  loadMasterData(1);
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(async () => {
+    searchQuery.value = val;
+    currentPage.value = 1;
+    allProducts.value = [];
+    await loadMasterData(1);
+    tryAutoAddFirstResult();
+  }, 300);
 }
 
-function handleScan(barcode: string) {
-  searchQuery.value = barcode;
+async function handleScan(barcode: string) {
   scannerActive.value = false;
+
+  // Try weight barcode parsing first
+  const parsed = parseWeightBarcode(barcode);
+  const searchBarcode = parsed ? parsed.productCode : barcode;
+  const weightKg = parsed ? parsed.weightKg : null;
+
+  searchQuery.value = searchBarcode;
   currentPage.value = 1;
   allProducts.value = [];
-  loadMasterData(1);
+  await loadMasterData(1);
+  tryAutoAddFirstResult(weightKg);
 }
 
 function handleLocationChange(event: Event) {
@@ -130,10 +159,8 @@ function handleProductClick(product: POSProduct) {
 }
 
 function handleAddToCart(product: POSProduct) {
-  const taxItem = taxes.value.find((t: any) =>
-    product.taxes_id?.includes(t.id),
-  );
-  cart.addItem(product, 1, taxItem?.amount || 0);
+  const qty = product.to_weight ? 0.01 : 1;
+  cart.addItem(product, qty);
 }
 
 function handleAddToCartFromDetail(product: POSProduct) {
@@ -141,13 +168,43 @@ function handleAddToCartFromDetail(product: POSProduct) {
   showProductDetail.value = false;
 }
 
-watch(configId, (id) => {
-  if (id) {
-    currentPage.value = 1;
-    allProducts.value = [];
-    loadMasterData(1);
+function handleCheckout() {
+  if (cart.items.length === 0) return;
+  showPaymentSheet.value = true;
+}
+
+function handleOrderCompleted() {
+  showPaymentSheet.value = false;
+}
+
+function tryAutoAddFirstResult(customWeightKg?: number | null) {
+  if (searchQuery.value && allProducts.value.length > 0) {
+    const product = allProducts.value[0];
+    if (product) {
+      const qty = customWeightKg ?? (product.to_weight ? 0.01 : 1);
+      cart.addItem(product, qty);
+    }
   }
-}, { immediate: true });
+}
+
+watch(
+  configId,
+  async (id) => {
+    if (id) {
+      const raw = route.query.session_id;
+      if (raw) {
+        const parsed = Number(Array.isArray(raw) ? raw[0] : raw);
+        sessionId.value = Number.isFinite(parsed) ? parsed : null;
+      } else {
+        await fetchSessionFromApi(id);
+      }
+      currentPage.value = 1;
+      allProducts.value = [];
+      loadMasterData(1);
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -173,7 +230,9 @@ watch(configId, (id) => {
 
       <div class="px-4 py-2 border-b border-outline-variant/20 bg-card/40">
         <div class="flex items-center gap-3">
-          <div class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+          <div
+            class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+          >
             <MapPin class="w-3.5 h-3.5" />
             <select
               :value="selectedLocationId ?? ''"
@@ -181,11 +240,7 @@ watch(configId, (id) => {
               class="bg-transparent border-none text-xs font-medium text-foreground cursor-pointer focus:outline-none"
             >
               <option value="">جميع المواقع</option>
-              <option
-                v-for="loc in locations"
-                :key="loc.id"
-                :value="loc.id"
-              >
+              <option v-for="loc in locations" :key="loc.id" :value="loc.id">
                 {{ loc.name }}
               </option>
             </select>
@@ -196,6 +251,32 @@ watch(configId, (id) => {
             :horizontal="true"
             @select="handleCategorySelect"
           />
+          <div
+            class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+          >
+            <Wallet class="w-3.5 h-3.5" />
+            <button
+              @click="showVaultModal = true"
+              :disabled="!sessionId"
+              class="bg-transparent border-none text-xs font-medium text-foreground cursor-pointer focus:outline-none hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+              :title="!sessionId ? 'يجب فتح وردية أولاً' : 'حركات الخزنة'"
+            >
+              الخزنة
+            </button>
+          </div>
+          <div
+            class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+          >
+            <LogOut class="w-3.5 h-3.5" />
+            <button
+              @click="showCloseSessionModal = true"
+              :disabled="!sessionId"
+              class="bg-transparent border-none text-xs font-medium text-red-500 cursor-pointer focus:outline-none hover:text-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              :title="!sessionId ? 'يجب فتح وردية أولاً' : 'إغلاق الوردية'"
+            >
+              إغلاق الوردية
+            </button>
+          </div>
         </div>
       </div>
 
@@ -209,7 +290,7 @@ watch(configId, (id) => {
         </div>
 
         <PosProductGrid
-          :products="filteredProducts"
+          :products="allProducts"
           :loading="loading"
           :has-more="hasMore"
           :selected-location-id="selectedLocationId"
@@ -226,9 +307,7 @@ watch(configId, (id) => {
     >
       <!-- Mobile: search + warehouse + categories at top of cart -->
       <div class="lg:hidden">
-        <div
-          class="px-4 py-3 border-b border-outline-variant/20 bg-card/50"
-        >
+        <div class="px-4 py-3 border-b border-outline-variant/20 bg-card/50">
           <div class="flex items-center gap-2">
             <PosSearchBar
               v-model="searchQuery"
@@ -241,7 +320,9 @@ watch(configId, (id) => {
         </div>
         <div class="px-4 py-2 border-b border-outline-variant/20 bg-card/40">
           <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+            <div
+              class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+            >
               <MapPin class="w-3.5 h-3.5" />
               <select
                 :value="selectedLocationId ?? ''"
@@ -249,11 +330,7 @@ watch(configId, (id) => {
                 class="bg-transparent border-none text-xs font-medium text-foreground cursor-pointer focus:outline-none"
               >
                 <option value="">جميع المواقع</option>
-                <option
-                  v-for="loc in locations"
-                  :key="loc.id"
-                  :value="loc.id"
-                >
+                <option v-for="loc in locations" :key="loc.id" :value="loc.id">
                   {{ loc.name }}
                 </option>
               </select>
@@ -264,12 +341,41 @@ watch(configId, (id) => {
               :horizontal="true"
               @select="handleCategorySelect"
             />
+            <div
+              class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+            >
+              <Wallet class="w-3.5 h-3.5" />
+              <button
+                @click="showVaultModal = true"
+                :disabled="!sessionId"
+                class="bg-transparent border-none text-xs font-medium text-foreground cursor-pointer focus:outline-none hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                :title="!sessionId ? 'يجب فتح وردية أولاً' : 'حركات الخزنة'"
+              >
+                الخزنة
+              </button>
+            </div>
+            <div
+              class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+            >
+              <LogOut class="w-3.5 h-3.5" />
+              <button
+                @click="showCloseSessionModal = true"
+                :disabled="!sessionId"
+                class="bg-transparent border-none text-xs font-medium text-red-500 cursor-pointer focus:outline-none hover:text-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                :title="!sessionId ? 'يجب فتح وردية أولاً' : 'إغلاق الوردية'"
+              >
+                إغلاق الوردية
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Cart panel fills remaining space -->
-      <PosCartPanel :bordered="false" />
+      <PosCartPanel
+        :bordered="false"
+        @checkout="handleCheckout"
+      />
 
       <!-- Mobile: add products button -->
       <div class="lg:hidden border-t border-outline-variant/20 bg-card">
@@ -292,7 +398,9 @@ watch(configId, (id) => {
         side="bottom"
         class="h-[85vh] p-0 flex flex-col rounded-t-2xl"
       >
-        <div class="px-4 py-3 border-b border-outline-variant/20 bg-card/50 shrink-0">
+        <div
+          class="px-4 py-3 border-b border-outline-variant/20 bg-card/50 shrink-0"
+        >
           <div class="flex items-center gap-2">
             <PosSearchBar
               v-model="searchQuery"
@@ -303,9 +411,13 @@ watch(configId, (id) => {
             />
           </div>
         </div>
-        <div class="px-4 py-2 border-b border-outline-variant/20 bg-card/40 shrink-0">
+        <div
+          class="px-4 py-2 border-b border-outline-variant/20 bg-card/40 shrink-0"
+        >
           <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+            <div
+              class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+            >
               <MapPin class="w-3.5 h-3.5" />
               <select
                 :value="selectedLocationId ?? ''"
@@ -313,11 +425,7 @@ watch(configId, (id) => {
                 class="bg-transparent border-none text-xs font-medium text-foreground cursor-pointer focus:outline-none"
               >
                 <option value="">جميع المواقع</option>
-                <option
-                  v-for="loc in locations"
-                  :key="loc.id"
-                  :value="loc.id"
-                >
+                <option v-for="loc in locations" :key="loc.id" :value="loc.id">
                   {{ loc.name }}
                 </option>
               </select>
@@ -328,6 +436,32 @@ watch(configId, (id) => {
               :horizontal="true"
               @select="handleCategorySelect"
             />
+            <div
+              class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+            >
+              <Wallet class="w-3.5 h-3.5" />
+              <button
+                @click="showVaultModal = true"
+                :disabled="!sessionId"
+                class="bg-transparent border-none text-xs font-medium text-foreground cursor-pointer focus:outline-none hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                :title="!sessionId ? 'يجب فتح وردية أولاً' : 'حركات الخزنة'"
+              >
+                الخزنة
+              </button>
+            </div>
+            <div
+              class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+            >
+              <LogOut class="w-3.5 h-3.5" />
+              <button
+                @click="showCloseSessionModal = true"
+                :disabled="!sessionId"
+                class="bg-transparent border-none text-xs font-medium text-red-500 cursor-pointer focus:outline-none hover:text-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                :title="!sessionId ? 'يجب فتح وردية أولاً' : 'إغلاق الوردية'"
+              >
+                إغلاق الوردية
+              </button>
+            </div>
           </div>
         </div>
         <div class="flex-1 overflow-y-auto p-3">
@@ -340,7 +474,7 @@ watch(configId, (id) => {
           </div>
 
           <PosProductGrid
-            :products="filteredProducts"
+            :products="allProducts"
             :loading="loading"
             :has-more="hasMore"
             :selected-location-id="selectedLocationId"
@@ -358,11 +492,30 @@ watch(configId, (id) => {
       @update:open="showProductDetail = $event"
       @add-to-cart="handleAddToCartFromDetail"
     />
+
+    <PosPaymentSheet
+      v-if="sessionId"
+      v-model:open="showPaymentSheet"
+      :payment-methods="paymentMethods"
+      :session-id="sessionId"
+      :config-id="configId"
+      @order-completed="handleOrderCompleted"
+    />
+
+    <PosVaultModal
+      v-if="sessionId"
+      v-model:open="showVaultModal"
+      :session-id="sessionId"
+    />
+
+    <PosCloseSessionModal
+      v-if="sessionId"
+      v-model:open="showCloseSessionModal"
+      :session-id="sessionId"
+      :config-id="configId"
+    />
   </div>
-  <div
-    v-else
-    class="flex items-center justify-center h-[calc(100vh-8rem)]"
-  >
+  <div v-else class="flex items-center justify-center h-[calc(100vh-8rem)]">
     <div class="text-center space-y-3">
       <ShoppingCart class="h-12 w-12 mx-auto text-muted-foreground/40" />
       <p class="text-muted-foreground">لم يتم تحديد جهاز كاشير</p>

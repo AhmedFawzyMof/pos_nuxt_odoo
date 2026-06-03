@@ -65,12 +65,12 @@ const emit = defineEmits<{
           >
             <td class="px-6 py-4">
               <span
-                class="px-2.5 py-1 rounded-full text-[11px] font-bold"
+                class="px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap"
                 :class="
                   prod.available_in_pos
                     ? 'bg-success/10 text-success'
                     : 'bg-outline-variant text-on-white-variant'
-                "
+              "
               >
                 {{
                   prod.available_in_pos ? "متاح بنظام البيع" : "مخفي بالخلفية"
@@ -136,12 +136,12 @@ const emit = defineEmits<{
             </td>
             <td class="px-6 py-4">
               <span
-                class="px-3 py-1 rounded-full text-label-md font-bold"
+                class="px-3 py-1 rounded-full text-label-md font-bold whitespace-nowrap"
                 :class="
                   (prod.qty_available || 0) <= 5
                     ? 'bg-error/10 text-error'
                     : 'bg-primary/10 text-primary'
-                "
+              "
               >
                 {{ prod.qty_available || 0 }} قطعة
                 {{ (prod.qty_available || 0) <= 5 ? "(منخفض)" : "" }}

@@ -12,8 +12,16 @@ export default defineEventHandler(async (event) => {
   const configId = query.config_id
     ? parseInt(query.config_id as string, 10)
     : null;
+
   const page = Math.max(1, parseInt((query.page as string) || "1", 10));
   const limit = Math.max(1, parseInt((query.limit as string) || "28", 10));
+  const categoryId = query.category_id
+    ? parseInt(query.category_id as string, 10)
+    : null;
+
+  const locationId = query.location_id
+    ? parseInt(query.location_id as string, 10)
+    : null;
 
   if (!configId) {
     throw createError({
@@ -38,7 +46,7 @@ export default defineEventHandler(async (event) => {
 
   const [rpcErr, rpcResult] = await tryCatch(
     odoo.execute_kw("pos.config", "get_pos_master_data_rpc", [
-      [configId, page, limit],
+      [configId, page, limit, categoryId, locationId],
     ]),
   );
 
@@ -61,13 +69,29 @@ export default defineEventHandler(async (event) => {
   const pagination = odooData.pagination || {};
 
   const [locErr, locData] = await tryCatch(
-    odoo.searchRead("stock.location", [["usage", "=", "internal"]], ["id", "name"]),
+    odoo.searchRead(
+      "stock.location",
+      [["usage", "=", "internal"]],
+      ["id", "name"],
+    ),
   );
 
   const locationMap: Record<number, string> = {};
   if (!locErr && locData) {
     for (const loc of locData as any[]) {
       locationMap[loc.id] = loc.name;
+    }
+  }
+
+  const categoryCountMap: Record<number, number> = {};
+  if (odooData.products && Array.isArray(odooData.products)) {
+    for (const p of odooData.products) {
+      const categoriesAssigned = p.pos_categories || [];
+      for (const cat of categoriesAssigned) {
+        if (cat.id) {
+          categoryCountMap[cat.id] = (categoryCountMap[cat.id] || 0) + 1;
+        }
+      }
     }
   }
 
@@ -80,6 +104,9 @@ export default defineEventHandler(async (event) => {
         display_name: p.display_name,
         barcode: p.barcode || "",
         list_price: p.lst_price || 0,
+        weight: p.weight || 0,
+        to_weight: p.to_weight || false,
+        type: p.type || "product",
         pos_categories: p.pos_categories || [],
         taxes_id: p.taxes_id || [],
         stock_by_location: Object.entries(p.stock_by_location || {}).map(
@@ -101,6 +128,7 @@ export default defineEventHandler(async (event) => {
       parent_id: cat.parent_id
         ? { id: cat.parent_id[0], name: cat.parent_id[1] }
         : null,
+      productsCount: categoryCountMap[cat.id] || 0,
     })),
     locations: locErr
       ? []
@@ -108,7 +136,7 @@ export default defineEventHandler(async (event) => {
           id: loc.id,
           name: loc.name,
         })),
-    taxes: (odooData.payment_methods || []).map((pm: any) => ({
+    paymentMethods: (odooData.payment_methods || []).map((pm: any) => ({
       id: pm.id,
       name: pm.name,
       is_cash_count: pm.is_cash_count,

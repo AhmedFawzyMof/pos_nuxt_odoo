@@ -135,7 +135,11 @@ async function handleOpenSession(regId: number) {
       activeConfigName.value = reg.name;
     }
 
-    router.push({ path: '/cashier', query: { config_id: regId } });
+    const query: Record<string, any> = { config_id: regId };
+    if (sessionData.session?.session_id) {
+      query.session_id = sessionData.session.session_id;
+    }
+    router.push({ path: '/cashier', query });
   } catch (err: any) {
     error.value = err.statusMessage || "فشل معالجة فتح صندوق اليومية";
   } finally {

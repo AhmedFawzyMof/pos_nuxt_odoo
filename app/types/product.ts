@@ -31,6 +31,7 @@ export interface Product {
   to_weight?: boolean;
   location_id?: number | null;
   location?: { id: number; name: string } | null;
+  stock_locations?: { location_id: number; location_name: string; qty: number }[];
   pos_categ_ids?: number[];
   pos_categories?: POSCategory[];
   image_1920?: string | null;

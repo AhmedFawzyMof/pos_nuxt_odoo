@@ -24,7 +24,6 @@ const showProductDetail = ref(false);
 
 const allProducts = ref<POSProduct[]>([]);
 const categories = ref<POSCategory[]>([]);
-const taxes = ref<any[]>([]);
 const warehouses = ref<any[]>([]);
 const loading = ref(false);
 const error = ref("");
@@ -65,7 +64,6 @@ async function loadMasterData(page = 1) {
       if (page === 1 && res.categories) {
         categories.value = res.categories;
       }
-      if (res.taxes) taxes.value = res.taxes;
       if (res.warehouses) warehouses.value = res.warehouses;
     }
   } catch (err: any) {
@@ -109,8 +107,8 @@ function handleProductClick(product: POSProduct) {
 }
 
 function handleAddToCart(product: POSProduct) {
-  const taxItem = taxes.value.find((t: any) => product.taxes_id?.includes(t.id));
-  cart.addItem(product, 1, taxItem?.amount || 0);
+  const qty = product.to_weight ? 0.01 : 1;
+  cart.addItem(product, qty);
 }
 
 function handleAddToCartFromDetail(product: POSProduct) {

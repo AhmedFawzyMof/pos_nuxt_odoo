@@ -13,7 +13,10 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="horizontal" class="flex gap-2 overflow-x-auto pb-1 scrollbar-hidden">
+  <div
+    v-if="horizontal"
+    class="flex gap-2 overflow-x-auto pb-1 scrollbar-hidden"
+  >
     <button
       @click="emit('select', null)"
       class="shrink-0 px-3 py-1.5 rounded-full text-sm transition-all cursor-pointer whitespace-nowrap border"
@@ -36,7 +39,7 @@ const emit = defineEmits<{
           : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground border-outline-variant/20'
       "
     >
-      {{ cat.name }}
+      {{ cat.name }} | {{ cat.productsCount }}
     </button>
   </div>
   <div v-else class="space-y-1">
@@ -53,7 +56,11 @@ const emit = defineEmits<{
         <span>كل المنتجات</span>
         <span
           class="text-[11px] tabular-nums"
-          :class="activeCategoryId === null ? 'text-white/70' : 'text-muted-foreground'"
+          :class="
+            activeCategoryId === null
+              ? 'text-white/70'
+              : 'text-muted-foreground'
+          "
         >
           {{ categories.reduce((s, c) => s + c.productsCount, 0) }}
         </span>
@@ -74,7 +81,11 @@ const emit = defineEmits<{
         <span>{{ cat.name }}</span>
         <span
           class="text-[11px] tabular-nums"
-          :class="activeCategoryId === cat.id ? 'text-primary/60' : 'text-muted-foreground'"
+          :class="
+            activeCategoryId === cat.id
+              ? 'text-primary/60'
+              : 'text-muted-foreground'
+          "
         >
           {{ cat.productsCount }}
         </span>
