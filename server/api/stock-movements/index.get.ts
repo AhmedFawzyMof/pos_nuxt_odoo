@@ -27,7 +27,6 @@ export default defineEventHandler(async (event) => {
 
   try {
     await odoo.connect();
-    console.log(params.type);
     const [rpcErr, result] = await tryCatch(
       odoo.execute_kw("stock.move.line", "get_frontend_ledger", [
         [],

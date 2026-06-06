@@ -238,6 +238,7 @@ async function handleSubmit() {
           quantity: item.quantity,
           price: item.price,
           discount: item.discount || 0,
+          taxes_id: item.product.taxes?.map((t) => t.id) || [],
         })),
         payments,
         note: orderNote.value,
@@ -247,6 +248,7 @@ async function handleSubmit() {
         service_fee_type: cart.serviceFeeType,
         customer_id: cart.customerId,
         location_id: cart.selectedLocationId,
+        amount_tax: cart.totalTax,
       },
     });
 

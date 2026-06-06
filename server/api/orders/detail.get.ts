@@ -2,6 +2,59 @@ import { defineEventHandler, getQuery, createError } from "h3";
 import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
+function toTuple(val: any): [number, string] | null {
+  if (!val && val !== 0) return null;
+  if (Array.isArray(val)) return [Number(val[0]) || 0, String(val[1] || "")];
+  if (typeof val === "number" || typeof val === "string")
+    return [Number(val) || 0, ""];
+  return null;
+}
+
+function toFloat(val: any, fallback = 0): number {
+  const n = Number(val);
+  return isNaN(n) ? fallback : n;
+}
+
+function normalizeOrder(raw: any) {
+  return {
+    id: raw.id,
+    name: raw.name || "",
+    date_order: raw.date_order || "",
+    partner_id: toTuple(raw.partner_id),
+    user_id: toTuple(raw.user_id) || [0, ""],
+    session_id: toTuple(raw.session_id) || [0, ""],
+    amount_total: toFloat(raw.amount_total),
+    amount_paid: toFloat(raw.amount_paid),
+    amount_tax: toFloat(raw.amount_tax),
+    amount_return: toFloat(raw.amount_return),
+    state: raw.state || "draft",
+    pos_reference: raw.pos_reference || "",
+    company_id: toTuple(raw.company_id),
+    session_summary: raw.session_summary,
+  };
+}
+
+function normalizeLine(raw: any) {
+  return {
+    id: raw.id,
+    product_id: toTuple(raw.product_id) || [0, ""],
+    qty: toFloat(raw.qty),
+    price_unit: toFloat(raw.price_unit),
+    price_subtotal: toFloat(raw.price_subtotal),
+    discount: toFloat(raw.discount),
+  };
+}
+
+function normalizePayment(raw: any) {
+  return {
+    id: raw.id,
+    payment_method_id: toTuple(raw.payment_method_id) || [0, ""],
+    amount: toFloat(raw.amount),
+    payment_date: raw.payment_date || "",
+    payment_status: raw.payment_status || "pending",
+  };
+}
+
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
   if (!session.user) {
@@ -27,53 +80,41 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const orderFields = [
-    "id", "name", "date_order", "partner_id", "user_id",
-    "session_id", "amount_total", "amount_paid", "amount_tax",
-    "amount_return", "state", "pos_reference", "company_id",
-    "lines", "statement_ids",
-  ];
-
-  const [orderErr, orders] = await tryCatch(
-    odoo.read("pos.order", [orderId], orderFields),
+  const [rpcErr, result] = await tryCatch(
+    odoo.execute_kw("custom.order.api", "api_get_order_detail", [
+      [orderId],
+      {},
+    ]),
   );
-  if (orderErr) {
+
+  if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل جلب تفاصيل الطلب: ${orderErr.message}`,
+      statusMessage: `فشل جلب تفاصيل الطلب: ${rpcErr.message}`,
     });
   }
-  if (!orders || orders.length === 0) {
-    throw createError({ statusCode: 404, statusMessage: "الطلب غير موجود" });
+
+  if (!result || result.status === "error" || !result.id) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: result?.message || "الطلب غير موجود في نظام Odoo",
+    });
   }
 
-  const order = orders[0];
-
-  let lines: any[] = [];
-  if (order.lines && order.lines.length > 0) {
-    const [linesErr, linesData] = await tryCatch(
-      odoo.read("pos.order.line", order.lines, [
-        "id", "product_id", "qty", "price_unit",
-        "price_subtotal", "discount",
-      ]),
-    );
-    if (!linesErr) lines = linesData || [];
-  }
-
-  let payments: any[] = [];
-  if (order.statement_ids && order.statement_ids.length > 0) {
-    const [payErr, payData] = await tryCatch(
-      odoo.read("pos.payment", order.statement_ids, [
-        "id", "payment_method_id", "amount", "payment_date", "payment_status",
-      ]),
-    );
-    if (!payErr) payments = payData || [];
-  }
+  const [pmErr, pmData] = await tryCatch(
+    odoo.searchRead("pos.payment.method", [], ["id", "name"]),
+  );
 
   return {
     success: true,
-    order,
-    lines,
-    payments,
+    order: normalizeOrder(result),
+    lines: (result.lines || []).map(normalizeLine),
+    payments: (result.payments || []).map(normalizePayment),
+    payment_methods: pmErr
+      ? []
+      : (pmData || []).map((pm: any) => ({
+          id: pm.id,
+          name: pm.name,
+        })),
   };
 });

@@ -38,7 +38,6 @@ async function fetchAllRegistersFromOdoo() {
     const res = await $fetch<{ success: boolean; data: POSRegister[] }>(
       "/api/pos/registers",
     );
-    console.log(res.data);
     if (res.success) {
       registers.value = res.data;
     }

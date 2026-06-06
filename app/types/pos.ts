@@ -42,6 +42,7 @@ export interface POSProduct {
   image_1920?: string | null;
   categ_id?: [number, string] | null;
   taxes_id?: number[];
+  taxes?: import("~/types/product").Tax[];
   stock_by_location?: { location_id: number; location_name: string; quantity: number }[];
 }
 
@@ -123,7 +124,7 @@ export interface POSOrder {
   amount_paid: number;
   amount_tax: number;
   amount_return: number;
-  state: "draft" | "paid" | "done" | "cancelled" | "invoiced";
+  state: "draft" | "paid" | "done" | "cancelled" | "invoiced" | "refund";
   pos_reference?: string;
   company_id?: [number, string];
   lines?: OrderLine[];
@@ -161,6 +162,7 @@ export interface OrderDetailResponse {
   order: POSOrder;
   lines: OrderLine[];
   payments: OrderPayment[];
+  payment_methods?: PaymentMethod[];
 }
 
 export interface OrderStatusPayload {

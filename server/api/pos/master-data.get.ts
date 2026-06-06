@@ -76,10 +76,25 @@ export default defineEventHandler(async (event) => {
     ),
   );
 
+  const [taxErr, taxData] = await tryCatch(
+    odoo.searchRead(
+      "account.tax",
+      [["type_tax_use", "=", "sale"]],
+      ["id", "name", "amount", "amount_type", "price_include"],
+    ),
+  );
+
   const locationMap: Record<number, string> = {};
   if (!locErr && locData) {
     for (const loc of locData as any[]) {
       locationMap[loc.id] = loc.name;
+    }
+  }
+
+  const taxMap: Record<number, { id: number; name: string; amount: number; amount_type?: string; price_include?: boolean }> = {};
+  if (!taxErr && taxData) {
+    for (const tax of taxData as any[]) {
+      taxMap[tax.id] = tax;
     }
   }
 
@@ -108,7 +123,11 @@ export default defineEventHandler(async (event) => {
         to_weight: p.to_weight || false,
         type: p.type || "product",
         pos_categories: p.pos_categories || [],
-        taxes_id: p.taxes_id || [],
+        taxes_id: (p.taxes_id || []).filter((id: number) => id > 0),
+        taxes: (p.taxes_id || [])
+          .filter((id: number) => id > 0)
+          .map((id: number) => taxMap[id])
+          .filter(Boolean),
         stock_by_location: Object.entries(p.stock_by_location || {}).map(
           ([locId, qty]) => ({
             location_id: parseInt(locId, 10),

@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "الحالة المطلوبة مطلوبة" });
   }
 
-  const validStates = ["draft", "paid", "done", "cancelled", "invoiced"];
+  const validStates = ["draft", "paid", "done", "cancelled", "invoiced", "refund"];
   if (!validStates.includes(state)) {
     throw createError({
       statusCode: 400,
@@ -41,7 +41,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const [rpcErr, result] = await tryCatch(
-    odoo.execute_kw("pos.order", "update_order_status_rpc", [[orderId, state]]),
+    odoo.execute_kw("custom.order.api", "api_update_order_status", [[], {
+      order_id: orderId,
+      new_status: state,
+    }]),
   );
 
   if (rpcErr) {

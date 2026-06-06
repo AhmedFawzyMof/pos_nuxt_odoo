@@ -10,8 +10,11 @@ import {
   CheckCheck,
   Edit3,
   Save,
+  Plus,
+  Banknote,
+  Wallet,
 } from "@lucide/vue";
-import type { POSOrder, OrderLine, OrderPayment } from "~/types/pos";
+import type { POSOrder, OrderLine, OrderPayment, PaymentMethod } from "~/types/pos";
 
 const props = defineProps<{
   isOpen: boolean;
@@ -37,6 +40,11 @@ const lines = ref<OrderLine[]>([]);
 const payments = ref<OrderPayment[]>([]);
 const editingPayments = ref<Record<number, number>>({});
 const selectedStatus = ref("");
+const showAddPayment = ref(false);
+const newPaymentName = ref("");
+const newPaymentAmount = ref(0);
+const addPaymentError = ref("");
+const availablePaymentMethods = ref<PaymentMethod[]>([]);
 
 const statusLabels: Record<string, string> = {
   draft: "مسودة",
@@ -44,6 +52,7 @@ const statusLabels: Record<string, string> = {
   done: "منتهي",
   cancelled: "ملغي",
   invoiced: "مفوتر",
+  refund: "مرتجع",
 };
 
 const statusColors: Record<string, string> = {
@@ -52,6 +61,7 @@ const statusColors: Record<string, string> = {
   done: "bg-tertiary-container/30 text-tertiary",
   cancelled: "bg-error-container text-error",
   invoiced: "bg-secondary-fixed text-on-secondary-fixed",
+  refund: "bg-amber-100 text-amber-700",
 };
 
 const totalFromLines = computed(() =>
@@ -78,6 +88,13 @@ async function fetchDetail(orderId: number) {
       order.value = data.order;
       lines.value = data.lines || [];
       payments.value = data.payments || [];
+      const methods = data.payment_methods || [];
+      const seen = new Set<string>();
+      availablePaymentMethods.value = methods.filter((m: PaymentMethod) => {
+        if (seen.has(m.name)) return false;
+        seen.add(m.name);
+        return true;
+      });
       selectedStatus.value = data.order.state;
       editingPayments.value = {};
       for (const p of data.payments || []) {
@@ -99,6 +116,11 @@ function closeDrawer() {
   lines.value = [];
   payments.value = [];
   error.value = "";
+  showAddPayment.value = false;
+  newPaymentName.value = "";
+  newPaymentAmount.value = 0;
+  addPaymentError.value = "";
+  availablePaymentMethods.value = [];
 }
 
 function showToast(message: string, type: "success" | "error") {
@@ -131,12 +153,54 @@ async function changeStatus() {
   }
 }
 
+function addPaymentLine() {
+  addPaymentError.value = "";
+  if (!newPaymentName.value.trim()) {
+    addPaymentError.value = "يرجى إدخال اسم طريقة الدفع";
+    return;
+  }
+  if (newPaymentAmount.value <= 0) {
+    addPaymentError.value = "يرجى إدخال مبلغ صحيح";
+    return;
+  }
+
+  const tempId = -Date.now();
+  const method = availablePaymentMethods.value.find(
+    (m) => m.name === newPaymentName.value.trim(),
+  );
+  if (!method) {
+    addPaymentError.value = "طريقة الدفع المحددة غير موجودة";
+    return;
+  }
+  payments.value.push({
+    id: tempId,
+    payment_method_id: [method.id, newPaymentName.value.trim()],
+    amount: newPaymentAmount.value,
+    payment_date: "",
+    payment_status: "paid",
+  });
+  editingPayments.value[tempId] = newPaymentAmount.value;
+  newPaymentName.value = "";
+  newPaymentAmount.value = 0;
+}
+
 async function savePayments() {
-  if (!order.value) return;
+  if (!order.value) {
+    showToast("بيانات الطلب غير متاحة، حاول إعادة فتح النافذة", "error");
+    return;
+  }
+  const hasTemp = payments.value.some(p => p.id < 0);
+  if (hasTemp) {
+    const invalidPayment = payments.value.find(p => p.id < 0 && (!p.payment_method_id || !p.payment_method_id[0]));
+    if (invalidPayment) {
+      showToast("طريقة الدفع غير صالحة، حاول إزالة الدفعة وإضافتها مجدداً", "error");
+      return;
+    }
+  }
   saving.value = true;
   try {
     const paymentsPayload = payments.value.map((p) => ({
-      id: p.id,
+      id: p.id < 0 ? null : p.id,
       method_id: p.payment_method_id[0],
       amount: editingPayments.value[p.id] ?? p.amount,
     }));
@@ -150,7 +214,7 @@ async function savePayments() {
         p.amount = editingPayments.value[p.id] ?? p.amount;
       }
       emit("refresh");
-      if (order.value) fetchDetail(order.value.id);
+      if (order.value) await fetchDetail(order.value.id);
     } else {
       showToast(res.message || "فشل تحديث المدفوعات", "error");
     }
@@ -377,6 +441,7 @@ const formatDate = (dateStr: string) => {
                   <th class="px-3 py-2 text-[11px] font-bold">طريقة الدفع</th>
                   <th class="px-3 py-2 text-[11px] font-bold">المبلغ</th>
                   <th class="px-3 py-2 text-[11px] font-bold">الحالة</th>
+                  <th class="px-3 py-2 text-[11px] font-bold"></th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-outline-variant/40">
@@ -403,24 +468,92 @@ const formatDate = (dateStr: string) => {
                       {{ pay.payment_status === 'paid' ? 'مدفوع' : pay.payment_status === 'reversed' ? 'مرتجع' : 'معلق' }}
                     </span>
                   </td>
+                  <td class="px-3 py-3">
+                    <button
+                      @click="payments = payments.filter(p => p.id !== pay.id)"
+                      class="p-1.5 rounded-lg hover:bg-error/10 text-error/70 hover:text-error transition-colors cursor-pointer disabled:opacity-30"
+                      title="حذف الدفعة"
+                    >
+                      <Trash2 class="w-4 h-4" />
+                    </button>
+                  </td>
                 </tr>
                 <tr v-if="payments.length === 0">
-                  <td colspan="3" class="p-6 text-center text-on-white-variant text-sm">
+                  <td colspan="4" class="p-6 text-center text-on-white-variant text-sm">
                     لا توجد مدفوعات مسجلة
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <button
-            v-if="payments.length > 0"
-            @click="savePayments"
-            :disabled="saving"
-            class="mt-3 px-5 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary/95 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm"
-          >
-            <Save class="w-4 h-4" />
-            حفظ المدفوعات
-          </button>
+
+          <!-- Add Payment Method Form -->
+          <div class="mt-3 space-y-3">
+            <button
+              @click="showAddPayment = !showAddPayment; if (!showAddPayment && availablePaymentMethods.length) { newPaymentName = availablePaymentMethods[0].name }"
+              class="w-full flex items-center justify-between px-4 py-3 bg-white border border-dashed border-outline-variant rounded-xl text-sm font-bold text-primary hover:bg-primary/5 transition-colors cursor-pointer"
+            >
+              <div class="flex items-center gap-2">
+                <Plus class="w-4 h-4" />
+                <span>إضافة طريقة دفع</span>
+              </div>
+              <span class="text-xs text-on-white-variant">{{ showAddPayment ? 'إخفاء' : 'إضافة' }}</span>
+            </button>
+
+            <div v-if="showAddPayment" class="bg-white-low border border-outline-variant rounded-xl p-4 space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-on-white-variant mb-1">طريقة الدفع</label>
+                <div class="relative">
+                  <Wallet class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-white-variant" />
+                  <select
+                    v-model="newPaymentName"
+                    class="w-full h-10 pr-10 bg-white border border-outline-variant rounded-lg px-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                  >
+                    <option value="" disabled>اختر طريقة الدفع</option>
+                    <option
+                      v-for="method in availablePaymentMethods"
+                      :key="method.id"
+                      :value="method.name"
+                    >
+                      {{ method.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-on-white-variant mb-1">المبلغ</label>
+                <div class="relative">
+                  <input
+                    v-model.number="newPaymentAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    class="w-full h-10 bg-white border border-outline-variant rounded-lg px-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none tabular-nums"
+                  />
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-on-white-variant">ج.م</span>
+                </div>
+              </div>
+              <p v-if="addPaymentError" class="text-xs text-error font-medium">{{ addPaymentError }}</p>
+              <button
+                @click="addPaymentLine"
+                class="w-full h-10 bg-primary text-white rounded-lg font-bold hover:bg-primary/95 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5 text-sm"
+              >
+                <Plus class="w-4 h-4" />
+                إضافة
+              </button>
+            </div>
+
+            <button
+              v-if="payments.length > 0"
+              @click="savePayments"
+              :disabled="saving"
+              class="w-full px-5 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary/95 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 text-sm"
+            >
+              <Save class="w-4 h-4" />
+              حفظ المدفوعات
+            </button>
+          </div>
         </div>
 
         <!-- Totals Summary -->

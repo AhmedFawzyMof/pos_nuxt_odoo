@@ -8,6 +8,14 @@ export interface InternalCategory {
   name: string;
 }
 
+export interface Tax {
+  id: number;
+  name: string;
+  amount: number;
+  amount_type?: string;
+  price_include?: boolean;
+}
+
 export interface Product {
   id?: number;
   name: string;
@@ -34,5 +42,7 @@ export interface Product {
   stock_locations?: { location_id: number; location_name: string; qty: number }[];
   pos_categ_ids?: number[];
   pos_categories?: POSCategory[];
+  taxes_id?: number[];
+  taxes?: Tax[];
   image_1920?: string | null;
 }

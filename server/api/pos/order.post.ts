@@ -10,7 +10,6 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event);
   const sessionId = Number(body?.session_id) || null;
-  console.log(sessionId);
   if (!sessionId) {
     throw createError({
       statusCode: 400,
@@ -25,7 +24,6 @@ export default defineEventHandler(async (event) => {
 
   const [connectErr] = await tryCatch(odoo.connect());
   if (connectErr) {
-    console.log(connectErr);
     throw createError({
       statusCode: 500,
       statusMessage: `Failed to connect to Odoo instance: ${connectErr.message}`,
@@ -38,6 +36,7 @@ export default defineEventHandler(async (event) => {
       quantity: Number(item.quantity) || 0,
       price: Number(item.price) || 0,
       discount: Number(item.discount) || 0,
+      tax_ids: (item.taxes_id || []).map(Number).filter((id: number) => id > 0),
     })),
     payments: (body.payments || []).map((pay: any) => ({
       amount: Number(pay.amount) || 0,
@@ -49,15 +48,15 @@ export default defineEventHandler(async (event) => {
     service_fee: Number(body.service_fee) || 0,
     service_fee_type: body.service_fee_type || "amount",
     note: body.note || "",
+    amount_tax: Number(body.amount_tax) || 0,
   };
 
   const positionalParams = [sessionId, sanitizedPayload];
 
   const [rpcErr, rpcResult] = await tryCatch(
-    odoo.execute_kw("pos.session", "create_pos_order_rpc", [positionalParams]),
+    odoo.execute_kw("pos.order", "create_pos_order_rpc", [positionalParams]),
   );
 
-  console.log(rpcErr, rpcResult);
   if (rpcErr) {
     throw createError({
       statusCode: 500,

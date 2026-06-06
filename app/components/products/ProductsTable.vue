@@ -9,7 +9,6 @@ const props = defineProps<{
   currentPage?: number;
   totalPages?: number;
 }>();
-console.log(props.products);
 const emit = defineEmits<{
   (e: "edit", product: Product, index: number): void;
   (e: "delete", product: Product, index: number): void;
@@ -36,6 +35,7 @@ const emit = defineEmits<{
             </th>
             <th class="px-6 py-4 font-bold text-label-md">الباركود</th>
             <th class="px-6 py-4 font-bold text-label-md">السعر البيعي</th>
+            <th class="px-6 py-4 font-bold text-label-md">الضريبة</th>
             <th class="px-6 py-4 font-bold text-label-md">التكلفة</th>
             <th class="px-6 py-4 font-bold text-label-md">المخزون الحالي</th>
             <th class="px-6 py-4 font-bold text-label-md">موقع التخزين</th>
@@ -47,7 +47,7 @@ const emit = defineEmits<{
 
         <tbody class="divide-y divide-outline-variant">
           <tr v-if="status === 'pending' && !products.length">
-            <td colspan="8" class="p-16 text-center text-on-white-variant">
+            <td colspan="9" class="p-16 text-center text-on-white-variant">
               <RefreshCw
                 class="w-10 h-10 block mb-2 mx-auto animate-spin text-primary"
               />
@@ -122,6 +122,28 @@ const emit = defineEmits<{
               }}
               ج.م
             </td>
+            <td class="px-6 py-4 text-center">
+              <span
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap"
+                :class="
+                  prod.taxes_id?.length
+                    ? 'bg-warning/10 text-warning'
+                    : 'bg-outline-variant text-on-white-variant'
+                "
+              >
+                <span
+                  class="w-3.5 h-3.5 rounded flex items-center justify-center text-[9px] font-bold"
+                  :class="
+                    prod.taxes_id?.length
+                      ? 'bg-warning text-white'
+                      : 'bg-on-white-variant/30 text-white'
+                  "
+                >
+                  {{ prod.taxes_id?.length ? "✓" : "—" }}
+                </span>
+                {{ prod.taxes_id?.length ? (prod.taxes?.[0]?.name || "خاضع") : "غير خاضع" }}
+              </span>
+            </td>
             <td class="px-6 py-4 text-on-white-variant text-label-md">
               {{
                 (prod.standard_price || 0).toLocaleString("ae-EG", {
@@ -177,7 +199,7 @@ const emit = defineEmits<{
           </tr>
 
           <tr v-if="products.length === 0 && status !== 'pending'">
-            <td colspan="8" class="p-12 text-center text-on-white-variant">
+            <td colspan="9" class="p-12 text-center text-on-white-variant">
               <SearchX class="w-10 h-10 block mb-2 mx-auto text-outline" />
               لا توجد منتجات مطابقة في كتالوج المستودع.
             </td>

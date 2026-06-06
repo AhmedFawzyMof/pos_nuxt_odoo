@@ -18,6 +18,7 @@ const pageTitle = computed(() => {
   });
   if (currentLink) return currentLink.name;
   if (route.path.startsWith("/customer-details")) return "تفاصيل العميل";
+  if (route.path.startsWith("/supplier-details")) return "تفاصيل المورد";
   return "Odoo Retail Lite";
 });
 </script>

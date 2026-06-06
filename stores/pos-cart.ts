@@ -27,6 +27,19 @@ export const usePosCartStore = defineStore("pos-cart", () => {
     }, 0),
   );
 
+  const totalTax = computed(() =>
+    items.value.reduce((sum, item) => {
+      const taxes = item.product.taxes;
+      if (!Array.isArray(taxes) || taxes.length === 0) return sum;
+      const lineTotal = item.price * item.quantity;
+      const discount = item.discount || 0;
+      const taxableBase = lineTotal - discount;
+      return sum + taxes.reduce((taxSum, tax) => {
+        return taxSum + taxableBase * (tax.amount / 100);
+      }, 0);
+    }, 0),
+  );
+
   const discountAmount = computed(() => {
     if (orderDiscountType.value === "percent") {
       return (subtotal.value * orderDiscount.value) / 100;
@@ -42,7 +55,10 @@ export const usePosCartStore = defineStore("pos-cart", () => {
   });
 
   const grandTotal = computed(() =>
-    Math.max(0, subtotal.value + serviceFeeAmount.value - discountAmount.value),
+    Math.max(
+      0,
+      subtotal.value + totalTax.value + serviceFeeAmount.value - discountAmount.value,
+    ),
   );
 
   const allocatedTotal = computed(() =>
@@ -153,6 +169,7 @@ export const usePosCartStore = defineStore("pos-cart", () => {
     selectedLocationName,
     itemCount,
     subtotal,
+    totalTax,
     discountAmount,
     serviceFeeAmount,
     grandTotal,

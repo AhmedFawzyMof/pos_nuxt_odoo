@@ -132,7 +132,9 @@ watch(
 <template>
   <div class="h-full flex gap-0 overflow-hidden">
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <div class="px-4 py-3 border-b border-outline-variant/20 bg-card/50 sticky top-0 z-10">
+      <div
+        class="px-4 py-3 border-b border-outline-variant/20 bg-card/50 sticky top-0 z-10"
+      >
         <PosSearchBar
           v-model="searchQuery"
           v-model:scanner-active="scannerActive"
@@ -142,10 +144,16 @@ watch(
       </div>
 
       <div class="flex-1 flex overflow-hidden">
-        <aside class="hidden md:block w-52 shrink-0 border-l border-outline-variant/20 overflow-y-auto p-3">
+        <aside
+          class="hidden md:block w-52 shrink-0 border-l border-outline-variant/20 overflow-y-auto custom-scrollbar p-3"
+        >
           <div class="flex items-center gap-2 mb-3 px-1">
             <Package class="w-4 h-4 text-primary" />
-            <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">الأقسام</h3>
+            <h3
+              class="text-xs font-bold text-muted-foreground uppercase tracking-wider"
+            >
+              الأقسام
+            </h3>
           </div>
           <PosCategoryFilter
             :categories="categories"
@@ -179,17 +187,28 @@ watch(
       <PosCartPanel />
     </aside>
 
-    <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-outline-variant/20 z-40 px-4 py-2 flex items-center justify-between">
+    <div
+      class="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-outline-variant/20 z-40 px-4 py-2 flex items-center justify-between"
+    >
       <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">shopping_cart</span>
+        <span class="material-symbols-outlined text-primary"
+          >shopping_cart</span
+        >
         <span class="font-bold text-sm">{{ cart.itemCount }}</span>
         <span class="text-muted-foreground text-xs">منتجات</span>
       </div>
       <div class="flex items-center gap-3">
         <span class="font-bold text-primary">
-          {{ cart.grandTotal.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
+          {{
+            cart.grandTotal.toLocaleString("ar-EG", {
+              minimumFractionDigits: 2,
+            })
+          }}
+          ج.م
         </span>
-        <button class="bg-primary text-white px-4 py-1.5 rounded-lg text-sm font-bold cursor-pointer">
+        <button
+          class="bg-primary text-white px-4 py-1.5 rounded-lg text-sm font-bold cursor-pointer"
+        >
           إتمام
         </button>
       </div>

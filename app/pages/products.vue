@@ -69,6 +69,33 @@ const drawerMode = ref<"add" | "edit">("add");
 const selectedProduct = ref<Product | null>(null);
 const isSaving = ref(false);
 const actionError = ref("");
+const liveStockLoading = ref(false);
+
+const checkLiveStock = async () => {
+  if (liveStockLoading.value) return;
+  const ids = products.value.map((p) => p.id).filter(Boolean) as number[];
+  if (!ids.length) return;
+  liveStockLoading.value = true;
+  try {
+    const res = await $fetch<{ success: boolean; stockMap: Record<number, { qty_available: number; stock_locations: any[] }> }>("/api/products/stock", {
+      method: "POST",
+      body: { ids },
+    });
+    if (res.success && res.stockMap) {
+      for (const prod of products.value) {
+        if (prod.id && res.stockMap[prod.id]) {
+          const s = res.stockMap[prod.id];
+          prod.qty_available = s.qty_available;
+          prod.stock_locations = s.stock_locations;
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error("Failed to fetch live stock:", err);
+  } finally {
+    liveStockLoading.value = false;
+  }
+};
 
 const openAddDrawer = () => {
   drawerMode.value = "add";
@@ -207,6 +234,18 @@ const handleDeleteFromDrawer = async () => {
             :class="{ 'animate-spin': status === 'pending' }"
             class="w-5 h-5"
           />
+        </button>
+        <button
+          @click="checkLiveStock"
+          :disabled="liveStockLoading"
+          class="flex items-center gap-1.5 px-3 py-2 rounded-full border border-success/40 text-success bg-success/5 hover:bg-success/10 transition-all active:scale-95 cursor-pointer disabled:opacity-50 text-label-md font-bold"
+          title="تحديث المخزون المباشر من أودو"
+        >
+          <RefreshCw
+            :class="{ 'animate-spin': liveStockLoading }"
+            class="w-4 h-4"
+          />
+          <span>المخزون المباشر</span>
         </button>
         <button
           @click="openAddDrawer"

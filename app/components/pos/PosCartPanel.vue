@@ -69,6 +69,12 @@ const isEmpty = computed(() => cart.items.length === 0);
             {{ cart.subtotal.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
           </span>
         </div>
+        <div v-if="cart.totalTax > 0" class="flex justify-between text-warning text-sm">
+          <span>الضريبة (14%)</span>
+          <span class="tabular-nums font-medium">
+            {{ cart.totalTax.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
+          </span>
+        </div>
         <div class="flex justify-between text-base font-bold pt-1 border-t border-outline-variant/20">
           <span>الإجمالي</span>
           <span class="tabular-nums text-primary">

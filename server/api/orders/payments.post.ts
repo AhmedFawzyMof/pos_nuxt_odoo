@@ -22,11 +22,16 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const sanitizedPayments = payments.map((p: any) => ({
-    id: p.id ? Number(p.id) : null,
-    method_id: Number(p.method_id) || 0,
-    amount: Number(p.amount) || 0,
-  }));
+  const sanitizedPayments = payments.map((p: any) => {
+    const entry: any = {
+      method_id: Number(p.method_id) || 0,
+      amount: Number(p.amount) || 0,
+    };
+    if (p.id) {
+      entry.id = Number(p.id);
+    }
+    return entry;
+  });
 
   const odoo = connectToOdoo(
     session.odooUsername as string,
@@ -42,9 +47,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const [rpcErr, result] = await tryCatch(
-    odoo.execute_kw("pos.order", "update_order_payments_rpc", [
-      [orderId, sanitizedPayments],
-    ]),
+    odoo.execute_kw("custom.order.api", "api_register_order_payments", [[], {
+      order_id: orderId,
+      payments: sanitizedPayments,
+    }]),
   );
 
   if (rpcErr) {

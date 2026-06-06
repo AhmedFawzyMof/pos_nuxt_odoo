@@ -1,4 +1,4 @@
-import { defineEventHandler, getQuery } from "h3";
+import { defineEventHandler, getQuery, createError } from "h3";
 import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
     odoo.execute_kw("product.product", "search_read", [
       [domain],
       {
-        fields: ["id", "name", "barcode"],
+        fields: ["id", "name", "barcode", "standard_price", "taxes_id"],
         limit: 20,
       },
     ]),
@@ -85,10 +85,16 @@ export default defineEventHandler(async (event) => {
   const data = products
     .map((p: any) => {
       const qty = quantitiesByProduct[p.id] ?? 0;
+      const rawTaxes = p.taxes_id || [];
+      const taxIds = rawTaxes
+        .map((t: any) => (Array.isArray(t) ? Number(t[0]) : Number(t)))
+        .filter((id: number) => id > 0);
       return {
         id: p.id,
         name: p.name,
         barcode: p.barcode || "",
+        standard_price: p.standard_price || 0,
+        taxes_id: taxIds,
         quantity: locationId ? qty : undefined,
       };
     })

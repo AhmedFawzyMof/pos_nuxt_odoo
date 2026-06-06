@@ -28,7 +28,6 @@ export const useAuth = () => {
       });
       return true;
     } catch (err: any) {
-      console.log(err);
       console.error("[useAuth login wrapper error]:", err);
       localError.value = err.message || "حدث خطأ أثناء تسجيل الدخول.";
       throw err;

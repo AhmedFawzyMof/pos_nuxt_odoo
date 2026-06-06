@@ -43,8 +43,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
 
-  // ?date_from=2026-05-01&date_to=2026-05-25  (both optional, default = today)
+  // ?date_from=2026-05-01&date_to=2026-05-25  (both optional, default = this month)
   const { date_from, date_to } = getQuery(event);
+  
+  // Default to current month if not provided
+  const now = new Date();
+  const defaultDateFrom = date_from || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const defaultDateTo = date_to || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   const odoo = connectToOdoo(
     session.odooUsername as string,
@@ -61,10 +66,7 @@ export default defineEventHandler(async (event) => {
 
   const [kpiErr, data] = await tryCatch(
     odoo.execute_kw("kpi.dashboard", "get_kpis", [
-      {
-        date_from: date_from ?? false,
-        date_to: date_to ?? false,
-      },
+      [defaultDateFrom, defaultDateTo],
     ]),
   );
   if (kpiErr) {
@@ -85,5 +87,5 @@ export default defineEventHandler(async (event) => {
   kpis[2]!.change = low_stock_count > 0 ? "عاجل" : "مستقر";
   kpis[2]!.changeType = low_stock_count > 0 ? "warning" : "positive";
 
-  return { success: true, kpis, date_from, date_to };
+  return { success: true, kpis, date_from: defaultDateFrom, date_to: defaultDateTo };
 });

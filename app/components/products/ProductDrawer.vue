@@ -75,6 +75,21 @@ const formLocationQty = ref<{ locationId: number; locationName: string; quantity
 const showLocationDropdown = ref(false);
 const showCategoryDropdown = ref(false);
 const formImage1920 = ref<string | null>(null);
+const formTaxesId = ref<number[]>([]);
+
+const { data: defaultTaxData } = await useFetch<{
+  success: boolean;
+  tax: { id: number; name: string; amount: number } | null;
+}>("/api/taxes/default");
+
+const defaultTaxId = computed(() => defaultTaxData.value?.tax?.id ?? null);
+
+const formTaxable = computed({
+  get: () => formTaxesId.value.length > 0,
+  set: (val: boolean) => {
+    formTaxesId.value = val && defaultTaxId.value ? [defaultTaxId.value] : [];
+  },
+});
 
 // مصفوفة إدارة المتغيرات الديناميكية
 const formVariants = ref<ProductVariantLocal[]>([]);
@@ -159,6 +174,7 @@ watch(
         formAvailableInPos.value = true;
         formIsWeight.value = false;
         formPosCategoryIds.value = [];
+        formTaxesId.value = [];
         formLocationQty.value = [];
         formVariants.value = [];
         formImage1920.value = null;
@@ -179,6 +195,7 @@ watch(
           props.product.pos_categories?.map((c) => c.id) ||
           [];
         formIsWeight.value = (props.product as any).to_weight || false;
+        formTaxesId.value = ((props.product as any).taxes_id || []).map(Number);
         formLocationQty.value = ((props.product as any).stock_locations || []).map(
           (sl: any) => ({
             locationId: sl.location_id,
@@ -303,6 +320,7 @@ const saveProduct = () => {
     image_1920: formImage1920.value,
     variants: formVariants.value,
     pos_categ_ids: formPosCategoryIds.value,
+    taxes_id: formTaxesId.value,
   });
 };
 </script>
@@ -701,6 +719,22 @@ const saveProduct = () => {
                   <span>المنتج يباع بالوزن</span>
                   <span class="text-[10px] text-on-white-variant"
                     >تفعيل هذا الخيار لتظهر الكمية بالكيلوجرام بدلاً من القطع</span
+                  >
+                </div>
+              </label>
+              <div class="border-t border-outline-variant/50"></div>
+              <label
+                class="flex items-center gap-3 text-label-md text-on-white cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  v-model="formTaxable"
+                  class="w-4 h-4 accent-primary"
+                />
+                <div class="flex flex-col">
+                  <span>خاضع للضريبة</span>
+                  <span class="text-[10px] text-on-white-variant"
+                    >{{ defaultTaxData?.tax?.name ? `سيتم تطبيق (${defaultTaxData.tax.name})` : "سيتم تطبيق الضريبة الافتراضية" }}</span
                   >
                 </div>
               </label>

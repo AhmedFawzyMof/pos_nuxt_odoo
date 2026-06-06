@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { Minus, Plus, Trash2 } from "@lucide/vue";
 import type { CartItem } from "~/types/pos";
 
@@ -13,6 +13,9 @@ const emit = defineEmits<{
 }>();
 
 const localQty = ref(props.item.quantity);
+watch(() => props.item.quantity, (newQty) => {
+  localQty.value = newQty;
+});
 const isWeight = computed(() => props.item.product.to_weight);
 const step = computed(() => (isWeight.value ? 0.01 : 1));
 const min = computed(() => (isWeight.value ? 0.01 : 1));
@@ -21,6 +24,22 @@ const lineTotal = computed(() => {
   const total = props.item.price * localQty.value;
   const discount = props.item.discount || 0;
   return total - discount;
+});
+
+const taxes = computed(() => props.item.product.taxes || []);
+
+const isTaxable = computed(() => taxes.value.length > 0);
+
+const taxLabel = computed(() => {
+  if (taxes.value.length === 1) return taxes.value[0]?.name || "خاضع للضريبة";
+  if (taxes.value.length > 1) return "خاضع للضريبة";
+  return "";
+});
+
+const taxAmount = computed(() => {
+  if (!isTaxable.value) return 0;
+  const base = props.item.price * localQty.value - (props.item.discount || 0);
+  return taxes.value.reduce((sum, tax) => sum + base * (tax.amount / 100), 0);
 });
 
 function increment() {
@@ -53,6 +72,10 @@ function onInput(e: Event) {
       </h4>
       <p class="text-xs text-muted-foreground">
         {{ item.price.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
+      </p>
+      <p v-if="isTaxable" class="text-[10px] text-warning font-medium flex items-center gap-1">
+        <span class="inline-block w-1.5 h-1.5 rounded-full bg-warning"></span>
+        {{ taxLabel }}: {{ taxAmount.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
       </p>
       <div class="flex items-center gap-2 mt-1.5">
         <button

@@ -47,7 +47,6 @@ export default defineEventHandler(async (event) => {
   }
 
   if (rpcResult.status === "error") {
-    console.log(rpcResult);
     throw createError({
       statusCode: 400,
       statusMessage: rpcResult.message || "Cash movement failed",

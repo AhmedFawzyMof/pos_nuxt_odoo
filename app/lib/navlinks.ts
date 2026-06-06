@@ -9,6 +9,9 @@ import {
   Warehouse,
   Timer,
   History,
+  Truck,
+  ClipboardList,
+  ReceiptText,
 } from "@lucide/vue";
 
 export const navLinks = [
@@ -20,6 +23,9 @@ export const navLinks = [
   { name: "المنتجات", path: "/products", icon: h(ShoppingBag) },
   { name: "الأقسام", path: "/categories", icon: h(LayoutGrid) },
   { name: "العملاء", path: "/customers", icon: h(Users) },
+  { name: "الموردين", path: "/suppliers", icon: h(Truck) },
+  { name: "أوامر الشراء", path: "/purchase-orders", icon: h(ClipboardList) },
+  { name: "فواتير الموردين", path: "/vendor-bills", icon: h(ReceiptText) },
   { name: "سجل الطلبات", path: "/orders", icon: h(Timer) },
 ];
 

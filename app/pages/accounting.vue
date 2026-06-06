@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import {
   TrendingUp,
   Banknote,
@@ -11,359 +11,288 @@ import {
   Landmark,
   BarChart3,
   Receipt,
+  Filter,
+  LoaderCircle,
+  CloudOff,
 } from "@lucide/vue";
+import type { VendorBill, VendorBillApiResponse } from "~/types/vendorBill";
 
-const taxPeriod = ref("هذا الشهر");
+const dateFrom = ref("");
+const dateTo = ref("");
 
-const transactions = ref([
-  {
-    type: "مبيعات",
-    typeColor: "bg-primary",
-    desc: "فاتورة #1042 - عميل نقدي",
-    time: "اليوم، 10:30 ص",
-    amount: "+450.00 ج.م",
-    amountColor: "text-primary",
-    status: "مكتمل",
-    statusColor: "bg-primary/10 text-primary",
-  },
-  {
-    type: "مصاريف",
-    typeColor: "bg-error",
-    desc: "فاتورة كهرباء - أكتوبر",
-    time: "اليوم، 09:15 ص",
-    amount: "-1,200.00 ج.م",
-    amountColor: "text-error",
-    status: "مدفوع",
-    statusColor: "bg-error/10 text-error",
-  },
-  {
-    type: "مرتجعات",
-    typeColor: "bg-amber-500",
-    desc: "مرتجع فاتورة #1038",
-    time: "أمس، 04:45 م",
-    amount: "-85.00 ج.م",
-    amountColor: "text-on-white",
-    status: "معالجة",
-    statusColor: "bg-white-variant text-on-white-variant",
-  },
-  {
-    type: "مبيعات",
-    typeColor: "bg-primary",
-    desc: "فاتورة #1041 - شركة النور",
-    time: "أمس، 02:20 م",
-    amount: "+2,800.00 ج.م",
-    amountColor: "text-primary",
-    status: "مكتمل",
-    statusColor: "bg-primary/10 text-primary",
-  },
-]);
+const now = new Date();
+const defaultDateFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+const defaultDateTo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+const selectedDateFrom = ref(defaultDateFrom);
+const selectedDateTo = ref(defaultDateTo);
+
+// KPI data
+const { data: kpiData, status: kpiStatus } = useFetch("/api/kpi/dashboard", {
+  query: { date_from: selectedDateFrom, date_to: selectedDateTo },
+});
+
+const totalRevenue = computed(() => (kpiData.value as any)?.kpis?.[0]?.value || "0.00 ج.م");
+const totalExpenses = computed(() => (kpiData.value as any)?.kpis?.[1]?.value || "0.00 ج.م");
+
+// Sales orders
+const { data: ordersData } = useFetch<any>("/api/orders", {
+  query: { page: 1, limit: 50, date_from: selectedDateFrom, date_to: selectedDateTo },
+});
+
+// Vendor bills
+const vendorBillsPage = ref(1);
+const { data: vbData, status: vbStatus, refresh: vbRefresh } =
+  useFetch<VendorBillApiResponse>("/api/vendor-bills", {
+    query: { page: vendorBillsPage, limit: 20, date_from: selectedDateFrom, date_to: selectedDateTo },
+  });
+
+const vendorBills = computed<VendorBill[]>(() => vbData.value?.data || []);
+
+// Combined transactions
+const transactions = computed(() => {
+  const items: any[] = [];
+
+  (ordersData.value as any)?.data?.forEach((o: any) => {
+    items.push({
+      type: "مبيعات",
+      typeColor: "bg-primary",
+      desc: `${o.name} - ${o.partner_id?.[1] || "عميل نقدي"}`,
+      time: o.date_order?.slice(0, 10) || "",
+      amount: `+${Number(o.amount_total).toLocaleString("ar-EG")} ج.م`,
+      amountColor: "text-primary",
+      status: o.state === "paid" || o.state === "done" ? "مكتمل" : o.state === "draft" ? "مسودة" : o.state,
+      statusColor: o.state === "paid" || o.state === "done" ? "bg-primary/10 text-primary" : "bg-amber-100 text-amber-800",
+    });
+  });
+
+  vendorBills.value?.forEach((b) => {
+    const isPaid = b.payment_state === "paid";
+    const isOverdue = b.payment_state === "overdue";
+    items.push({
+      type: "فواتير موردين",
+      typeColor: "bg-amber-500",
+      desc: `${b.name} - ${b.partner_id?.[1] || ""}`,
+      time: b.invoice_date || "",
+      amount: `-${Number(b.amount_total).toLocaleString("ar-EG")} ج.م`,
+      amountColor: "text-error",
+      status: isPaid ? "مدفوع" : isOverdue ? "متأخر" : b.state === "draft" ? "مسودة" : b.state === "posted" ? "مستحق" : b.state,
+      statusColor: isPaid ? "bg-emerald-100 text-emerald-800" : isOverdue ? "bg-red-100 text-red-800" : "bg-slate-100 text-slate-600",
+    });
+  });
+
+  items.sort((a: any, b: any) => (b.time || "").localeCompare(a.time || ""));
+  return items;
+});
+
+// Totals
+const totalPayable = computed(() =>
+  vendorBills.value
+    .filter((b) => b.payment_state !== "paid")
+    .reduce((s, b) => s + b.amount_residual, 0),
+);
+
+const totalVendorBills = computed(() =>
+  vendorBills.value.reduce((s, b) => s + b.amount_total, 0),
+);
+
+const activeFilter = ref("all");
+const filteredTransactions = computed(() => {
+  if (activeFilter.value === "all") return transactions.value;
+  const filterMap: Record<string, string> = {
+    sales: "مبيعات",
+    bills: "فواتير موردين",
+    expenses: "مصاريف",
+  };
+  return transactions.value.filter((t: any) => t.type === filterMap[activeFilter.value]);
+});
 
 const reports = [
-  {
-    title: "قائمة الدخل",
-    desc: "ملخص الأرباح والخسائر للربع الحالي",
-    icon: FileText,
-  },
-  {
-    title: "الميزانية العمومية",
-    desc: "الأصول والالتزامات وحقوق الملكية",
-    icon: Landmark,
-  },
-  {
-    title: "تقرير التدفق النقدي",
-    desc: "حركة السيولة النقدية الواردة والصادرة",
-    icon: BarChart3,
-  },
-  {
-    title: "الإقرار الضريبي",
-    desc: "ضريبة القيمة المضافة للفترة السابقة",
-    icon: Receipt,
-  },
+  { title: "قائمة الدخل", desc: "ملخص الأرباح والخسائر للربع الحالي", icon: FileText },
+  { title: "الميزانية العمومية", desc: "الأصول والالتزامات وحقوق الملكية", icon: Landmark },
+  { title: "تقرير التدفق النقدي", desc: "حركة السيولة النقدية الواردة والصادرة", icon: BarChart3 },
+  { title: "الإقرار الضريبي", desc: "ضريبة القيمة المضافة للفترة السابقة", icon: Receipt },
 ];
 
-const expenseDistribution = [
-  {
-    label: "الموردين",
-    percentage: "65%",
-    widthClass: "w-[65%]",
-    colorClass: "bg-primary",
-  },
-  {
-    label: "رواتب الموظفين",
-    percentage: "25%",
-    widthClass: "w-[25%]",
-    colorClass: "bg-secondary",
-  },
-  {
-    label: "خدمات (كهرباء، ماء)",
-    percentage: "10%",
-    widthClass: "w-[10%]",
-    colorClass: "bg-tertiary",
-  },
-];
+const loadingAll = computed(() => kpiStatus.value === "pending");
 </script>
 
 <template>
   <div class="space-y-8">
-    <!-- Financial Overview KPI Bento Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Daily Revenue -->
-      <div
-        class="bg-white-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow group cursor-pointer"
-      >
-        <div class="flex justify-between items-start">
-          <div
-            class="w-12 h-12 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform"
-          >
-            <TrendingUp class="w-7 h-7" />
-          </div>
-          <span
-            class="text-label-md font-bold text-primary bg-primary-container/10 px-2 py-1 rounded"
-            >+12.5%</span
-          >
-        </div>
-        <div class="mt-4">
-          <p class="text-on-white-variant font-label-md text-label-md">
-            إيرادات اليوم
-          </p>
-          <h3 class="text-price-display font-bold text-primary">
-            12,450.00 ج.م
-          </h3>
-        </div>
-      </div>
-
-      <!-- Total Expenses -->
-      <div
-        class="bg-white-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow group cursor-pointer"
-      >
-        <div class="flex justify-between items-start">
-          <div
-            class="w-12 h-12 rounded-lg bg-error-container/20 flex items-center justify-center text-error group-hover:scale-110 transition-transform"
-          >
-            <Banknote class="w-7 h-7" />
-          </div>
-          <span
-            class="text-label-md font-bold text-error bg-error-container/10 px-2 py-1 rounded"
-            >-3.2%</span
-          >
-        </div>
-        <div class="mt-4">
-          <p class="text-on-white-variant font-label-md text-label-md">
-            إجمالي المصاريف
-          </p>
-          <h3 class="text-price-display font-bold text-on-white">
-            3,120.50 ج.م
-          </h3>
-        </div>
-      </div>
-
-      <!-- Net Profit -->
-      <div
-        class="bg-primary text-white rounded-xl p-6 flex flex-col justify-between shadow-lg group hover:-translate-y-0.5 transition-all cursor-pointer"
-      >
-        <div class="flex justify-between items-start">
-          <div
-            class="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center group-hover:rotate-12 transition-transform"
-          >
-            <Wallet class="w-7 h-7" />
-          </div>
-          <span
-            class="text-label-md font-bold text-white bg-white/20 px-2 py-1 rounded"
-            >المستهدف: 85%</span
-          >
-        </div>
-        <div class="mt-4">
-          <p class="text-white/80 font-label-md text-label-md">
-            صافي الربح (الشهري)
-          </p>
-          <h3 class="text-price-display font-bold text-white">48,930.00 ج.م</h3>
-        </div>
+    <div v-if="loadingAll" class="h-[calc(100vh-200px)] flex items-center justify-center">
+      <div class="flex flex-col items-center gap-3 text-on-white-variant">
+        <LoaderCircle class="w-8 h-8 animate-spin text-primary" />
+        <span class="text-[13px]">جاري تحميل البيانات المالية...</span>
       </div>
     </div>
 
-    <!-- Main Grid: Transactions & Reports -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- Recent Transactions Table -->
-      <div
-        class="lg:col-span-2 bg-white-lowest border border-outline-variant rounded-xl flex flex-col overflow-hidden"
-      >
-        <div
-          class="p-6 border-b border-outline-variant flex justify-between items-center bg-white-bright"
-        >
-          <h4 class="text-headline-sm font-bold">آخر المعاملات</h4>
-          <button
-            class="text-primary text-label-md font-bold flex items-center gap-1 hover:underline"
-          >
-            عرض الكل
-            <ArrowLeft class="w-[14px] h-[14px]" />
-          </button>
+    <template v-else>
+      <!-- Date Filter -->
+      <div class="flex items-center gap-4 bg-white-lowest border border-outline-variant rounded-xl p-4">
+        <Filter class="w-5 h-5 text-on-white-variant" />
+        <div class="flex items-center gap-2">
+          <label class="text-label-md text-on-white-variant">من</label>
+          <input v-model="selectedDateFrom" type="date" class="h-10 px-3 border border-outline-variant rounded-lg text-sm" />
         </div>
-        <div class="overflow-x-auto custom-scrollbar">
+        <div class="flex items-center gap-2">
+          <label class="text-label-md text-on-white-variant">إلى</label>
+          <input v-model="selectedDateTo" type="date" class="h-10 px-3 border border-outline-variant rounded-lg text-sm" />
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white-lowest border border-outline-variant rounded-xl p-6">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary">
+              <TrendingUp class="w-6 h-6" />
+            </div>
+          </div>
+          <p class="text-on-white-variant text-label-md">إيرادات الفترة</p>
+          <h3 class="text-price-display font-bold text-primary">{{ totalRevenue }}</h3>
+        </div>
+
+        <div class="bg-white-lowest border border-outline-variant rounded-xl p-6">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-lg bg-error-container/20 flex items-center justify-center text-error">
+              <Banknote class="w-6 h-6" />
+            </div>
+          </div>
+          <p class="text-on-white-variant text-label-md">مصاريف الفترة</p>
+          <h3 class="text-price-display font-bold text-on-white">{{ totalExpenses }}</h3>
+        </div>
+
+        <div class="bg-white-lowest border border-outline-variant rounded-xl p-6">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600">
+              <Receipt class="w-6 h-6" />
+            </div>
+          </div>
+          <p class="text-on-white-variant text-label-md">فواتير الموردين (إجمالي)</p>
+          <h3 class="text-price-display font-bold text-amber-600">{{ totalVendorBills.toLocaleString("ar-EG") }} ج.م</h3>
+        </div>
+
+        <div class="bg-white-lowest border border-outline-variant rounded-xl p-6">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-lg bg-error/20 flex items-center justify-center text-error">
+              <Wallet class="w-6 h-6" />
+            </div>
+          </div>
+          <p class="text-on-white-variant text-label-md">المستحق للموردين</p>
+          <h3 class="text-price-display font-bold text-error">{{ totalPayable.toLocaleString("ar-EG") }} ج.م</h3>
+        </div>
+      </div>
+
+      <!-- Filters & Transactions -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 bg-white-lowest border border-outline-variant rounded-xl flex flex-col overflow-hidden">
+          <div class="p-4 border-b border-outline-variant flex items-center justify-between">
+            <h4 class="text-headline-sm font-bold">المعاملات المالية</h4>
+            <div class="flex gap-2">
+              <button @click="activeFilter = 'all'" class="px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer" :class="activeFilter === 'all' ? 'bg-primary text-white' : 'bg-white-low text-on-white-variant'">الكل</button>
+              <button @click="activeFilter = 'sales'" class="px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer" :class="activeFilter === 'sales' ? 'bg-primary text-white' : 'bg-white-low text-on-white-variant'">مبيعات</button>
+              <button @click="activeFilter = 'bills'" class="px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer" :class="activeFilter === 'bills' ? 'bg-primary text-white' : 'bg-white-low text-on-white-variant'">فواتير الموردين</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-right border-collapse">
+              <thead class="bg-white">
+                <tr>
+                  <th class="p-4 text-label-md font-bold text-on-white-variant">النوع</th>
+                  <th class="p-4 text-label-md font-bold text-on-white-variant">البيان</th>
+                  <th class="p-4 text-label-md font-bold text-on-white-variant">التاريخ</th>
+                  <th class="p-4 text-label-md font-bold text-on-white-variant text-left">المبلغ</th>
+                  <th class="p-4 text-label-md font-bold text-on-white-variant">الحالة</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-outline-variant">
+                <tr v-for="(t, i) in filteredTransactions" :key="i" class="hover:bg-white-low transition-colors group">
+                  <td class="p-4">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full" :class="t.typeColor"></span>
+                      <span class="text-body-md">{{ t.type }}</span>
+                    </div>
+                  </td>
+                  <td class="p-4 text-body-md font-bold">{{ t.desc }}</td>
+                  <td class="p-4 text-label-md text-on-white-variant">{{ t.time }}</td>
+                  <td class="p-4 text-body-md font-bold text-left" :class="t.amountColor">{{ t.amount }}</td>
+                  <td class="p-4">
+                    <span class="text-[12px] font-bold px-2 py-0.5 rounded-full" :class="t.statusColor">{{ t.status }}</span>
+                  </td>
+                </tr>
+                <tr v-if="filteredTransactions.length === 0">
+                  <td colspan="5" class="p-8 text-center text-on-white-variant">لا توجد معاملات في هذه الفترة</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Reports -->
+        <div class="bg-white-lowest border border-outline-variant rounded-xl flex flex-col">
+          <div class="p-6 border-b border-outline-variant bg-white-bright">
+            <h4 class="text-headline-sm font-bold">التقارير المالية</h4>
+          </div>
+          <div class="p-4 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
+            <div v-for="(rep, idx) in reports" :key="idx" class="p-4 border border-outline-variant rounded-lg hover:bg-white transition-all cursor-pointer group">
+              <div class="flex items-center gap-3">
+                <div class="p-2 bg-secondary-container text-on-secondary-container rounded group-hover:bg-primary group-hover:text-white transition-colors">
+                  <component :is="rep.icon" class="w-5 h-5" />
+                </div>
+                <div>
+                  <p class="text-body-md font-bold">{{ rep.title }}</p>
+                  <p class="text-label-md text-on-white-variant">{{ rep.desc }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 mt-auto">
+            <button class="w-full py-2.5 rounded-lg border border-primary text-primary font-bold hover:bg-primary/5 transition-colors cursor-pointer">إعداد تقرير مخصص</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bills Summary -->
+      <div class="bg-white-lowest border border-outline-variant rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-headline-sm font-bold">فواتير الموردين غير المسددة</h4>
+          <NuxtLink to="/suppliers" class="text-primary text-label-md font-bold flex items-center gap-1 hover:underline cursor-pointer">
+            عرض الموردين <ArrowLeft class="w-[14px] h-[14px]" />
+          </NuxtLink>
+        </div>
+        <div class="overflow-x-auto">
           <table class="w-full text-right border-collapse">
-            <thead class="bg-white">
+            <thead class="bg-white-low text-on-white-variant">
               <tr>
-                <th class="p-4 text-label-md font-bold text-on-white-variant">
-                  النوع
-                </th>
-                <th class="p-4 text-label-md font-bold text-on-white-variant">
-                  البيان
-                </th>
-                <th class="p-4 text-label-md font-bold text-on-white-variant">
-                  التاريخ
-                </th>
-                <th
-                  class="p-4 text-label-md font-bold text-on-white-variant text-left"
-                >
-                  المبلغ
-                </th>
-                <th class="p-4 text-label-md font-bold text-on-white-variant">
-                  الحالة
-                </th>
+                <th class="p-3 text-label-md font-bold">رقم الفاتورة</th>
+                <th class="p-3 text-label-md font-bold">المورد</th>
+                <th class="p-3 text-label-md font-bold">تاريخ الاستحقاق</th>
+                <th class="p-3 text-label-md font-bold">الإجمالي</th>
+                <th class="p-3 text-label-md font-bold">المتبقي</th>
+                <th class="p-3 text-label-md font-bold">الحالة</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-outline-variant">
-              <tr
-                v-for="(t, index) in transactions"
-                :key="index"
-                class="hover:bg-white-low transition-colors group cursor-pointer"
-              >
-                <td class="p-4">
-                  <div class="flex items-center gap-2">
-                    <span
-                      class="w-2 h-2 rounded-full"
-                      :class="t.typeColor"
-                    ></span>
-                    <span class="text-body-md">{{ t.type }}</span>
-                  </div>
-                </td>
-                <td class="p-4 text-body-md font-bold">{{ t.desc }}</td>
-                <td class="p-4 text-label-md text-on-white-variant">
-                  {{ t.time }}
-                </td>
-                <td
-                  class="p-4 text-body-md font-bold text-left"
-                  :class="t.amountColor"
-                >
-                  {{ t.amount }}
-                </td>
-                <td class="p-4">
-                  <span
-                    class="text-[12px] font-bold px-2 py-0.5 rounded-full"
-                    :class="t.statusColor"
-                  >
-                    {{ t.status }}
+            <tbody class="divide-y divide-outline-variant/45">
+              <tr v-for="b in vendorBills.filter(b => b.payment_state !== 'paid').slice(0, 10)" :key="b.id" class="hover:bg-primary/5 transition-colors">
+                <td class="p-3 font-bold">{{ b.name }}</td>
+                <td class="p-3">{{ b.partner_id?.[1] || '-' }}</td>
+                <td class="p-3 text-on-white-variant">{{ b.invoice_date_due || '-' }}</td>
+                <td class="p-3">{{ b.amount_total.toLocaleString("ar-EG") }} ج.م</td>
+                <td class="p-3 font-bold text-error">{{ b.amount_residual.toLocaleString("ar-EG") }} ج.م</td>
+                <td class="p-3">
+                  <span class="text-[12px] font-bold px-2 py-0.5 rounded-full"
+                    :class="b.payment_state === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'">
+                    {{ b.payment_state === 'overdue' ? 'متأخر' : 'مستحق' }}
                   </span>
                 </td>
+              </tr>
+              <tr v-if="vendorBills.filter(b => b.payment_state !== 'paid').length === 0">
+                <td colspan="6" class="p-6 text-center text-on-white-variant">لا توجد فواتير غير مسددة</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-
-      <!-- Financial Reports Section -->
-      <div
-        class="bg-white-lowest border border-outline-variant rounded-xl flex flex-col"
-      >
-        <div class="p-6 border-b border-outline-variant bg-white-bright">
-          <h4 class="text-headline-sm font-bold">التقارير المالية</h4>
-        </div>
-        <div class="p-4 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
-          <div
-            v-for="(rep, idx) in reports"
-            :key="idx"
-            class="p-4 border border-outline-variant rounded-lg hover:bg-white transition-all cursor-pointer group"
-          >
-            <div class="flex items-center gap-3">
-              <div
-                class="p-2 bg-secondary-container text-on-secondary-container rounded group-hover:bg-primary group-hover:text-white transition-colors"
-              >
-                <component :is="rep.icon" class="w-5 h-5" />
-              </div>
-              <div>
-                <p class="text-body-md font-bold">{{ rep.title }}</p>
-                <p class="text-label-md text-on-white-variant">
-                  {{ rep.desc }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="p-4 mt-auto">
-          <button
-            class="w-full py-2.5 rounded-lg border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
-          >
-            إعداد تقرير مخصص
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tax Summary & Budget Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div
-        class="bg-white-high/50 p-6 rounded-xl border border-outline-variant"
-      >
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-2">
-            <PieChart class="w-5 h-5 text-primary" />
-            <h4 class="text-headline-sm font-bold">توزيع المصروفات</h4>
-          </div>
-          <select
-            v-model="taxPeriod"
-            class="bg-transparent border-none text-label-md font-bold text-primary focus:ring-0 outline-none cursor-pointer"
-          >
-            <option value="هذا الشهر">هذا الشهر</option>
-            <option value="الشهر الماضي">الشهر الماضي</option>
-          </select>
-        </div>
-        <div class="space-y-4">
-          <div
-            v-for="(exp, idx) in expenseDistribution"
-            :key="idx"
-            class="space-y-1"
-          >
-            <div class="flex justify-between text-label-md">
-              <span>{{ exp.label }}</span>
-              <span>{{ exp.percentage }}</span>
-            </div>
-            <div
-              class="w-full bg-white-highest h-2 rounded-full overflow-hidden"
-            >
-              <div
-                class="h-full rounded-full"
-                :class="[exp.colorClass, exp.widthClass]"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="bg-white-lowest border border-outline-variant rounded-xl p-6 relative overflow-hidden flex flex-col justify-between"
-      >
-        <div class="relative z-10 space-y-2">
-          <h4 class="text-headline-sm font-bold mb-2">تنبيهات ضريبية</h4>
-          <p class="text-body-md text-on-white-variant">
-            موعد تقديم الإقرار الضريبي القادم خلال 5 أيام عمل.
-          </p>
-          <div class="flex gap-4 pt-2">
-            <button
-              class="bg-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-primary/90 transition-shadow active:scale-95"
-            >
-              تجهيز الإقرار
-            </button>
-            <button class="text-secondary font-bold hover:underline">
-              مراجعة البيانات
-            </button>
-          </div>
-        </div>
-        <!-- Decorative Background element -->
-        <div
-          class="absolute -bottom-6 -left-6 opacity-10 scale-150 rotate-12 text-primary"
-        >
-          <FileWarning class="w-[120px] h-[120px]" />
-        </div>
-      </div>
-    </div>
+    </template>
   </div>
 </template>

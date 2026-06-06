@@ -11,9 +11,13 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
 
   const page = Math.max(1, parseInt((query.page as string) || "1", 10));
-  const limit = Math.max(1, Math.min(100, parseInt((query.limit as string) || "20", 10)));
+  const limit = Math.max(
+    1,
+    Math.min(100, parseInt((query.limit as string) || "20", 10)),
+  );
   const search = (query.search as string) || "";
   const status = (query.status as string) || "";
+  const sessionSearch = (query.session_id as string) || "";
   const dateFrom = (query.date_from as string) || "";
   const dateTo = (query.date_to as string) || "";
 
@@ -30,55 +34,31 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const domain: any[] = [];
-  if (search) {
-    domain.push(["name", "ilike", search]);
-  }
-  if (status) {
-    domain.push(["state", "=", status]);
-  }
-  if (dateFrom) {
-    domain.push(["date_order", ">=", dateFrom]);
-  }
-  if (dateTo) {
-    domain.push(["date_order", "<=", dateTo]);
-  }
-
-  const [countErr, totalItems] = await tryCatch(
-    odoo.searchCount("pos.order", domain),
+  const [rpcErr, result] = await tryCatch(
+    odoo.execute_kw("custom.order.api", "api_get_orders", [[], {
+      page,
+      limit,
+      search_term: search || undefined,
+      status: status || undefined,
+      session_id: sessionSearch || undefined,
+      date_from: dateFrom || undefined,
+      date_to: dateTo || undefined,
+    }]),
   );
-  if (countErr) {
+
+  if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل حساب عدد الطلبات: ${countErr.message}`,
-    });
-  }
-
-  const totalPages = Math.ceil(totalItems / limit);
-  const offset = (page - 1) * limit;
-
-  const fields = [
-    "id", "name", "date_order", "partner_id", "user_id",
-    "session_id", "amount_total", "amount_paid", "amount_tax",
-    "amount_return", "state", "pos_reference",
-  ];
-
-  const [readErr, orders] = await tryCatch(
-    odoo.searchRead("pos.order", domain, fields, limit, offset, "date_order desc"),
-  );
-  if (readErr) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل جلب الطلبات: ${readErr.message}`,
+      statusMessage: `فشل جلب الطلبات: ${rpcErr.message}`,
     });
   }
 
   return {
     success: true,
-    data: orders || [],
-    totalItems,
-    totalPages,
-    currentPage: page,
-    itemsPerPage: limit,
+    data: result.data ?? [],
+    totalItems: result.totalItems ?? 0,
+    totalPages: result.totalPages ?? 0,
+    currentPage: result.currentPage ?? page,
+    itemsPerPage: result.itemsPerPage ?? limit,
   };
 });

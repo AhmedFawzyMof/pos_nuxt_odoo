@@ -36,9 +36,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const [rpcErr, result] = await tryCatch(
-    odoo.execute_kw("pos.order", "remove_order_line_rpc", [
-      [orderId, lineId],
-    ]),
+    odoo.execute_kw("custom.order.api", "api_remove_order_line", [[], {
+      order_id: orderId,
+      line_id: lineId,
+    }]),
   );
 
   if (rpcErr) {

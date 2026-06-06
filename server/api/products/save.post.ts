@@ -20,7 +20,6 @@ async function safeSearchRead(
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const session = await getUserSession(event);
-  console.log(body);
 
   const odoo = connectToOdoo(
     session.odooUsername as string,
@@ -53,6 +52,9 @@ export default defineEventHandler(async (event) => {
       active: Boolean(body.active),
       available_in_pos: Boolean(body.available_in_pos),
       to_weight: Boolean(body.to_weight),
+      taxes_id: body.taxes_id?.length
+        ? [[6, 0, body.taxes_id.map(Number)]]
+        : [[5, 0, 0]],
       is_storable: true,
     };
 
@@ -313,8 +315,6 @@ async function updateOdooStock(
 
     // 3. Apply inventory adjustment (SET value, not add)
     await odoo.execute_kw("stock.quant", "action_apply_inventory", [[quantId]]);
-
-    console.log(`Stock set to ${newQty} for product ${productId}`);
   } catch (e: any) {
     console.error("Stock update error:", e);
   }

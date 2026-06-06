@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import {
   Banknote,
   Receipt,
-  CloudCog,
   Search,
   CheckCircle,
   XCircle,
+  RotateCcw,
   RefreshCw,
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Store,
   CheckCheck,
   Eye,
   LoaderCircle,
@@ -22,13 +21,33 @@ import type { POSOrder, OrderListResponse } from "~/types/pos";
 
 const searchQuery = ref("");
 const statusFilter = ref("");
+const sessionSearch = ref("");
+const debouncedSearchQuery = ref("");
+const debouncedSessionSearch = ref("");
 const currentPage = ref(1);
+
+let searchTimeout: ReturnType<typeof setTimeout>;
+watch(searchQuery, (val) => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    debouncedSearchQuery.value = val;
+    currentPage.value = 1;
+  }, 400);
+});
+
+let sessionTimeout: ReturnType<typeof setTimeout>;
+watch(sessionSearch, (val) => {
+  clearTimeout(sessionTimeout);
+  sessionTimeout = setTimeout(() => {
+    debouncedSessionSearch.value = val;
+    currentPage.value = 1;
+  }, 400);
+});
 const limit = 20;
 
 const showToast = ref(false);
 const toastMessage = ref("");
 const toastType = ref<"success" | "error">("success");
-const shiftOpen = ref(true);
 const selectedOrderId = ref<number | null>(null);
 const drawerOpen = ref(false);
 
@@ -51,10 +70,11 @@ const {
   query: {
     page: currentPage,
     limit,
-    search: searchQuery,
+    search: debouncedSearchQuery,
     status: statusFilter,
+    session_id: debouncedSessionSearch,
   },
-  watch: [currentPage, searchQuery, statusFilter],
+  watch: [currentPage, debouncedSearchQuery, statusFilter, debouncedSessionSearch],
   transform: (response) => {
     if (!response.data) response.data = [];
     return response;
@@ -131,20 +151,6 @@ function showToastMessage(message: string, type: "success" | "error") {
   }, 3000);
 }
 
-const toggleShift = () => {
-  if (shiftOpen.value) {
-    if (
-      confirm(
-        "هل أنت متأكد من رغبتك في إغلاق الوردية الحالية وطباعة ملخص المبيعات؟",
-      )
-    ) {
-      shiftOpen.value = false;
-    }
-  } else {
-    shiftOpen.value = true;
-  }
-};
-
 const formatTime = (dateStr: string) => {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
@@ -160,6 +166,7 @@ const statusLabels: Record<string, string> = {
   done: "منتهي",
   cancelled: "ملغي",
   invoiced: "مفوتر",
+  refund: "مرتجع",
 };
 
 const statusColors: Record<string, string> = {
@@ -168,6 +175,7 @@ const statusColors: Record<string, string> = {
   done: "bg-tertiary-container/30 text-tertiary",
   cancelled: "bg-error-container text-error",
   invoiced: "bg-secondary-fixed text-on-secondary-fixed",
+  refund: "bg-amber-100 text-amber-700",
 };
 
 const statusIcons: Record<string, any> = {
@@ -176,6 +184,7 @@ const statusIcons: Record<string, any> = {
   done: CheckCircle,
   cancelled: XCircle,
   invoiced: CheckCircle,
+  refund: RotateCcw,
 };
 </script>
 
@@ -211,7 +220,7 @@ const statusIcons: Record<string, any> = {
 
       <template v-if="status !== 'error'">
         <!-- Top KPI Dashboard -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div
             class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
           >
@@ -250,31 +259,6 @@ const statusIcons: Record<string, any> = {
             </div>
           </div>
 
-          <div
-            class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
-          >
-            <div class="space-y-1">
-              <p class="text-label-md text-on-white-variant">
-                حالة السحابة والمزامنة
-              </p>
-              <div class="flex items-center gap-2">
-                <span
-                  class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"
-                ></span>
-                <h2 class="text-headline-sm font-bold text-on-white">
-                  متصل بـ Odoo
-                </h2>
-              </div>
-              <p class="text-xs text-on-white-variant">
-                بيانات حية من الخادم
-              </p>
-            </div>
-            <div
-              class="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center text-primary"
-            >
-              <CloudCog class="w-7 h-7" />
-            </div>
-          </div>
         </div>
 
         <!-- Orders Table Section -->
@@ -312,7 +296,19 @@ const statusIcons: Record<string, any> = {
                 <option value="done">منتهي</option>
                 <option value="cancelled">ملغي</option>
                 <option value="invoiced">مفوتر</option>
+                <option value="refund">مرتجع</option>
               </select>
+              <div class="relative">
+                <Search
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-on-white-variant w-5 h-5"
+                />
+                <input
+                  v-model="sessionSearch"
+                  class="bg-white text-on-white border border-outline-variant rounded-xl pr-10 pl-4 py-2 w-full md:w-48 focus:ring-2 focus:ring-primary outline-none"
+                  placeholder="البحث برقم الوردية..."
+                  type="text"
+                />
+              </div>
               <button
                 @click="refresh()"
                 class="bg-white-high text-on-white-variant p-2.5 rounded-xl hover:bg-outline-variant transition-colors cursor-pointer"
@@ -339,6 +335,7 @@ const statusIcons: Record<string, any> = {
                   <th class="px-6 py-4 font-bold text-label-md">العميل</th>
                   <th class="px-6 py-4 font-bold text-label-md">الإجمالي</th>
                   <th class="px-6 py-4 font-bold text-label-md">الحالة</th>
+                  <th class="px-6 py-4 font-bold text-label-md">الوردية</th>
                   <th class="px-6 py-4 font-bold text-label-md">الإجراءات</th>
                 </tr>
               </thead>
@@ -396,6 +393,9 @@ const statusIcons: Record<string, any> = {
                       }}</span>
                     </div>
                   </td>
+                  <td class="px-6 py-5 text-on-white-variant">
+                    {{ order.session_id?.[1] || "—" }}
+                  </td>
                   <td class="px-6 py-5" @click.stop>
                     <div class="flex items-center gap-2">
                       <button
@@ -406,7 +406,7 @@ const statusIcons: Record<string, any> = {
                         <Eye class="w-[18px] h-[18px]" />
                       </button>
                       <button
-                        v-if="order.state !== 'cancelled'"
+                        v-if="order.state !== 'cancelled' && order.state !== 'refund'"
                         @click="voidOrder(order.id, order.name)"
                         class="text-error border border-error/20 px-3 py-1.5 rounded-lg hover:bg-error/10 transition-colors flex items-center gap-2 text-label-md font-bold cursor-pointer"
                       >
@@ -419,7 +419,7 @@ const statusIcons: Record<string, any> = {
 
                 <!-- Empty State -->
                 <tr v-if="ordersList.length === 0 && status !== 'pending'">
-                  <td colspan="6" class="p-16 text-center text-on-white-variant">
+                  <td colspan="7" class="p-16 text-center text-on-white-variant">
                     <AlertCircle class="w-10 h-10 block mb-2 mx-auto text-outline" />
                     <p class="font-bold">لا توجد طلبات مطابقة</p>
                     <p class="text-sm mt-1">حاول تغيير معايير البحث أو التصفية</p>
@@ -428,7 +428,7 @@ const statusIcons: Record<string, any> = {
 
                 <!-- Loading rows -->
                 <tr v-if="status === 'pending' && ordersList.length > 0">
-                  <td colspan="6" class="p-8 text-center">
+                  <td colspan="7" class="p-8 text-center">
                     <LoaderCircle class="w-6 h-6 animate-spin inline-block text-primary" />
                     <span class="mr-2 text-on-white-variant text-sm">جاري التحديث...</span>
                   </td>
@@ -476,110 +476,7 @@ const statusIcons: Record<string, any> = {
           </div>
         </div>
 
-        <!-- Asymmetric Detail Section (Bento Grid) -->
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div
-            class="lg:col-span-3 bg-white-highest/30 rounded-3xl p-8 border border-outline-variant backdrop-blur-sm shadow-sm flex flex-col justify-between"
-          >
-            <div class="flex justify-between items-start mb-6">
-              <div>
-                <h4 class="text-headline-md font-bold text-on-white mb-2">
-                  تحليل المبيعات الفوري
-                </h4>
-                <p class="text-body-md text-on-white-variant">
-                  مراقبة أداء المبيعات والأوامر المنفذة
-                </p>
-              </div>
-            </div>
-            <div class="h-64 flex items-end gap-4 px-4 pt-6">
-              <div
-                class="flex-1 bg-primary/20 rounded-t-xl h-[30%] relative group"
-              >
-                <div
-                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  {{ (totalSales * 0.3).toFixed(0) }} ج.م
-                </div>
-              </div>
-              <div
-                class="flex-1 bg-primary/40 rounded-t-xl h-[50%] relative group"
-              >
-                <div
-                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  {{ (totalSales * 0.5).toFixed(0) }} ج.م
-                </div>
-              </div>
-              <div
-                class="flex-1 bg-primary/60 rounded-t-xl h-[85%] relative group"
-              >
-                <div
-                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  {{ (totalSales * 0.85).toFixed(0) }} ج.م
-                </div>
-              </div>
-              <div
-                class="flex-1 bg-primary-container rounded-t-xl h-[65%] relative group"
-              >
-                <div
-                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  {{ (totalSales * 0.65).toFixed(0) }} ج.م
-                </div>
-              </div>
-              <div
-                class="flex-1 bg-primary/30 rounded-t-xl h-[40%] relative group border-2 border-dashed border-primary"
-              >
-                <div
-                  class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-white text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  {{ (totalSales * 0.4).toFixed(0) }} ج.م
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div class="lg:col-span-1">
-            <div
-              class="p-6 rounded-3xl shadow-xl flex flex-col justify-between aspect-square transition-all"
-              :class="
-                shiftOpen
-                  ? 'bg-primary text-white shadow-primary/20'
-                  : 'bg-white-variant text-on-white-variant border border-outline-variant shadow-sm'
-              "
-            >
-              <div>
-                <Store class="w-9 h-9 mb-4" />
-                <h5 class="text-headline-sm font-bold">
-                  {{
-                    shiftOpen ? "الوردية مفتوحة حالياً" : "الوردية مغلقة"
-                  }}
-                </h5>
-                <p class="text-body-md opacity-80 mt-1">
-                  {{
-                    shiftOpen
-                      ? "يمكنك إدارة الطلبات من هنا"
-                      : "يرجى فتح وردية جديدة لبدء البيع"
-                  }}
-                </p>
-              </div>
-              <button
-                @click="toggleShift"
-                class="w-full py-3 rounded-2xl font-bold border transition-colors cursor-pointer active:scale-95 text-center"
-                :class="
-                  shiftOpen
-                    ? 'bg-white/20 hover:bg-white/30 border-white/30 text-white'
-                    : 'bg-primary text-white hover:bg-primary/95 border-none'
-                "
-              >
-                {{
-                  shiftOpen ? "إغلاق الوردية الحالية" : "فتح وردية جديدة"
-                }}
-              </button>
-            </div>
-          </div>
-        </div>
       </template>
     </template>
 
