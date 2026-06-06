@@ -37,7 +37,7 @@ const endItem = computed(() =>
 
 <template>
   <div
-    class="bg-white-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col"
+    class="bg-white rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col"
   >
     <slot name="filters" />
 

@@ -29,7 +29,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="bg-white-lowest rounded-2xl border border-outline-variant overflow-hidden flex flex-col shadow-sm"
+    class="bg-white rounded-2xl border border-outline-variant overflow-hidden flex flex-col shadow-sm"
   >
     <div class="overflow-x-auto custom-scrollbar">
       <table class="w-full text-right border-collapse">

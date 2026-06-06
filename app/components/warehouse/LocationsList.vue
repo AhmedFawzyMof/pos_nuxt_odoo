@@ -31,7 +31,7 @@ defineEmits<{
 
 <template>
   <div
-    class="lg:col-span-2 bg-white-lowest rounded-xl border border-outline-variant overflow-hidden"
+    class="lg:col-span-2 bg-white rounded-xl border border-outline-variant overflow-hidden"
   >
     <div
       class="p-6 border-b border-outline-variant flex flex-col md:flex-row justify-between items-center md:items-start bg-white/50 backdrop-blur-sm sticky top-0"

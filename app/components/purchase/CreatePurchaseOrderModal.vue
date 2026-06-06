@@ -206,7 +206,7 @@ const resetForm = () => {
             <span class="font-bold">{{ saveError }}</span>
           </div>
 
-          <SupplierSearchSelect v-model:supplier="selectedSupplier" />
+          <PurchaseSupplierSearchSelect v-model:supplier="selectedSupplier" />
 
           <!-- Date -->
           <div class="space-y-1.5">
@@ -216,16 +216,16 @@ const resetForm = () => {
             <input
               v-model="dateOrder"
               type="date"
-              class="w-full h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white-lowest"
+              class="w-full h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white"
             />
           </div>
 
           <!-- From Bill: Search Bills -->
           <div v-if="activeTab === 'from-bill'">
-            <VendorBillSelector @bill-selected="onBillSelected" />
+            <PurchaseVendorBillSelector @bill-selected="onBillSelected" />
           </div>
 
-          <ProductLinesEditor v-model:lines="lines" />
+          <PurchaseProductLinesEditor v-model:lines="lines" />
 
           <!-- Notes -->
           <div class="space-y-1.5">
@@ -234,7 +234,7 @@ const resetForm = () => {
             >
             <textarea
               v-model="notes"
-              class="w-full h-24 px-4 py-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white-lowest resize-none"
+              class="w-full h-24 px-4 py-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white resize-none"
               placeholder="ملاحظات إضافية لأمر الشراء..."
             />
           </div>

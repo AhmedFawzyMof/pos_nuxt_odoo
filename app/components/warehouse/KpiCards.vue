@@ -36,7 +36,7 @@ const getIcon = (iconName: string) => {
     <div
       v-for="(kpi, idx) in kpis"
       :key="idx"
-      class="bg-white-lowest p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow"
+      class="bg-white p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow"
     >
       <div class="flex justify-between items-start mb-4">
         <div class="p-3 rounded-lg" :class="kpi.color">

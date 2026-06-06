@@ -11,7 +11,7 @@ defineProps<{
 <template>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <div
-      class="bg-white-lowest p-6 rounded-2xl border border-outline-variant shadow-sm"
+      class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm"
     >
       <div class="flex justify-between items-center mb-4">
         <span class="p-3 rounded-xl bg-primary/10 text-primary">
@@ -23,7 +23,7 @@ defineProps<{
     </div>
 
     <div
-      class="bg-white-lowest p-6 rounded-2xl border border-outline-variant shadow-sm"
+      class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm"
     >
       <div class="flex justify-between items-center mb-4">
         <span
@@ -37,7 +37,7 @@ defineProps<{
     </div>
 
     <div
-      class="bg-white-lowest p-6 rounded-2xl border border-outline-variant shadow-sm"
+      class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm"
     >
       <div class="flex justify-between items-center mb-4">
         <span class="p-3 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed">
@@ -49,7 +49,7 @@ defineProps<{
     </div>
 
     <div
-      class="bg-white-lowest p-6 rounded-2xl border border-outline-variant shadow-sm"
+      class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm"
     >
       <div class="flex justify-between items-center mb-4">
         <span class="p-3 rounded-xl bg-primary-container/20 text-primary">

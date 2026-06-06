@@ -162,7 +162,7 @@ watch(
     <template v-else-if="customer">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div
-          class="lg:col-span-2 bg-white-lowest border border-outline-variant rounded-xl p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm"
+          class="lg:col-span-2 bg-white border border-outline-variant rounded-xl p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm"
         >
           <div class="relative shrink-0">
             <div
@@ -222,7 +222,7 @@ watch(
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div
-          class="bg-white-lowest border border-outline-variant p-4 rounded-xl shadow-sm"
+          class="bg-white border border-outline-variant p-4 rounded-xl shadow-sm"
         >
           <p class="text-label-md text-on-white-variant mb-1">
             إجمالي طلبات العميل
@@ -232,7 +232,7 @@ watch(
           </h4>
         </div>
         <div
-          class="bg-white-lowest border border-outline-variant p-4 rounded-xl shadow-sm"
+          class="bg-white border border-outline-variant p-4 rounded-xl shadow-sm"
         >
           <p class="text-label-md text-on-white-variant mb-1">
             إجمالي المبيعات المحققة
@@ -242,7 +242,7 @@ watch(
           </h4>
         </div>
         <div
-          class="bg-white-lowest border border-outline-variant p-4 rounded-xl shadow-sm"
+          class="bg-white border border-outline-variant p-4 rounded-xl shadow-sm"
         >
           <p class="text-label-md text-on-white-variant mb-1">
             متوسط سلة المشتريات
@@ -252,7 +252,7 @@ watch(
           </h4>
         </div>
         <div
-          class="bg-white-lowest border border-outline-variant p-4 rounded-xl shadow-sm"
+          class="bg-white border border-outline-variant p-4 rounded-xl shadow-sm"
         >
           <p class="text-label-md text-on-white-variant mb-1">تاريخ آخر طلب</p>
           <h4 class="text-headline-md font-bold text-on-white">
@@ -313,7 +313,7 @@ watch(
         class="grid grid-cols-1 lg:grid-cols-3 gap-6"
       >
         <div
-          class="lg:col-span-2 bg-white-lowest border border-outline-variant rounded-xl p-6 shadow-sm"
+          class="lg:col-span-2 bg-white border border-outline-variant rounded-xl p-6 shadow-sm"
         >
           <h3 class="text-headline-sm font-bold text-on-white mb-4">
             آخر معاملة
@@ -359,7 +359,7 @@ watch(
         </div>
 
         <div
-          class="bg-white-lowest border border-outline-variant rounded-xl p-6 shadow-sm"
+          class="bg-white border border-outline-variant rounded-xl p-6 shadow-sm"
         >
           <h3 class="text-headline-sm font-bold text-on-white mb-6">
             معلومات العميل
@@ -391,7 +391,7 @@ watch(
 
       <div
         v-if="activeTab === 'orders'"
-        class="bg-white-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm"
+        class="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm"
       >
         <div
           v-if="transactions.length === 0"
@@ -460,7 +460,7 @@ watch(
 
       <div
         v-if="activeTab === 'settings'"
-        class="bg-white-lowest border border-outline-variant rounded-xl p-8 max-w-2xl mx-auto shadow-sm"
+        class="bg-white border border-outline-variant rounded-xl p-8 max-w-2xl mx-auto shadow-sm"
       >
         <h3 class="text-headline-sm font-bold text-on-white mb-6">
           تعديل بيانات العميل الأساسية

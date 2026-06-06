@@ -19,7 +19,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="bg-white-lowest rounded-2xl border border-outline-variant overflow-hidden flex flex-col shadow-sm"
+    class="bg-white rounded-2xl border border-outline-variant overflow-hidden flex flex-col shadow-sm"
   >
     <div class="overflow-x-auto custom-scrollbar">
       <table class="w-full text-right border-collapse">
@@ -69,7 +69,7 @@ const emit = defineEmits<{
                   prod.available_in_pos
                     ? 'bg-success/10 text-success'
                     : 'bg-outline-variant text-on-white-variant'
-              "
+                "
               >
                 {{
                   prod.available_in_pos ? "متاح بنظام البيع" : "مخفي بالخلفية"
@@ -141,7 +141,11 @@ const emit = defineEmits<{
                 >
                   {{ prod.taxes_id?.length ? "✓" : "—" }}
                 </span>
-                {{ prod.taxes_id?.length ? (prod.taxes?.[0]?.name || "خاضع") : "غير خاضع" }}
+                {{
+                  prod.taxes_id?.length
+                    ? prod.taxes?.[0]?.name || "خاضع"
+                    : "غير خاضع"
+                }}
               </span>
             </td>
             <td class="px-6 py-4 text-on-white-variant text-label-md">
@@ -159,21 +163,26 @@ const emit = defineEmits<{
                   (prod.qty_available || 0) <= 5
                     ? 'bg-error/10 text-error'
                     : 'bg-primary/10 text-primary'
-              "
+                "
               >
-                {{ prod.qty_available || 0 }} {{ prod.to_weight ? "كجم" : "قطعة" }}
+                {{ prod.qty_available || 0 }}
+                {{ prod.to_weight ? "كجم" : "قطعة" }}
                 {{ (prod.qty_available || 0) <= 5 ? "(منخفض)" : "" }}
               </span>
             </td>
             <td class="px-6 py-4 text-label-md text-on-white-variant">
               <div v-if="prod.stock_locations?.length" class="space-y-1">
                 <div
-                  v-for="loc in prod.stock_locations.filter(l => l.location_name !== 'Unknown')"
+                  v-for="loc in prod.stock_locations.filter(
+                    (l) => l.location_name !== 'Unknown',
+                  )"
                   :key="loc.location_id"
                   class="flex justify-between gap-2"
                 >
                   <span>{{ loc.location_name }}</span>
-                  <span class="font-mono whitespace-nowrap">{{ loc.qty }} {{ prod.to_weight ? "كجم" : "قطعة" }}</span>
+                  <span class="font-mono whitespace-nowrap"
+                    >{{ loc.qty }} {{ prod.to_weight ? "كجم" : "قطعة" }}</span
+                  >
                 </div>
               </div>
               <span v-else>-</span>

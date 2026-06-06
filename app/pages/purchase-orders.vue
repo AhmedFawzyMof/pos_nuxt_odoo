@@ -152,13 +152,13 @@ const stateClass = (state: string) => {
 
       <input
         v-model="searchQuery"
-        class="w-full h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white-lowest"
+        class="w-full h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white"
         placeholder="بحث برقم الأمر أو اسم المورد..."
         type="text"
       />
 
       <div
-        class="bg-white-lowest border border-outline-variant rounded-xl overflow-hidden"
+        class="bg-white border border-outline-variant rounded-xl overflow-hidden"
       >
         <div
           v-if="poList.length === 0"

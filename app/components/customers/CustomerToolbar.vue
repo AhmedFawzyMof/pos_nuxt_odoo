@@ -13,7 +13,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white-lowest p-5 rounded-xl border border-outline-variant shadow-sm"
+    class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white p-5 rounded-xl border border-outline-variant shadow-sm"
   >
     <h3 class="text-headline-md font-bold text-primary">
       إدارة العملاء والشركاء

@@ -152,7 +152,7 @@ const modules = [
         <div
           v-for="kpi in kpis"
           :key="kpi.title"
-          class="bg-white-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-between hover:shadow-md transition-all group"
+          class="bg-white border border-outline-variant rounded-xl p-6 flex flex-col justify-between hover:shadow-md transition-all group"
         >
           <div class="flex justify-between items-start">
             <div
@@ -216,7 +216,7 @@ const modules = [
             v-for="mod in modules"
             :key="mod.name"
             :to="mod.path"
-            class="bg-white-lowest border border-outline-variant p-6 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-98 flex gap-4 group"
+            class="bg-white border border-outline-variant p-6 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-98 flex gap-4 group"
           >
             <div
               class="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"

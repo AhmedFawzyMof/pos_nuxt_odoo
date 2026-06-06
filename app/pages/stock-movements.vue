@@ -181,7 +181,7 @@ const triggerExport = async () => {
       <div class="flex gap-2">
         <button
           @click="triggerExport"
-          class="h-11 px-4 border border-outline-variant bg-white-lowest hover:bg-white rounded-lg text-label-md font-bold flex items-center gap-2 transition-all active:scale-95 cursor-pointer text-on-white"
+          class="h-11 px-4 border border-outline-variant bg-white hover:bg-white rounded-lg text-label-md font-bold flex items-center gap-2 transition-all active:scale-95 cursor-pointer text-on-white"
         >
           <Download class="w-[20px] h-[20px] text-primary" />
           تصدير التقرير
@@ -198,7 +198,7 @@ const triggerExport = async () => {
 
     <!-- Filter and Search Area -->
     <div
-      class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-white-lowest p-4 rounded-xl border border-outline-variant shadow-sm"
+      class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-white p-4 rounded-xl border border-outline-variant shadow-sm"
     >
       <!-- Search Input -->
       <div class="relative lg:col-span-1">
@@ -293,7 +293,7 @@ const triggerExport = async () => {
 
     <!-- Ledger Movements Table Grid -->
     <div
-      class="bg-white-lowest rounded-2xl border border-outline-variant overflow-hidden flex flex-col shadow-sm"
+      class="bg-white rounded-2xl border border-outline-variant overflow-hidden flex flex-col shadow-sm"
     >
       <div class="overflow-x-auto custom-scrollbar">
         <table class="w-full text-right border-collapse">

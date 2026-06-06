@@ -18,12 +18,9 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="bg-white-lowest border border-outline-variant rounded-xl overflow-hidden"
+    class="bg-white border border-outline-variant rounded-xl overflow-hidden"
   >
-    <div
-      v-if="status === 'pending'"
-      class="p-16 text-center"
-    >
+    <div v-if="status === 'pending'" class="p-16 text-center">
       <RefreshCw class="w-10 h-10 mx-auto animate-spin text-primary" />
       <p class="mt-4 text-on-white-variant">جاري جلب بيانات الموردين...</p>
     </div>

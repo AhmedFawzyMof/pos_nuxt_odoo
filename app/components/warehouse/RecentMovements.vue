@@ -39,7 +39,7 @@ const getIcon = (typeClass: string) => {
 
 <template>
   <div
-    class="bg-white-lowest rounded-xl border border-outline-variant flex flex-col h-full"
+    class="bg-white rounded-xl border border-outline-variant flex flex-col h-full"
   >
     <div
       class="p-6 border-b border-outline-variant bg-white/50 backdrop-blur-sm"

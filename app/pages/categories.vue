@@ -158,7 +158,7 @@ const handleDeleteFromDrawer = async () => {
 <template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <div
-      class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white-lowest p-4 rounded-xl border border-outline-variant shadow-sm"
+      class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white p-4 rounded-xl border border-outline-variant shadow-sm"
     >
       <div class="relative flex-1 max-w-md">
         <Search

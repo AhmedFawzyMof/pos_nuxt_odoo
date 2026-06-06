@@ -51,7 +51,7 @@ const setPage = (page: number) => {
 
 <template>
   <div
-    class="bg-white-lowest rounded-xl border border-outline-variant overflow-hidden"
+    class="bg-white rounded-xl border border-outline-variant overflow-hidden"
     dir="rtl"
   >
     <div class="p-6 border-b border-outline-variant">
@@ -147,7 +147,7 @@ const setPage = (page: number) => {
         <button
           :disabled="currentPage === 1"
           @click="setPage(currentPage - 1)"
-          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-white-lowest hover:bg-white-high transition-all text-on-white-variant disabled:opacity-40 disabled:hover:bg-white-lowest"
+          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-white hover:bg-white-high transition-all text-on-white-variant disabled:opacity-40 disabled:hover:bg-white"
         >
           <ChevronRight class="w-5 h-5" />
         </button>
@@ -160,7 +160,7 @@ const setPage = (page: number) => {
           :class="[
             currentPage === pageNumber
               ? 'bg-primary text-white border-primary'
-              : 'border-outline-variant bg-white-lowest text-on-white hover:bg-white-high',
+              : 'border-outline-variant bg-white text-on-white hover:bg-white-high',
           ]"
         >
           {{ pageNumber }}
@@ -169,7 +169,7 @@ const setPage = (page: number) => {
         <button
           :disabled="currentPage >= totalPages"
           @click="setPage(currentPage + 1)"
-          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-white-lowest hover:bg-white-high transition-all text-on-white-variant disabled:opacity-40 disabled:hover:bg-white-lowest"
+          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-white hover:bg-white-high transition-all text-on-white-variant disabled:opacity-40 disabled:hover:bg-white"
         >
           <ChevronLeft class="w-5 h-5" />
         </button>

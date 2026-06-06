@@ -74,7 +74,12 @@ const {
     status: statusFilter,
     session_id: debouncedSessionSearch,
   },
-  watch: [currentPage, debouncedSearchQuery, statusFilter, debouncedSessionSearch],
+  watch: [
+    currentPage,
+    debouncedSearchQuery,
+    statusFilter,
+    debouncedSessionSearch,
+  ],
   transform: (response) => {
     if (!response.data) response.data = [];
     return response;
@@ -98,8 +103,8 @@ const totalSales = computed(() =>
     .reduce((sum, o) => sum + o.amount_total, 0),
 );
 
-const completedCount = computed(() =>
-  ordersList.value.filter((o) => o.state !== "cancelled").length,
+const completedCount = computed(
+  () => ordersList.value.filter((o) => o.state !== "cancelled").length,
 );
 
 const nextPage = () => {
@@ -125,7 +130,8 @@ function closeDetail() {
 }
 
 async function voidOrder(orderId: number, orderName: string) {
-  if (!confirm(`هل أنت متأكد من رغبتك في إلغاء الطلب رقم #${orderName}؟`)) return;
+  if (!confirm(`هل أنت متأكد من رغبتك في إلغاء الطلب رقم #${orderName}؟`))
+    return;
   try {
     const res = await $fetch<any>("/api/orders/status", {
       method: "POST",
@@ -222,7 +228,7 @@ const statusIcons: Record<string, any> = {
         <!-- Top KPI Dashboard -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div
-            class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
+            class="bg-white border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
           >
             <div class="space-y-1">
               <p class="text-label-md text-on-white-variant">إجمالي المبيعات</p>
@@ -241,10 +247,12 @@ const statusIcons: Record<string, any> = {
           </div>
 
           <div
-            class="bg-white-lowest border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
+            class="bg-white border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
           >
             <div class="space-y-1">
-              <p class="text-label-md text-on-white-variant">الطلبات المكتملة</p>
+              <p class="text-label-md text-on-white-variant">
+                الطلبات المكتملة
+              </p>
               <h2 class="text-display-sm font-bold text-on-white">
                 {{ completedCount }} طلب
               </h2>
@@ -258,12 +266,11 @@ const statusIcons: Record<string, any> = {
               <Receipt class="w-7 h-7" />
             </div>
           </div>
-
         </div>
 
         <!-- Orders Table Section -->
         <div
-          class="bg-white-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden"
+          class="bg-white border border-outline-variant rounded-2xl shadow-sm overflow-hidden"
         >
           <div
             class="p-6 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -328,9 +335,7 @@ const statusIcons: Record<string, any> = {
                 <tr
                   class="bg-white-low text-on-white-variant border-b border-outline-variant"
                 >
-                  <th class="px-6 py-4 font-bold text-label-md">
-                    رقم الطلب
-                  </th>
+                  <th class="px-6 py-4 font-bold text-label-md">رقم الطلب</th>
                   <th class="px-6 py-4 font-bold text-label-md">الوقت</th>
                   <th class="px-6 py-4 font-bold text-label-md">العميل</th>
                   <th class="px-6 py-4 font-bold text-label-md">الإجمالي</th>
@@ -383,9 +388,7 @@ const statusIcons: Record<string, any> = {
                       "
                     >
                       <component
-                        :is="
-                          statusIcons[order.state] || RefreshCw
-                        "
+                        :is="statusIcons[order.state] || RefreshCw"
                         class="w-[14px] h-[14px]"
                       />
                       <span>{{
@@ -406,7 +409,10 @@ const statusIcons: Record<string, any> = {
                         <Eye class="w-[18px] h-[18px]" />
                       </button>
                       <button
-                        v-if="order.state !== 'cancelled' && order.state !== 'refund'"
+                        v-if="
+                          order.state !== 'cancelled' &&
+                          order.state !== 'refund'
+                        "
                         @click="voidOrder(order.id, order.name)"
                         class="text-error border border-error/20 px-3 py-1.5 rounded-lg hover:bg-error/10 transition-colors flex items-center gap-2 text-label-md font-bold cursor-pointer"
                       >
@@ -419,18 +425,29 @@ const statusIcons: Record<string, any> = {
 
                 <!-- Empty State -->
                 <tr v-if="ordersList.length === 0 && status !== 'pending'">
-                  <td colspan="7" class="p-16 text-center text-on-white-variant">
-                    <AlertCircle class="w-10 h-10 block mb-2 mx-auto text-outline" />
+                  <td
+                    colspan="7"
+                    class="p-16 text-center text-on-white-variant"
+                  >
+                    <AlertCircle
+                      class="w-10 h-10 block mb-2 mx-auto text-outline"
+                    />
                     <p class="font-bold">لا توجد طلبات مطابقة</p>
-                    <p class="text-sm mt-1">حاول تغيير معايير البحث أو التصفية</p>
+                    <p class="text-sm mt-1">
+                      حاول تغيير معايير البحث أو التصفية
+                    </p>
                   </td>
                 </tr>
 
                 <!-- Loading rows -->
                 <tr v-if="status === 'pending' && ordersList.length > 0">
                   <td colspan="7" class="p-8 text-center">
-                    <LoaderCircle class="w-6 h-6 animate-spin inline-block text-primary" />
-                    <span class="mr-2 text-on-white-variant text-sm">جاري التحديث...</span>
+                    <LoaderCircle
+                      class="w-6 h-6 animate-spin inline-block text-primary"
+                    />
+                    <span class="mr-2 text-on-white-variant text-sm"
+                      >جاري التحديث...</span
+                    >
                   </td>
                 </tr>
               </tbody>
@@ -475,8 +492,6 @@ const statusIcons: Record<string, any> = {
             </div>
           </div>
         </div>
-
-
       </template>
     </template>
 

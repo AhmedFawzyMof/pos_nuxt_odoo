@@ -11,7 +11,21 @@ interface VendorBillDetail {
 }
 
 const emit = defineEmits<{
-  (e: "bill-selected", detail: { supplierId: number; supplierName: string; invoiceDate: string; lines: { product_id: number | null; product_name: string; quantity: number; price_unit: number; tax_ids: number[] }[] }): void;
+  (
+    e: "bill-selected",
+    detail: {
+      supplierId: number;
+      supplierName: string;
+      invoiceDate: string;
+      lines: {
+        product_id: number | null;
+        product_name: string;
+        quantity: number;
+        price_unit: number;
+        tax_ids: number[];
+      }[];
+    },
+  ): void;
 }>();
 
 const search = ref("");
@@ -71,7 +85,12 @@ const select = async (bill: VendorBillResult) => {
       lines,
     });
   } catch {
-    emit("bill-selected", { supplierId: 0, supplierName: "", invoiceDate: "", lines: [] });
+    emit("bill-selected", {
+      supplierId: 0,
+      supplierName: "",
+      invoiceDate: "",
+      lines: [],
+    });
   } finally {
     isLoadingLines.value = false;
   }
@@ -98,13 +117,15 @@ const paymentStateClass = (state: string) => {
 
 <template>
   <div class="space-y-1.5">
-    <label class="text-label-md font-bold text-on-white-variant">اختيار فاتورة موردين</label>
+    <label class="text-label-md font-bold text-on-white-variant"
+      >اختيار فاتورة موردين</label
+    >
     <div class="relative">
       <div class="flex items-center gap-2">
         <input
           v-model="search"
           :disabled="!!selectedBillId"
-          class="flex-1 h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white-lowest text-on-white disabled:bg-white-low"
+          class="flex-1 h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white text-on-white disabled:bg-white-low"
           placeholder="ابحث برقم الفاتورة أو اسم المورد..."
           type="text"
         />
@@ -119,7 +140,7 @@ const paymentStateClass = (state: string) => {
       </div>
       <div
         v-if="showDropdown && results.length > 0"
-        class="absolute z-10 mt-1 w-full bg-white-lowest border border-outline-variant rounded-xl shadow-lg max-h-48 overflow-y-auto"
+        class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-xl shadow-lg max-h-48 overflow-y-auto"
       >
         <button
           v-for="b in results"

@@ -126,7 +126,7 @@ const prevPage = () => {
       <div class="flex gap-4 items-center">
         <input
           v-model="searchQuery"
-          class="flex-1 h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white-lowest"
+          class="flex-1 h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white"
           placeholder="بحث بالاسم أو رقم الهاتف أو البريد..."
           type="text"
         />

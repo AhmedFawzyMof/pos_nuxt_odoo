@@ -53,13 +53,15 @@ const clear = () => {
 
 <template>
   <div class="space-y-1.5">
-    <label class="text-label-md font-bold text-on-white-variant">المورد *</label>
+    <label class="text-label-md font-bold text-on-white-variant"
+      >المورد *</label
+    >
     <div class="relative">
       <div class="flex items-center gap-2">
         <input
           v-model="search"
           :disabled="!!modelValue"
-          class="flex-1 h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white-lowest text-on-white disabled:bg-white-low"
+          class="flex-1 h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white text-on-white disabled:bg-white-low"
           placeholder="ابحث عن مورد..."
           type="text"
         />
@@ -74,7 +76,7 @@ const clear = () => {
       </div>
       <div
         v-if="showDropdown && results.length > 0"
-        class="absolute z-10 mt-1 w-full bg-white-lowest border border-outline-variant rounded-xl shadow-lg max-h-48 overflow-y-auto"
+        class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-xl shadow-lg max-h-48 overflow-y-auto"
       >
         <button
           v-for="s in results"
@@ -85,10 +87,7 @@ const clear = () => {
           {{ s.name }}
         </button>
       </div>
-      <div
-        v-if="isSearching"
-        class="absolute left-3 top-1/2 -translate-y-1/2"
-      >
+      <div v-if="isSearching" class="absolute left-3 top-1/2 -translate-y-1/2">
         <LoaderCircle class="w-4 h-4 animate-spin text-on-white-variant" />
       </div>
     </div>
