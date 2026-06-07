@@ -141,7 +141,7 @@ const handleSave = async (payload: {
       drawerOpen.value = false;
     }
   } catch (err: any) {
-    console.error("Failed to save POS Category to Odoo:", err);
+    console.error("Failed to save POS Category:", err);
     alert(err.statusMessage || "خطأ في حفظ القسم بالنظام.");
   } finally {
     isSaving.value = false;

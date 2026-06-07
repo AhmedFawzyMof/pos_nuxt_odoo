@@ -172,7 +172,7 @@ const handleSave = async (
       drawerOpen.value = false;
     }
   } catch (err: any) {
-    console.error("Failed to preserve modifications to Odoo ERP:", err);
+    console.error("Failed to preserve modifications:", err);
     actionError.value =
       err.statusMessage ||
       err.message ||
@@ -202,7 +202,7 @@ const handleDeleteFromDrawer = async () => {
         drawerOpen.value = false;
       }
     } catch (err: any) {
-      console.error("Failed to archive product in Odoo ERP:", err);
+      console.error("Failed to archive product:", err);
       actionError.value =
         err.statusMessage ||
         err.message ||
@@ -245,7 +245,7 @@ const handleDeleteFromDrawer = async () => {
           @click="checkLiveStock"
           :disabled="liveStockLoading"
           class="flex items-center gap-1.5 px-3 py-2 rounded-full border border-success/40 text-success bg-success/5 hover:bg-success/10 transition-all active:scale-95 cursor-pointer disabled:opacity-50 text-label-md font-bold"
-          title="تحديث المخزون المباشر من أودو"
+          title="تحديث المخزون المباشر"
         >
           <RefreshCw
             :class="{ 'animate-spin': liveStockLoading }"

@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   if (connectErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل الاتصال بأودو: ${connectErr.message}`,
+      statusMessage: `فشل الاتصال بالخادم: ${connectErr.message}`,
     });
   }
 

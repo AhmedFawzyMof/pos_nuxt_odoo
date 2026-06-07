@@ -106,7 +106,7 @@ export default defineEventHandler(async (event) => {
       processedCount: moveLines.length,
     };
   } catch (error: any) {
-    console.error("Odoo Batch Processing Fail:", error);
+    console.error("Batch Processing Fail:", error);
     throw createError({
       statusCode: 500,
       statusMessage: `فشل في معالجة النقل المخزني: ${error.message}`,

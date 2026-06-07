@@ -27,10 +27,10 @@ export default defineEventHandler(async (event) => {
   const [err] = await tryCatch(odoo.connect());
 
   if (err) {
-    console.error("Odoo Sync Error:", err.message);
+    console.error("Sync Error:", err.message);
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل الاتصال بأودو: ${err.message}`,
+      statusMessage: `فشل الاتصال بالخادم: ${err.message}`,
     });
   }
 
@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
   );
 
   if (newLocationError) {
-    console.error("Odoo Sync Error:", newLocationError);
+    console.error("Sync Error:", newLocationError);
     throw createError({
       statusCode: 500,
       statusMessage: `فشل في إنشاء الموقع: ${newLocationError.message}`,

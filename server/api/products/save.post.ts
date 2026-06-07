@@ -198,10 +198,10 @@ export default defineEventHandler(async (event) => {
       id: templateId,
     };
   } catch (error: any) {
-    console.error("Odoo Save Error: ", error);
+    console.error("Save Error: ", error);
     return createError({
       statusCode: 500,
-      statusMessage: `فشل في حفظ البيانات في Odoo: ${error.message}`,
+      statusMessage: `فشل في حفظ البيانات: ${error.message}`,
     });
   }
 });

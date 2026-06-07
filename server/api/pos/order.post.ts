@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   if (connectErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to connect to Odoo instance: ${connectErr.message}`,
+      statusMessage: `Failed to connect to server: ${connectErr.message}`,
     });
   }
 
@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `Odoo Core RPC Processing Failure: ${rpcErr.message}`,
+      statusMessage: `Core RPC Processing Failure: ${rpcErr.message}`,
     });
   }
 

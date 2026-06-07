@@ -439,7 +439,7 @@ const closeModal = async () => {
                   <span
                     v-if="item.createNewProduct"
                     class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-bold"
-                    >جديد بأودو</span
+                    >جديد</span
                   >
                   <span
                     v-else
@@ -482,7 +482,7 @@ const closeModal = async () => {
             />
             <span>{{
               isSaving
-                ? "جاري ترحيل الباقة لأودو..."
+                ? "جاري ترحيل الباقة..."
                 : "ترحيل الشحنة كاملة والمزامنة"
             }}</span>
           </button>

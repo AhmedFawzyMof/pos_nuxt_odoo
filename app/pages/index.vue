@@ -9,6 +9,8 @@ import {
   ShoppingBag,
   Users,
   History,
+  Truck,
+  ClipboardList,
   TrendingUp,
   Banknote,
   Wallet,
@@ -96,6 +98,22 @@ const modules = [
     bg: "bg-teal-500/10",
     color: "text-teal-600",
   },
+  {
+    name: "الموردين",
+    description: "إدارة الموردين، متابعة الحسابات وطلبات الشراء.",
+    path: "/suppliers",
+    icon: Truck,
+    bg: "bg-orange-500/10",
+    color: "text-orange-600",
+  },
+  {
+    name: "أوامر الشراء",
+    description: "إنشاء ومتابعة أوامر الشراء للمخزون والمواد.",
+    path: "/purchase-orders",
+    icon: ClipboardList,
+    bg: "bg-cyan-500/10",
+    color: "text-cyan-600",
+  },
 ];
 </script>
 
@@ -122,7 +140,7 @@ const modules = [
           <div>
             <p class="font-bold text-sm">فشل جلب بيانات لوحة التحكم</p>
             <p class="text-xs opacity-75 font-mono mt-0.5">
-              {{ error?.message || "تعذر الاتصال بأودو" }}
+              {{ error?.message || "تعذر الاتصال بالخادم" }}
             </p>
           </div>
         </div>
@@ -133,7 +151,7 @@ const modules = [
       >
         <div class="relative z-10 max-w-xl">
           <h3 class="text-display-lg font-bold mb-2">
-            مرحباً بك في لوحة تحكم Odoo
+            مرحباً بك في easyweb POS
           </h3>
           <p class="text-body-lg opacity-90">
             من هنا يمكنك الوصول إلى جميع الأدوات الذكية لإدارة البيع بالتجزئة،
@@ -143,7 +161,7 @@ const modules = [
         <div
           class="absolute -bottom-6 left-6 opacity-10 text-[160px] select-none font-black hidden md:block"
         >
-          Odoo
+          easyweb
         </div>
       </div>
 

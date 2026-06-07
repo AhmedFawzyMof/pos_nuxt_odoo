@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
   if (connectErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to connect to Odoo: ${connectErr.message}`,
+      statusMessage: `Failed to connect to server: ${connectErr.message}`,
     });
   }
 

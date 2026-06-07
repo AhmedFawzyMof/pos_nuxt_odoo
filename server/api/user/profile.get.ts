@@ -1,0 +1,71 @@
+import { defineEventHandler, createError } from "h3";
+import { connectToOdoo } from "~~/server/utils/client";
+import { tryCatch } from "~~/server/utils/tryCatch";
+
+export default defineEventHandler(async (event) => {
+  const session = await getUserSession(event);
+  if (!session?.user) {
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
+  }
+
+  const odoo = connectToOdoo(
+    session.odooUsername as string,
+    session.odooPassword as string,
+  );
+
+  try {
+    await odoo.connect();
+
+    const uid = session.user.id;
+
+    const [userErr, userData] = await tryCatch(
+      odoo.read("res.users", uid, [
+        "name", "login", "email", "lang", "tz", "partner_id", "groups_id",
+      ]),
+    );
+    if (userErr) throw userErr;
+
+    const user = userData?.[0];
+    if (!user) {
+      throw createError({ statusCode: 404, statusMessage: "User not found" });
+    }
+
+    const partnerId = user.partner_id?.[0];
+    let avatarBase64 = null;
+    if (partnerId) {
+      const [avatarErr, avatarData] = await tryCatch(
+        odoo.read("res.partner", partnerId, ["image_1920"]),
+      );
+      if (!avatarErr && avatarData?.[0]?.image_1920) {
+        avatarBase64 = avatarData[0].image_1920;
+      }
+    }
+
+    const [groupsErr, groupsData] = await tryCatch(
+      odoo.searchRead("res.groups", [["id", "in", user.groups_id || []]], ["id", "name", "category_id"]),
+    );
+    const groups = groupsErr
+      ? []
+      : (groupsData || []).filter((g: any) => g.category_id);
+
+    return {
+      success: true,
+      data: {
+        id: user.id,
+        name: user.name,
+        login: user.login,
+        email: user.email,
+        lang: user.lang,
+        tz: user.tz,
+        partnerId,
+        avatar: avatarBase64,
+        groups,
+      },
+    };
+  } catch (error: any) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: `Failed to fetch user profile: ${error.message}`,
+    });
+  }
+});

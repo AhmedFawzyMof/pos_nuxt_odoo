@@ -41,7 +41,7 @@ function syncCash() {
       </CardTitle>
       <CardDescription class="text-xs text-amber-700">
         لتتمكن من إدراج المنتجات وبدء الفواتير، يجب تدشين دورة مالية أولاً
-        في خادم أودو.
+        في خادم النظام.
       </CardDescription>
     </CardHeader>
     <CardContent>

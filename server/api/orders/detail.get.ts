@@ -76,7 +76,7 @@ export default defineEventHandler(async (event) => {
   if (connectErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل الاتصال بـ Odoo: ${connectErr.message}`,
+      statusMessage: `فشل الاتصال بالخادم: ${connectErr.message}`,
     });
   }
 
@@ -97,7 +97,7 @@ export default defineEventHandler(async (event) => {
   if (!result || result.status === "error" || !result.id) {
     throw createError({
       statusCode: 404,
-      statusMessage: result?.message || "الطلب غير موجود في نظام Odoo",
+      statusMessage: result?.message || "الطلب غير موجود في النظام",
     });
   }
 

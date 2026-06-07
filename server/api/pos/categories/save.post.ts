@@ -71,10 +71,10 @@ export default defineEventHandler(async (event) => {
       id: categoryId,
     };
   } catch (error: any) {
-    console.error("Odoo Category Save Error: ", error);
+    console.error("Category Save Error: ", error);
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في حفظ القسم في أودو: ${error.message}`,
+      statusMessage: `فشل في حفظ القسم: ${error.message}`,
     });
   }
 });

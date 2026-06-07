@@ -24,7 +24,7 @@ const registerName = ref("");
     class="max-w-md bg-card border border-primary/20 rounded-xl p-5 shadow-sm space-y-4"
   >
     <div class="space-y-1">
-      <h3 class="text-sm font-bold">تسجيل محطة عمل جديدة في أودو</h3>
+      <h3 class="text-sm font-bold">تسجيل محطة عمل جديدة</h3>
       <p class="text-xs text-muted-foreground">
         سيقوم النظام بإنشاء ملف إعدادات متكامل مع دفاتر اليومية الافتراضية
         تلقائياً.

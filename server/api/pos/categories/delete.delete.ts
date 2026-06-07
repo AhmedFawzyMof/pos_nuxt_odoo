@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
   } catch (error: any) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل حذف القسم من أودو: ${error.message}`,
+      statusMessage: `فشل حذف القسم: ${error.message}`,
     });
   }
 });

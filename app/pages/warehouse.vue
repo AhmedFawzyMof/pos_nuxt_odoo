@@ -18,7 +18,7 @@ const isError = computed(() => !!error.value || data.value?.success === false);
 const errorMessage = computed(() => {
   if (error.value) return "فشل الاتصال بالخادم الداخلي. يرجى التحقق من الشبكة.";
   if (data.value?.success === false)
-    return (data.value as any).error || "فشل جلب البيانات من نظام أودو.";
+    return (data.value as any).error || "فشل جلب البيانات من النظام.";
   return "";
 });
 

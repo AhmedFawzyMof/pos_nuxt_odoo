@@ -181,7 +181,7 @@ const handleSaveLocation = async () => {
     console.error(error);
     validationError.value =
       error.statusMessage ||
-      "حدث خطأ أثناء المزامنة مع أودو (Error syncing with Odoo)";
+      "حدث خطأ أثناء المزامنة (Error syncing)";
   } finally {
     isSaving.value = false;
   }

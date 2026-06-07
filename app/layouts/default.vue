@@ -20,7 +20,11 @@ const pageTitle = computed(() => {
   });
   if (currentLink) return currentLink.name;
   if (route.path.startsWith("/customer-details")) return "تفاصيل العميل";
-  return "Odoo Retail Lite";
+  if (route.path.startsWith("/supplier-details")) return "تفاصيل المورد";
+  if (route.path.startsWith("/reports")) return "التقارير";
+  if (route.path.startsWith("/user-profile")) return "الملف الشخصي";
+  if (route.path.startsWith("/company-profile")) return "بيانات الشركة";
+  return "easyweb";
 });
 </script>
 
