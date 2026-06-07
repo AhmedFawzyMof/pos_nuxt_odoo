@@ -504,7 +504,7 @@ const statusIcons: Record<string, any> = {
 
     <!-- Feedback Toast -->
     <div
-      class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500"
+      class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 bg-white text-primary"
       :class="
         showToast
           ? 'translate-y-0 opacity-100'

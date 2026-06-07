@@ -8,8 +8,13 @@ import {
   Filter,
   LoaderCircle,
   CloudOff,
-  Eye,
   ArrowUpLeft,
+  CheckCheck,
+  AlertCircle,
+  Send,
+  XCircle,
+  Landmark,
+  X,
 } from "@lucide/vue";
 import type { VendorBill, VendorBillApiResponse } from "~/types/vendorBill";
 
@@ -30,11 +35,10 @@ const {
   refresh,
   pending,
 } = useFetch<VendorBillApiResponse>("/api/vendor-bills", {
-  lazy: true,
   query: {
     page: currentPage,
     search: searchQuery,
-    payment_state: filterState,
+    status: filterState,
     date_from: dateFrom,
     date_to: dateTo,
   },
@@ -109,6 +113,97 @@ const paymentStateClass = (state: string) => {
 };
 
 const loadingAll = computed(() => pending.value);
+
+const showToast = ref(false);
+const toastMessage = ref("");
+const toastType = ref<"success" | "error">("success");
+
+function showToastMessage(message: string, type: "success" | "error") {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+}
+
+const showPaymentModal = ref(false);
+const payBillId = ref<number | null>(null);
+const payAmount = ref(0);
+const payDate = ref("");
+
+function openPayModal(bill: VendorBill) {
+  payBillId.value = bill.id;
+  payAmount.value = bill.amount_residual;
+  payDate.value = new Date().toISOString().slice(0, 10);
+  showPaymentModal.value = true;
+}
+
+const postBill = async (billId: number) => {
+  try {
+    const res = await $fetch<{ success: boolean; message?: string }>(
+      "/api/vendor-bills/status",
+      { method: "POST", body: { bill_id: billId, status: "posted" } },
+    );
+    if (res.success) {
+      showToastMessage(res.message || "تم ترحيل الفاتورة بنجاح", "success");
+      refresh();
+    } else {
+      showToastMessage(res.message || "فشل ترحيل الفاتورة", "error");
+    }
+  } catch (e: any) {
+    showToastMessage(
+      e?.data?.statusMessage || e?.message || "خطأ في الاتصال بالخادم", "error",
+    );
+  }
+};
+
+const cancelBill = async (billId: number) => {
+  try {
+    const res = await $fetch<{ success: boolean; message?: string }>(
+      "/api/vendor-bills/status",
+      { method: "POST", body: { bill_id: billId, status: "cancel" } },
+    );
+    if (res.success) {
+      showToastMessage(res.message || "تم إلغاء الفاتورة بنجاح", "success");
+      refresh();
+    } else {
+      showToastMessage(res.message || "فشل إلغاء الفاتورة", "error");
+    }
+  } catch (e: any) {
+    showToastMessage(
+      e?.data?.statusMessage || e?.message || "خطأ في الاتصال بالخادم", "error",
+    );
+  }
+};
+
+const submitPayment = async () => {
+  if (!payBillId.value || payAmount.value <= 0) return;
+  try {
+    const res = await $fetch<{ success: boolean; message?: string }>(
+      "/api/vendor-bills/payment",
+      {
+        method: "POST",
+        body: {
+          bill_id: payBillId.value,
+          amount: payAmount.value,
+          payment_date: payDate.value,
+        },
+      },
+    );
+    if (res.success) {
+      showToastMessage(res.message || "تم تسجيل الدفعة بنجاح", "success");
+      showPaymentModal.value = false;
+      refresh();
+    } else {
+      showToastMessage(res.message || "فشل تسجيل الدفعة", "error");
+    }
+  } catch (e: any) {
+    showToastMessage(
+      e?.data?.statusMessage || e?.message || "خطأ في الاتصال بالخادم", "error",
+    );
+  }
+};
 </script>
 
 <template>
@@ -283,6 +378,7 @@ const loadingAll = computed(() => pending.value);
                 <th class="p-4 text-label-md font-bold">المتبقي</th>
                 <th class="p-4 text-label-md font-bold">حالة الدفع</th>
                 <th class="p-4 text-label-md font-bold">الحالة</th>
+                <th class="p-4 text-label-md font-bold">الإجراءات</th>
               </tr>
             </thead>
             <tbody
@@ -327,6 +423,31 @@ const loadingAll = computed(() => pending.value);
                   >
                     {{ stateText(bill.state) }}
                   </span>
+                </td>
+                <td class="p-4">
+                  <div class="flex gap-2">
+                    <button
+                      v-if="bill.state === 'draft'"
+                      @click="postBill(bill.id)"
+                      class="px-3 py-1 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 cursor-pointer flex items-center gap-1"
+                    >
+                      <Send class="w-3 h-3" /> ترحيل
+                    </button>
+                    <button
+                      v-if="bill.state === 'posted' && bill.payment_state !== 'paid'"
+                      @click="openPayModal(bill)"
+                      class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer flex items-center gap-1"
+                    >
+                      <Landmark class="w-3 h-3" /> دفع
+                    </button>
+                    <button
+                      v-if="bill.state !== 'paid' && bill.state !== 'cancel'"
+                      @click="cancelBill(bill.id)"
+                      class="px-3 py-1 bg-error text-white text-xs font-bold rounded-lg hover:bg-error/90 cursor-pointer flex items-center gap-1"
+                    >
+                      <XCircle class="w-3 h-3" /> إلغاء
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -420,5 +541,86 @@ const loadingAll = computed(() => pending.value);
         </div>
       </div>
     </template>
+  </div>
+
+  <!-- Payment Modal -->
+  <div
+    v-if="showPaymentModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+    @click.self="showPaymentModal = false"
+  >
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-headline-sm font-bold">تسجيل دفعة</h3>
+        <button
+          @click="showPaymentModal = false"
+          class="cursor-pointer text-on-white-variant hover:text-on-white"
+        >
+          <X class="w-5 h-5" />
+        </button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-label-md text-on-white-variant mb-1">المبلغ</label>
+          <input
+            v-model.number="payAmount"
+            type="number"
+            step="0.01"
+            min="0"
+            class="w-full h-11 px-3 border border-outline-variant rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <div>
+          <label class="block text-label-md text-on-white-variant mb-1">تاريخ الدفع</label>
+          <input
+            v-model="payDate"
+            type="date"
+            class="w-full h-11 px-3 border border-outline-variant rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button
+            @click="showPaymentModal = false"
+            class="flex-1 h-11 border border-outline-variant rounded-lg font-bold cursor-pointer hover:bg-white-low"
+          >
+            إلغاء
+          </button>
+          <button
+            @click="submitPayment"
+            :disabled="payAmount <= 0"
+            class="flex-1 h-11 bg-primary text-white rounded-lg font-bold cursor-pointer hover:bg-primary/90 disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            <Landmark class="w-4 h-4" /> تأكيد الدفع
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feedback Toast -->
+  <div
+    class="fixed bottom-10 left-1/2 -translate-x-1/2 z-100 transition-all duration-500 bg-white text-primary"
+    :class="
+      showToast
+        ? 'translate-y-0 opacity-100'
+        : 'translate-y-32 opacity-0 pointer-events-none'
+    "
+  >
+    <div
+      class="px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3"
+      :class="
+        toastType === 'success'
+          ? 'bg-on-white text-white'
+          : 'bg-error text-on-error'
+      "
+    >
+      <component
+        :is="toastType === 'success' ? CheckCheck : AlertCircle"
+        class="w-5 h-5 shrink-0"
+      />
+      <div>
+        <p class="font-bold text-sm text-primary">{{ toastMessage }}</p>
+      </div>
+    </div>
   </div>
 </template>

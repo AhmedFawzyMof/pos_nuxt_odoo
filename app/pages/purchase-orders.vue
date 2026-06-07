@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { CloudOff, LoaderCircle, Plus } from "@lucide/vue";
+import {
+  CloudOff,
+  LoaderCircle,
+  Plus,
+  CheckCheck,
+  AlertCircle,
+} from "@lucide/vue";
 import type {
   PurchaseOrder,
   PurchaseOrderApiResponse,
@@ -12,6 +18,9 @@ const showCreateModal = ref(false);
 const currentPage = ref(1);
 const searchQuery = ref("");
 const filterState = ref("");
+const showToast = ref(false);
+const toastMessage = ref("");
+const toastType = ref<"success" | "error">("success");
 
 const {
   data: apiResponse,
@@ -33,27 +42,81 @@ const poList = computed<PurchaseOrder[]>(() => apiResponse.value?.data || []);
 const totalPages = computed(() => apiResponse.value?.totalPages || 1);
 const totalItems = computed(() => apiResponse.value?.totalItems || 0);
 
+function showToastMessage(message: string, type: "success" | "error") {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+}
+
 const confirmPO = async (poId: number) => {
   try {
-    const res = await $fetch("/api/purchase-orders/confirm", {
-      method: "POST",
-      body: { po_id: poId },
-    });
-    if ((res as any).success) refresh();
-  } catch (e) {
-    console.error(e);
+    const res = await $fetch<{ success: boolean; message?: string }>(
+      "/api/purchase-orders/confirm",
+      { method: "POST", body: { po_id: poId } },
+    );
+    if (res.success) {
+      showToastMessage("تم تأكيد أمر الشراء بنجاح", "success");
+      await refresh();
+    } else {
+      showToastMessage(res.message || "فشل تأكيد أمر الشراء", "error");
+    }
+  } catch (e: any) {
+    showToastMessage(
+      e?.data?.statusMessage ||
+        e?.statusMessage ||
+        e?.message ||
+        "خطأ في الاتصال بالخادم",
+      "error",
+    );
+  }
+};
+
+const receivePO = async (poId: number) => {
+  try {
+    const res = await $fetch<{ success: boolean; message?: string }>(
+      "/api/purchase-orders/receive",
+      { method: "POST", body: { po_id: poId } },
+    );
+    if (res.success) {
+      showToastMessage("تم استلام المنتجات بنجاح", "success");
+      await refresh();
+    } else {
+      showToastMessage(res.message || "فشل استلام المنتجات", "error");
+    }
+  } catch (e: any) {
+    showToastMessage(
+      e?.data?.statusMessage ||
+        e?.statusMessage ||
+        e?.message ||
+        "خطأ في الاتصال بالخادم",
+      "error",
+    );
   }
 };
 
 const createBill = async (poId: number) => {
   try {
-    const res = await $fetch("/api/purchase-orders/create-bill", {
-      method: "POST",
-      body: { po_id: poId },
-    });
-    if ((res as any).success) refresh();
-  } catch (e) {
-    console.error(e);
+    const res = await $fetch<{ success: boolean; message?: string }>(
+      "/api/purchase-orders/create-bill",
+      { method: "POST", body: { po_id: poId } },
+    );
+    if (res.success) {
+      showToastMessage(res.message || "تم إنشاء فاتورة المورد بنجاح", "success");
+      refresh();
+    } else {
+      showToastMessage(res.message || "فشل إنشاء الفاتورة", "error");
+    }
+  } catch (e: any) {
+    showToastMessage(
+      e?.data?.statusMessage ||
+        e?.statusMessage ||
+        e?.message ||
+        "خطأ في الاتصال بالخادم",
+      "error",
+    );
   }
 };
 
@@ -224,12 +287,13 @@ const stateClass = (state: string) => {
                       v-if="
                         po.state === 'purchase' && po.receipt_status !== 'done'
                       "
+                      @click="receivePO(po.id)"
                       class="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer"
                     >
                       استلام
                     </button>
                     <button
-                      v-if="po.state === 'purchase'"
+                      v-if="po.state === 'purchase' && po.receipt_status !== 'pending'"
                       @click="createBill(po.id)"
                       class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer"
                     >
@@ -269,4 +333,31 @@ const stateClass = (state: string) => {
     @update:open="showCreateModal = $event"
     @created="refresh"
   />
+
+  <!-- Feedback Toast -->
+  <div
+    class="fixed bottom-10 left-1/2 -translate-x-1/2 z-100 transition-all duration-500 bg-white text-primary"
+    :class="
+      showToast
+        ? 'translate-y-0 opacity-100'
+        : 'translate-y-32 opacity-0 pointer-events-none'
+    "
+  >
+    <div
+      class="px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3"
+      :class="
+        toastType === 'success'
+          ? 'bg-on-white text-white'
+          : 'bg-error text-on-error'
+      "
+    >
+      <component
+        :is="toastType === 'success' ? CheckCheck : AlertCircle"
+        class="w-5 h-5 shrink-0"
+      />
+      <div>
+        <p class="font-bold text-sm text-primary">{{ toastMessage }}</p>
+      </div>
+    </div>
+  </div>
 </template>
