@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { parseWeightBarcode } from "~/utils/weightBarcode";
-import { AlertCircle, ShoppingCart, Plus, MapPin, Wallet, LogOut } from "@lucide/vue";
+import {
+  AlertCircle,
+  ShoppingCart,
+  Plus,
+  MapPin,
+  Wallet,
+  LogOut,
+} from "@lucide/vue";
 import PosSearchBar from "~/components/pos/PosSearchBar.vue";
 import PosCategoryFilter from "~/components/pos/PosCategoryFilter.vue";
 import PosProductGrid from "~/components/pos/PosProductGrid.vue";
@@ -10,9 +17,11 @@ import PosProductDetailSheet from "~/components/pos/PosProductDetailSheet.vue";
 import PosVaultModal from "~/components/pos/PosVaultModal.vue";
 import PosPaymentSheet from "~/components/pos/PosPaymentSheet.vue";
 import PosCloseSessionModal from "~/components/pos/PosCloseSessionModal.vue";
+import PosHotkeyHelp from "~/components/pos/PosHotkeyHelp.vue";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { usePosCartStore } from "~~/stores/pos-cart";
+import { usePosHotkeys } from "~/composables/usePosHotkeys";
 import type { POSProduct, POSCategory, PaymentMethod } from "~/types/pos";
 
 const route = useRoute();
@@ -26,9 +35,12 @@ const sessionId = ref<number | null>(null);
 
 async function fetchSessionFromApi(configIdVal: string) {
   try {
-    const res = await $fetch<{ success: boolean; session: any }>("/api/pos/status", {
-      params: { config_id: configIdVal },
-    });
+    const res = await $fetch<{ success: boolean; session: any }>(
+      "/api/pos/status",
+      {
+        params: { config_id: configIdVal },
+      },
+    );
     if (res.success && res.session?.session_id) {
       sessionId.value = res.session.session_id;
     }
@@ -51,6 +63,15 @@ const showProductsDrawer = ref(false);
 const showVaultModal = ref(false);
 const showCloseSessionModal = ref(false);
 const showPaymentSheet = ref(false);
+const hotkeyPreselectMethodId = ref<number | null>(null);
+const hotkeyAutoExpandSection = ref<"discount" | "customer" | null>(null);
+
+watch(showPaymentSheet, (open) => {
+  if (!open) {
+    hotkeyPreselectMethodId.value = null;
+    hotkeyAutoExpandSection.value = null;
+  }
+});
 
 const allProducts = ref<POSProduct[]>([]);
 const categories = ref<POSCategory[]>([]);
@@ -59,6 +80,16 @@ const locations = ref<any[]>([]);
 const loading = ref(false);
 const error = ref("");
 const totalPages = ref(1);
+
+const { selectedCartIndex } = usePosHotkeys({
+  paymentMethods,
+  sessionId,
+  showPaymentSheet,
+  showCloseSessionModal,
+  preselectMethodId: hotkeyPreselectMethodId,
+  autoExpandSection: hotkeyAutoExpandSection,
+  onCheckout: handleCheckout,
+});
 
 const hasMore = computed(() => currentPage.value < totalPages.value);
 
@@ -227,8 +258,9 @@ watch(
 <template>
   <div
     v-if="configId"
-    class="flex gap-0 overflow-hidden -m-6 h-[calc(100vh-4rem)]"
+    class="flex gap-0 overflow-hidden -m-6 h-[calc(100vh-4rem)] relative"
   >
+    <PosHotkeyHelp />
     <!-- Desktop left panel: search + categories + products (hidden on mobile) -->
     <div class="hidden lg:flex flex-1 flex-col min-w-0 overflow-hidden">
       <div
@@ -391,7 +423,9 @@ watch(
       <!-- Cart panel fills remaining space -->
       <PosCartPanel
         :bordered="false"
+        :selected-index="selectedCartIndex"
         @checkout="handleCheckout"
+        @select-item="(i) => (selectedCartIndex = i)"
       />
 
       <!-- Mobile: add products button -->
@@ -516,6 +550,8 @@ watch(
       :payment-methods="paymentMethods"
       :session-id="sessionId"
       :config-id="configId"
+      :preselect-method-id="hotkeyPreselectMethodId"
+      :auto-expand-section="hotkeyAutoExpandSection"
       @order-completed="handleOrderCompleted"
     />
 

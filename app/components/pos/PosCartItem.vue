@@ -5,6 +5,7 @@ import type { CartItem } from "~/types/pos";
 
 const props = defineProps<{
   item: CartItem;
+  isSelected?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -65,7 +66,10 @@ function onInput(e: Event) {
 </script>
 
 <template>
-  <div class="flex items-start gap-3 py-3 border-b border-outline-variant/20 last:border-0">
+  <div
+    class="flex items-start gap-3 py-3 border-b border-outline-variant/20 last:border-0 rounded-lg transition-all duration-150"
+    :class="isSelected ? 'ring-2 ring-primary ring-offset-1 bg-primary/5 -mx-2 px-2' : ''"
+  >
     <div class="flex-1 min-w-0 space-y-1">
       <h4 class="text-sm font-semibold leading-tight truncate">
         {{ item.product.display_name || item.product.name }}

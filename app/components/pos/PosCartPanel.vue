@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { ShoppingCart, Trash2, Receipt } from "@lucide/vue";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import { Button } from "@/components/ui/button";
 import PosCartItem from "./PosCartItem.vue";
 import { usePosCartStore } from "~~/stores/pos-cart";
 
 const props = withDefaults(defineProps<{
   bordered?: boolean;
+  selectedIndex?: number;
+  loading?: boolean;
 }>(), {
   bordered: true,
+  selectedIndex: -1,
+  loading: false,
 });
 
 const emit = defineEmits<{
   checkout: [];
+  selectItem: [index: number];
 }>();
 
 const cart = usePosCartStore();
@@ -45,17 +51,34 @@ const isEmpty = computed(() => cart.items.length === 0);
 
     <div class="flex-1 overflow-y-auto px-4 py-2 space-y-0">
       <div
-        v-if="isEmpty"
+        v-if="isEmpty && !loading"
         class="flex flex-col items-center justify-center h-full text-muted-foreground"
       >
         <span class="material-symbols-outlined text-5xl text-muted-foreground/30">shopping_cart</span>
         <p class="text-sm mt-2">الفواتير فارغة</p>
         <p class="text-xs mt-1">اختر المنتجات من الكتالوج</p>
       </div>
+      <div v-else-if="isEmpty && loading" class="space-y-2 px-2 py-4">
+        <div
+          v-for="i in 3"
+          :key="i"
+          class="flex items-center gap-3 p-3 rounded-xl"
+        >
+          <Skeleton class="w-10 h-10 rounded-lg shrink-0" />
+          <div class="flex-1 space-y-2">
+            <Skeleton class="h-3 w-3/4" />
+            <Skeleton class="h-3 w-1/3" />
+          </div>
+          <Skeleton class="h-8 w-20 rounded-lg" />
+        </div>
+      </div>
       <PosCartItem
-        v-for="item in cart.items"
+        v-for="(item, index) in cart.items"
         :key="item.product.id"
         :item="item"
+        :is-selected="index === selectedIndex"
+        class="cursor-pointer select-none"
+        @click="emit('selectItem', index)"
         @update-quantity="(q) => cart.updateQuantity(item.product.id, q)"
         @remove="cart.removeItem(item.product.id)"
       />

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { RefreshCw, Edit, Trash2, SearchX, Folder } from "@lucide/vue";
+import { Edit, Trash2, SearchX, Folder } from "@lucide/vue";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 
 interface Category {
   id?: number;
@@ -52,17 +53,27 @@ const emit = defineEmits<{
         </thead>
 
         <tbody class="divide-y divide-outline-variant">
-          <tr v-if="status === 'pending' && !categories.length">
-            <td colspan="5" class="p-16 text-center text-on-white-variant">
-              <RefreshCw
-                class="w-10 h-10 block mb-2 mx-auto animate-spin text-primary"
-              />
-              جاري جلب مصفوفة الأقسام من النظام...
-            </td>
-          </tr>
+          <template v-if="status === 'pending' && !categories.length">
+            <tr v-for="i in 5" :key="'skeleton-' + i">
+              <td class="px-6 py-4"><Skeleton class="h-5 w-24 rounded-full" /></td>
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <Skeleton class="w-10 h-10 rounded-lg shrink-0" />
+                  <Skeleton class="h-4 w-36" />
+                </div>
+              </td>
+              <td class="px-6 py-4"><Skeleton class="h-4 w-12" /></td>
+              <td class="px-6 py-4"><Skeleton class="h-5 w-16 rounded-full" /></td>
+              <td class="px-6 py-4 text-center">
+                <div class="flex justify-center gap-2">
+                  <Skeleton class="h-8 w-8 rounded-full" />
+                  <Skeleton class="h-8 w-8 rounded-full" />
+                </div>
+              </td>
+            </tr>
+          </template>
 
           <tr
-            v-else
             v-for="(cat, index) in categories"
             :key="cat.id || index"
             @click="emit('edit', cat, index)"

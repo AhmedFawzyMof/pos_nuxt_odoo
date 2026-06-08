@@ -16,6 +16,7 @@ import {
   Activity,
   Circle,
 } from "@lucide/vue";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import ReportChart from "./ReportChart.vue";
 import ReportTable from "./ReportTable.vue";
 
@@ -98,15 +99,28 @@ defineExpose({ refresh, handleExport });
 <template>
   <div class="space-y-6">
     <!-- Loading -->
-    <div
-      v-if="pending && !reportData"
-      class="flex items-center justify-center py-20"
-    >
-      <div class="flex flex-col items-center gap-3 text-on-white-variant">
+    <div v-if="pending && !reportData" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div
-          class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"
-        />
-        <span class="text-[13px]">جاري تحميل التقرير...</span>
+          v-for="i in 4"
+          :key="i"
+          class="bg-white border border-outline-variant rounded-xl p-5 space-y-3"
+        >
+          <Skeleton class="w-10 h-10 rounded-lg" />
+          <Skeleton class="h-3 w-24" />
+          <Skeleton class="h-6 w-32" />
+        </div>
+      </div>
+      <Skeleton class="h-64 w-full rounded-xl" />
+      <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
+        <div class="p-4 space-y-3">
+          <div v-for="i in 5" :key="i" class="flex gap-4">
+            <Skeleton class="h-4 flex-1" />
+            <Skeleton class="h-4 w-24" />
+            <Skeleton class="h-4 w-20" />
+            <Skeleton class="h-4 w-28" />
+          </div>
+        </div>
       </div>
     </div>
 

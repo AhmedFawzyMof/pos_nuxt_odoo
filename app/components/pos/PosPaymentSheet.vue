@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, nextTick, onMounted } from "vue";
 import {
   X,
   CheckCircle,
@@ -24,6 +24,8 @@ const props = defineProps<{
   paymentMethods: PaymentMethod[];
   sessionId: number;
   configId: string;
+  preselectMethodId?: number | null;
+  autoExpandSection?: "discount" | "customer" | null;
 }>();
 
 const emit = defineEmits<{
@@ -102,6 +104,39 @@ async function saveCustomer(payload: Record<string, any>) {
     customerDrawerSaving.value = false;
   }
 }
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (!isOpen) return;
+    nextTick(() => {
+      if (props.preselectMethodId) {
+        const method = findMethod(props.preselectMethodId);
+        if (method) {
+          selectPaymentMethod(method);
+        }
+      }
+      if (props.autoExpandSection === "discount") {
+        showDiscount.value = true;
+        setTimeout(() => {
+          const input = document.querySelector<HTMLInputElement>(
+            '[placeholder="0"], [placeholder="0.00"]',
+          );
+          input?.focus();
+        }, 100);
+      }
+      if (props.autoExpandSection === "customer") {
+        showCustomer.value = true;
+        setTimeout(() => {
+          const input = document.querySelector<HTMLInputElement>(
+            '[placeholder="بحث عن عميل..."]',
+          );
+          input?.focus();
+        }, 100);
+      }
+    });
+  },
+);
 
 onMounted(() => fetchCustomers());
 

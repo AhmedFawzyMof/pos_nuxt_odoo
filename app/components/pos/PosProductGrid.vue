@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { LoaderCircle } from "@lucide/vue";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import PosProductCard from "./PosProductCard.vue";
 import type { POSProduct } from "~/types/pos";
 
@@ -55,11 +56,22 @@ watch(
   <div ref="gridRef" class="space-y-4">
     <div
       v-if="loading && products.length === 0"
-      class="flex items-center justify-center py-20"
+      class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
     >
-      <div class="flex flex-col items-center gap-3 text-muted-foreground">
-        <LoaderCircle class="w-8 h-8 animate-spin text-primary" />
-        <span class="text-sm">جاري تحميل المنتجات...</span>
+      <div
+        v-for="i in 12"
+        :key="i"
+        class="bg-card border border-outline-variant/40 rounded-xl overflow-hidden flex flex-col"
+      >
+        <Skeleton class="aspect-square rounded-none" />
+        <div class="p-2.5 space-y-2">
+          <Skeleton class="h-3 w-3/4" />
+          <Skeleton class="h-2.5 w-1/2" />
+          <div class="flex items-center justify-between pt-1">
+            <Skeleton class="h-4 w-16" />
+            <Skeleton class="h-8 w-8 rounded-lg" />
+          </div>
+        </div>
       </div>
     </div>
 

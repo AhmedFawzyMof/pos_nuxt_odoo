@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { RefreshCw, SearchX } from "@lucide/vue";
+import { SearchX } from "@lucide/vue";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import type { Supplier } from "~/types/supplier";
 
 defineProps<{
@@ -20,9 +21,36 @@ const emit = defineEmits<{
   <div
     class="bg-white border border-outline-variant rounded-xl overflow-hidden"
   >
-    <div v-if="status === 'pending'" class="p-16 text-center">
-      <RefreshCw class="w-10 h-10 mx-auto animate-spin text-primary" />
-      <p class="mt-4 text-on-white-variant">جاري جلب بيانات الموردين...</p>
+    <div
+      v-if="status === 'pending' && suppliers.length === 0"
+      class="bg-white border border-outline-variant rounded-xl overflow-hidden"
+    >
+      <div class="overflow-x-auto">
+        <table class="w-full text-right border-collapse">
+          <thead class="bg-white-low text-on-white-variant">
+            <tr>
+              <th class="p-4 text-label-md font-bold">الاسم</th>
+              <th class="p-4 text-label-md font-bold">رقم الهاتف</th>
+              <th class="p-4 text-label-md font-bold">الرقم الضريبي</th>
+              <th class="p-4 text-label-md font-bold">شروط الدفع</th>
+              <th class="p-4 text-label-md font-bold">إجمالي المشتريات</th>
+              <th class="p-4 text-label-md font-bold">المستحق</th>
+              <th class="p-4 text-label-md font-bold">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant/45">
+            <tr v-for="i in 5" :key="'skeleton-' + i">
+              <td class="p-4"><Skeleton class="h-4 w-32" /></td>
+              <td class="p-4"><Skeleton class="h-4 w-24" /></td>
+              <td class="p-4"><Skeleton class="h-4 w-20" /></td>
+              <td class="p-4"><Skeleton class="h-4 w-28" /></td>
+              <td class="p-4"><Skeleton class="h-4 w-20" /></td>
+              <td class="p-4"><Skeleton class="h-4 w-16" /></td>
+              <td class="p-4"><Skeleton class="h-8 w-14 rounded-lg" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div

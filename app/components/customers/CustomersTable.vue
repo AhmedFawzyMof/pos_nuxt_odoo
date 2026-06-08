@@ -2,7 +2,6 @@
 import { computed } from "vue";
 import { navigateTo } from "#app";
 import {
-  RefreshCw,
   SearchX,
   Star,
   History,
@@ -10,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "@lucide/vue";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import type { Customer } from "~/types/customer";
 
 const props = defineProps<{
@@ -58,14 +58,32 @@ const endItem = computed(() =>
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant">
-          <tr v-if="status === 'pending'">
-            <td colspan="6" class="p-16 text-center">
-              <RefreshCw class="w-10 h-10 mx-auto animate-spin text-primary" />
-              <p class="mt-4 text-on-white-variant">
-                جاري جلب بيانات العملاء...
-              </p>
-            </td>
-          </tr>
+          <template v-if="status === 'pending' && customers.length === 0">
+            <tr v-for="i in 5" :key="'skeleton-' + i">
+              <td class="px-6 py-5">
+                <div class="flex items-center gap-3">
+                  <Skeleton class="w-10 h-10 rounded-full shrink-0" />
+                  <div class="space-y-1.5">
+                    <Skeleton class="h-4 w-32" />
+                    <Skeleton class="h-3 w-40" />
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-5"><Skeleton class="h-4 w-24" /></td>
+              <td class="px-6 py-5"><Skeleton class="h-5 w-14 rounded-full" /></td>
+              <td class="px-6 py-5"><Skeleton class="h-4 w-16" /></td>
+              <td class="px-6 py-5">
+                <Skeleton class="h-4 w-20 mb-1" />
+                <Skeleton class="h-3 w-16" />
+              </td>
+              <td class="px-6 py-5 text-center">
+                <div class="flex justify-center gap-2">
+                  <Skeleton class="h-8 w-8 rounded-lg" />
+                  <Skeleton class="h-8 w-8 rounded-lg" />
+                </div>
+              </td>
+            </tr>
+          </template>
 
           <tr v-else-if="customers.length === 0">
             <td colspan="6" class="p-16 text-center text-on-white-variant">

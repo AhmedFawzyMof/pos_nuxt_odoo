@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Edit, MoreVertical, ChevronRight, ChevronLeft } from "@lucide/vue";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 
 interface StockLevelItem {
   name: string;
@@ -16,6 +17,7 @@ interface StockLevelItem {
 const props = withDefaults(
   defineProps<{
     stockLevels: StockLevelItem[];
+    loading?: boolean;
     totalRecords?: number;
     totalPages?: number;
     limit?: number;
@@ -24,6 +26,7 @@ const props = withDefaults(
     totalRecords: 0,
     totalPages: 1,
     limit: 5,
+    loading: false,
   },
 );
 
@@ -75,18 +78,44 @@ const setPage = (page: number) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant">
-          <tr v-if="!stockLevels || stockLevels.length === 0">
-            <td colspan="6" class="p-8 text-center text-on-white-variant">
-              لا توجد مخزونات مسجلة لهذه الصفحة حالياً.
-            </td>
-          </tr>
+          <template v-if="loading && (!stockLevels || stockLevels.length === 0)">
+            <tr v-for="i in 5" :key="'skeleton-' + i">
+              <td class="p-4">
+                <div class="flex items-center gap-3">
+                  <Skeleton class="w-10 h-10 rounded-md shrink-0" />
+                  <div class="space-y-1.5">
+                    <Skeleton class="h-4 w-32" />
+                    <Skeleton class="h-3 w-20" />
+                  </div>
+                </div>
+              </td>
+              <td class="p-4"><Skeleton class="h-4 w-20" /></td>
+              <td class="p-4"><Skeleton class="h-4 w-24" /></td>
+              <td class="p-4"><Skeleton class="h-4 w-12" /></td>
+              <td class="p-4"><Skeleton class="h-5 w-16 rounded-md" /></td>
+              <td class="p-4">
+                <div class="flex gap-1">
+                  <Skeleton class="h-8 w-8 rounded-full" />
+                  <Skeleton class="h-8 w-8 rounded-full" />
+                </div>
+              </td>
+            </tr>
+          </template>
 
-          <tr
-            v-else
-            v-for="(item, idx) in stockLevels"
-            :key="idx"
-            class="hover:bg-white-low transition-colors"
-          >
+          <template v-else-if="!loading && (!stockLevels || stockLevels.length === 0)">
+            <tr>
+              <td colspan="6" class="p-8 text-center text-on-white-variant">
+                لا توجد مخزونات مسجلة لهذه الصفحة حالياً.
+              </td>
+            </tr>
+          </template>
+
+          <template v-else>
+            <tr
+              v-for="(item, idx) in stockLevels"
+              :key="idx"
+              class="hover:bg-white-low transition-colors"
+            >
             <td class="p-4">
               <div class="flex items-center gap-3">
                 <img
@@ -132,6 +161,7 @@ const setPage = (page: number) => {
               </div>
             </td>
           </tr>
+          </template>
         </tbody>
       </table>
     </div>

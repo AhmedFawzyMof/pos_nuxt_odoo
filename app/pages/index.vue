@@ -16,8 +16,8 @@ import {
   Wallet,
   ShoppingCart,
   Circle,
-  LoaderCircle,
 } from "@lucide/vue";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 
 const kpiIconMap: Record<string, any> = {
   trending_up: TrendingUp,
@@ -121,11 +121,27 @@ const modules = [
   <div class="space-y-8">
     <div
       v-if="pending && !data?.kpis"
-      class="h-[calc(100vh-200px)] flex items-center justify-center"
+      class="space-y-8"
     >
-      <div class="flex flex-col items-center gap-3 text-on-white-variant">
-        <LoaderCircle class="w-8 h-8 animate-spin text-primary" />
-        <span class="text-[13px]">جاري تحميل البيانات...</span>
+      <div class="bg-primary/10 p-8 rounded-2xl">
+        <Skeleton class="h-8 w-64 mb-2" />
+        <Skeleton class="h-4 w-96" />
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div
+          v-for="i in 4"
+          :key="i"
+          class="bg-white border border-outline-variant rounded-xl p-6 space-y-4"
+        >
+          <div class="flex items-center justify-between">
+            <Skeleton class="w-12 h-12 rounded-lg" />
+            <Skeleton class="h-5 w-16 rounded" />
+          </div>
+          <div class="space-y-2">
+            <Skeleton class="h-3 w-24" />
+            <Skeleton class="h-7 w-32" />
+          </div>
+        </div>
       </div>
     </div>
 

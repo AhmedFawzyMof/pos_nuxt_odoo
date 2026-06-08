@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import * as XLSX from "xlsx";
+import * as XLSX from "@sheetjs/xlsx";
 
 const props = defineProps<{
   columns: { key: string; label: string; type?: string }[];

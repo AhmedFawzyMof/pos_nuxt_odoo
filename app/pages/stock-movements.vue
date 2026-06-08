@@ -15,7 +15,7 @@ import {
   RefreshCw,
   FileX2,
 } from "@lucide/vue";
-import * as XLSX from "xlsx";
+import * as XLSX from "@sheetjs/xlsx";
 
 const router = useRouter();
 
