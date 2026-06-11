@@ -3,9 +3,11 @@ export function parseWeightBarcode(
 ): { productCode: string; weightKg: number } | null {
   if (barcode.length !== 13) return null;
 
-  const splitAt = 7;
-  const productCode = barcode.substring(0, splitAt);
-  const weightStr = barcode.substring(splitAt, 12);
+  const prefix = barcode.substring(6, 8);
+  if (prefix !== "80") return null;
+
+  const productCode = barcode.substring(0, 6);
+  const weightStr = barcode.substring(8, 12);
 
   const weightGrams = parseInt(weightStr, 10);
   if (isNaN(weightGrams) || weightGrams <= 0) return null;

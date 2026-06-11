@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from "vue";
 import type { Product } from "~/types/product";
+import { parseWeightBarcode } from "~/utils/weightBarcode";
 import {
   Package,
   X,
@@ -143,7 +144,9 @@ const {
   pauseDuration: 1800,
   onScan: (barcode, done) => {
     if (activeBarcodeTarget.value.type === "main") {
-      formBarcode.value = barcode.trim();
+      const trimmed = barcode.trim();
+      const parsed = parseWeightBarcode(trimmed);
+      formBarcode.value = parsed && formIsWeight.value ? parsed.productCode : trimmed;
     } else if (
       activeBarcodeTarget.value.type === "variant" &&
       activeBarcodeTarget.value.index !== undefined

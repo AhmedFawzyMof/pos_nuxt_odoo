@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
-import { parseWeightBarcode } from "~/utils/weightBarcode";
+import { ref, computed, watch, onMounted, nextTick } from "vue";
+import { parseWeightBarcode, tryWeightBarcodeSearch } from "~/utils/weightBarcode";
 import {
   AlertCircle,
   ShoppingCart,
@@ -65,6 +65,19 @@ const showCloseSessionModal = ref(false);
 const showPaymentSheet = ref(false);
 const hotkeyPreselectMethodId = ref<number | null>(null);
 const hotkeyAutoExpandSection = ref<"discount" | "customer" | null>(null);
+
+const showToast = ref(false);
+const toastMessage = ref("");
+const toastType = ref<"success" | "error">("success");
+
+function showFeedbackToast(message: string, type: "success" | "error" = "success") {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+}
 
 watch(showPaymentSheet, (open) => {
   if (!open) {
@@ -148,16 +161,23 @@ let searchDebounce: NodeJS.Timeout;
 function handleSearch(val: string) {
   clearTimeout(searchDebounce);
   searchDebounce = setTimeout(async () => {
-    searchQuery.value = val;
+    const { searchQuery: parsedQuery, weightKg } = tryWeightBarcodeSearch(val);
+    searchQuery.value = parsedQuery;
     currentPage.value = 1;
     allProducts.value = [];
     await loadMasterData(1);
-    tryAutoAddFirstResult();
+    tryAutoAddFirstResult(weightKg);
+    if (searchQuery.value && allProducts.value.length === 0) {
+      await nextTick();
+      (document.activeElement as HTMLInputElement)?.select();
+      showFeedbackToast("المنتج غير موجود", "error");
+    }
   }, 300);
 }
 
 async function handleScan(barcode: string) {
   scannerActive.value = false;
+  clearTimeout(searchDebounce);
 
   // Try weight barcode parsing first
   const parsed = parseWeightBarcode(barcode);
@@ -169,6 +189,11 @@ async function handleScan(barcode: string) {
   allProducts.value = [];
   await loadMasterData(1);
   tryAutoAddFirstResult(weightKg);
+  if (searchQuery.value && allProducts.value.length === 0) {
+    await nextTick();
+    (document.activeElement as HTMLInputElement)?.select();
+    showFeedbackToast("المنتج غير موجود", "error");
+  }
 }
 
 function handleLocationChange(event: Event) {
@@ -573,6 +598,30 @@ watch(
     <div class="text-center space-y-3">
       <ShoppingCart class="h-12 w-12 mx-auto text-muted-foreground/40" />
       <p class="text-muted-foreground">لم يتم تحديد جهاز كاشير</p>
+    </div>
+  </div>
+
+  <!-- Feedback Toast -->
+  <div
+    class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500"
+    :class="
+      showToast
+        ? 'translate-y-0 opacity-100'
+        : 'translate-y-32 opacity-0 pointer-events-none'
+    "
+  >
+    <div
+      class="px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3"
+      :class="
+        toastType === 'success'
+          ? 'bg-primary text-white'
+          : 'bg-red-600 text-white'
+      "
+    >
+      <AlertCircle class="w-5 h-5 shrink-0" />
+      <div>
+        <p class="font-bold text-sm">{{ toastMessage }}</p>
+      </div>
     </div>
   </div>
 </template>

@@ -23,6 +23,8 @@ export default defineEventHandler(async (event) => {
     ? parseInt(query.location_id as string, 10)
     : null;
 
+  const searchText = (query.search as string) || "";
+
   if (!configId) {
     throw createError({
       statusCode: 400,
@@ -46,7 +48,7 @@ export default defineEventHandler(async (event) => {
 
   const [rpcErr, rpcResult] = await tryCatch(
     odoo.execute_kw("pos.config", "get_pos_master_data_rpc", [
-      [configId, page, limit, categoryId, locationId],
+      [configId, page, limit, categoryId, locationId, searchText],
     ]),
   );
 

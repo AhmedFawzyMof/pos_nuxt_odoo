@@ -6,6 +6,17 @@ export default defineNuxtConfig({
     port: 3000,
     https: true,
   },
+  vite: {
+    build: {
+      rollupOptions: {
+        onwarn(warning, warn) {
+          if (warning.plugin === '@tailwindcss/vite:generate:build') return
+          if (warning.code === 'ANNONCOMMENT') return
+          warn(warning)
+        },
+      },
+    },
+  },
   css: ["@/assets/tailwind.css"],
   modules: [
     "@nuxtjs/tailwindcss",
