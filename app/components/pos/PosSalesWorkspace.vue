@@ -67,7 +67,7 @@ async function loadMasterData(page = 1) {
       if (res.warehouses) warehouses.value = res.warehouses;
     }
   } catch (err: any) {
-    error.value = err.statusMessage || err.message || "فشل تحميل البيانات";
+    error.value = err.message || err.statusMessage || "فشل تحميل البيانات";
   } finally {
     loading.value = false;
   }

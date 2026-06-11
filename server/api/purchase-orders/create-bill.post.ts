@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في إنشاء الفاتورة من أمر الشراء: ${rpcErr.message}`,
+      message: `فشل في إنشاء الفاتورة من أمر الشراء: ${rpcErr.message}`,
     });
   }
 

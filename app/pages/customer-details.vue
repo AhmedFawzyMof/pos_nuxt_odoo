@@ -119,7 +119,7 @@ const saveSettings = async () => {
       activeTab.value = "overview";
     }
   } catch (err: any) {
-    actionError.value = err.statusMessage || "خطأ في الاتصال بالنظام";
+    actionError.value = err.message || err.statusMessage || "خطأ في الاتصال بالنظام";
   } finally {
     isSaving.value = false;
   }

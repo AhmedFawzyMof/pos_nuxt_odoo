@@ -74,14 +74,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل جلب تفاصيل الطلب: ${rpcErr.message}`,
+      message: `فشل جلب تفاصيل الطلب: ${rpcErr.message}`,
     });
   }
 
   if (!result || result.status === "error" || !result.id) {
     throw createError({
       statusCode: 404,
-      statusMessage: result?.message || "الطلب غير موجود في النظام",
+      message: result?.message || "الطلب غير موجود في النظام",
     });
   }
 

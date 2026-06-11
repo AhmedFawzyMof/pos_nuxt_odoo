@@ -144,7 +144,7 @@ const handleDelete = async (product: Product) => {
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.statusMessage || "خطأ في الاتصال بالنظام، لم يتم حذف المنتج.");
+      alert(err.message || err.statusMessage || "خطأ في الاتصال بالنظام، لم يتم حذف المنتج.");
     } finally {
       isSaving.value = false;
     }
@@ -174,8 +174,8 @@ const handleSave = async (
   } catch (err: any) {
     console.error("Failed to preserve modifications:", err);
     actionError.value =
-      err.statusMessage ||
       err.message ||
+      err.statusMessage ||
       "فشل في حفظ المنتج. يرجى المحاولة مجدداً.";
   } finally {
     isSaving.value = false;
@@ -204,8 +204,8 @@ const handleDeleteFromDrawer = async () => {
     } catch (err: any) {
       console.error("Failed to archive product:", err);
       actionError.value =
-        err.statusMessage ||
         err.message ||
+        err.statusMessage ||
         "فشل في أرشفة المنتج. يرجى المحاولة مجدداً.";
     } finally {
       isSaving.value = false;

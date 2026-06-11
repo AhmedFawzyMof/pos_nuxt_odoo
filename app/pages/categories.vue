@@ -110,7 +110,7 @@ const handleDelete = async (category: Category) => {
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.statusMessage || "خطأ في الاتصال بالنظام، لم يتم حذف القسم.");
+      alert(err.message || err.statusMessage || "خطأ في الاتصال بالنظام، لم يتم حذف القسم.");
     } finally {
       isSaving.value = false;
     }
@@ -142,7 +142,7 @@ const handleSave = async (payload: {
     }
   } catch (err: any) {
     console.error("Failed to save POS Category:", err);
-    alert(err.statusMessage || "خطأ في حفظ القسم بالنظام.");
+    alert(err.message || err.statusMessage || "خطأ في حفظ القسم بالنظام.");
   } finally {
     isSaving.value = false;
   }

@@ -36,7 +36,7 @@ export default defineEventHandler(async (event) => {
     console.error("Sync Error:", newLocationError);
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في إنشاء الموقع: ${newLocationError.message}`,
+      message: `فشل في إنشاء الموقع: ${newLocationError.message}`,
     });
   }
 

@@ -101,7 +101,7 @@ async function handleCreateRegister(name: string) {
       showRegistrationForm.value = false;
     }
   } catch (err: any) {
-    error.value = err.statusMessage || "تعذر إعداد جهاز جديد حالياً";
+    error.value = err.message || err.statusMessage || "تعذر إعداد جهاز جديد حالياً";
   } finally {
     globalLoading.value = false;
   }
@@ -140,7 +140,7 @@ async function handleOpenSession(regId: number) {
     }
     router.push({ path: '/cashier', query });
   } catch (err: any) {
-    error.value = err.statusMessage || "فشل معالجة فتح صندوق اليومية";
+    error.value = err.message || err.statusMessage || "فشل معالجة فتح صندوق اليومية";
   } finally {
     actionLoading.value[regId] = false;
   }

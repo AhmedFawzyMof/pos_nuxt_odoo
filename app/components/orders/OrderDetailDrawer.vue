@@ -113,7 +113,7 @@ async function fetchDetail(orderId: number) {
       error.value = data.message || "فشل تحميل تفاصيل الطلب";
     }
   } catch (err: any) {
-    error.value = err.statusMessage || "خطأ في الاتصال بالخادم";
+    error.value = err.message || err.statusMessage || "خطأ في الاتصال بالخادم";
   } finally {
     loading.value = false;
   }
@@ -161,7 +161,7 @@ async function changeStatus() {
       showToast(res.message || "فشل تحديث الحالة", "error");
     }
   } catch (err: any) {
-    showToast(err.statusMessage || "خطأ في الاتصال", "error");
+    showToast(err.message || err.statusMessage || "خطأ في الاتصال", "error");
   } finally {
     saving.value = false;
   }
@@ -238,7 +238,7 @@ async function savePayments() {
       showToast(res.message || "فشل تحديث المدفوعات", "error");
     }
   } catch (err: any) {
-    showToast(err.statusMessage || "خطأ في الاتصال", "error");
+    showToast(err.message || err.statusMessage || "خطأ في الاتصال", "error");
   } finally {
     saving.value = false;
   }
@@ -262,7 +262,7 @@ async function removeLine(lineId: number) {
       showToast(res.message || "فشل حذف الصنف", "error");
     }
   } catch (err: any) {
-    showToast(err.statusMessage || "خطأ في الاتصال", "error");
+    showToast(err.message || err.statusMessage || "خطأ في الاتصال", "error");
   } finally {
     saving.value = false;
   }

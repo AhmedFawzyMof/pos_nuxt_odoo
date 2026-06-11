@@ -16,7 +16,7 @@ export async function getOdooClient(event: any) {
   if (connectErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to connect to server: ${connectErr.message}`,
+      message: `Failed to connect to server: ${connectErr.message}`,
     })
   }
   return odoo

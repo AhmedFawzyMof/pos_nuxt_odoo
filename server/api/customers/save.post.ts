@@ -35,19 +35,18 @@ export default defineEventHandler(async (event) => {
     if (writeErr) {
       throw createError({
         statusCode: 500,
-        statusMessage: `فشل في تحديث بيانات العميل: ${writeErr.message}`,
+        message: `فشل في تحديث بيانات العميل: ${writeErr.message}`,
       });
     }
     partnerId = body.id;
   } else {
-    // Create new partner
     const [createErr, newId] = await tryCatch(
       odoo.execute_kw("res.partner", "create", [[partnerVals]]),
     );
     if (createErr) {
       throw createError({
         statusCode: 500,
-        statusMessage: `فشل في إنشاء العميل: ${createErr.message}`,
+        message: `فشل في إنشاء العميل: ${createErr.message}`,
       });
     }
     partnerId = newId as number;

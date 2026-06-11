@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
     if (writeErr) {
       throw createError({
         statusCode: 500,
-        statusMessage: `فشل في تحديث بيانات المورد: ${writeErr.message}`,
+        message: `فشل في تحديث بيانات المورد: ${writeErr.message}`,
       });
     }
     partnerId = body.id;
@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
     if (createErr) {
       throw createError({
         statusCode: 500,
-        statusMessage: `فشل في إنشاء المورد: ${createErr.message}`,
+        message: `فشل في إنشاء المورد: ${createErr.message}`,
       });
     }
     partnerId = newId as number;

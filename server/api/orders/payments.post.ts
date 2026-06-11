@@ -43,14 +43,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل تحديث مدفوعات الطلب: ${rpcErr.message}`,
+      message: `فشل تحديث مدفوعات الطلب: ${rpcErr.message}`,
     });
   }
 
   if (result?.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: result.message || "فشل تحديث مدفوعات الطلب",
+      message: result.message || "فشل تحديث مدفوعات الطلب",
     });
   }
 

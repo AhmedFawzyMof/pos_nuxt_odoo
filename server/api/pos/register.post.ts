@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل عطل في الخادم: ${rpcErr.message}`,
+      message: `فشل عطل في الخادم: ${rpcErr.message}`,
     });
   }
 
@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
   if (rpcResult.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: rpcResult.message,
+      message: rpcResult.message,
     });
   }
 

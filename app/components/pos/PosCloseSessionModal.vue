@@ -51,7 +51,7 @@ async function fetchSummary() {
       closingCash.value = res.summary.cash_balance;
     }
   } catch (err: any) {
-    summaryError.value = err.statusMessage || "فشل تحميل ملخص الوردية";
+    summaryError.value = err.message || err.statusMessage || "فشل تحميل ملخص الوردية";
   } finally {
     loadingSummary.value = false;
   }
@@ -114,7 +114,7 @@ async function handleCloseSession() {
       }, 1500);
     }
   } catch (err: any) {
-    errorMessage.value = err.statusMessage || "فشل إغلاق الوردية";
+    errorMessage.value = err.message || err.statusMessage || "فشل إغلاق الوردية";
   } finally {
     isClosing.value = false;
   }

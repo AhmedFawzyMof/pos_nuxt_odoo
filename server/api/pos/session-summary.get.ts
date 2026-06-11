@@ -22,14 +22,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `RPC failed: ${rpcErr.message}`,
+      message: `RPC failed: ${rpcErr.message}`,
     });
   }
 
   if (rpcResult.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: rpcResult.message || "Failed to get session summary",
+      message: rpcResult.message || "Failed to get session summary",
     });
   }
 

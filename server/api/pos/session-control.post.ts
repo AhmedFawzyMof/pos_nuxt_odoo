@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   if (!configId || !["open", "close", "status"].includes(action)) {
     throw createError({
       statusCode: 400,
-      statusMessage:
+      message:
         "Invalid request: config_id and action (open/close/status) required",
     });
   }
@@ -27,14 +27,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `RPC failed: ${rpcErr.message}`,
+      message: `RPC failed: ${rpcErr.message}`,
     });
   }
 
   if (rpcResult.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: rpcResult.message || "Session control failed",
+      message: rpcResult.message || "Session control failed",
     });
   }
 

@@ -44,14 +44,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `Core RPC Processing Failure: ${rpcErr.message}`,
+      message: `Core RPC Processing Failure: ${rpcErr.message}`,
     });
   }
 
   if (rpcResult.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: rpcResult.message || "Failed to commit order transaction.",
+      message: rpcResult.message || "Failed to commit order transaction.",
     });
   }
 

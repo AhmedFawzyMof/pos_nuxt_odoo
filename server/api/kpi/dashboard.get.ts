@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
   if (kpiErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في جلب بيانات الأداء: ${kpiErr.message}`,
+      message: `فشل في جلب بيانات الأداء: ${kpiErr.message}`,
     });
   }
 

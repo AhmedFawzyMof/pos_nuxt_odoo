@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   if (!configId) {
     throw createError({
       statusCode: 400,
-      statusMessage:
+      message:
         "Bad Request: config_id is required to fetch catalog environments.",
     });
   }
@@ -39,14 +39,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `Master Catalog RPC Failed: ${rpcErr.message}`,
+      message: `Master Catalog RPC Failed: ${rpcErr.message}`,
     });
   }
 
   if (rpcResult.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage:
+      message:
         rpcResult.message || "Failed to load point-of-sale catalog.",
     });
   }

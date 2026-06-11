@@ -99,7 +99,7 @@ async function saveCustomer(payload: Record<string, any>) {
       if (newCustomer) selectCustomer(newCustomer);
     }
   } catch (err: any) {
-    customerDrawerError.value = err.statusMessage || "خطأ في الاتصال";
+    customerDrawerError.value = err.message || err.statusMessage || "خطأ في الاتصال";
   } finally {
     customerDrawerSaving.value = false;
   }

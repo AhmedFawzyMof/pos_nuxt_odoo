@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
   if (kpiErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في جلب بيانات المخزون: ${kpiErr.message}`,
+      message: `فشل في جلب بيانات المخزون: ${kpiErr.message}`,
     });
   }
 
@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
   if (err) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في جلب مواقع المستودع: ${err.message}`,
+      message: `فشل في جلب مواقع المستودع: ${err.message}`,
     });
   }
 
@@ -88,7 +88,7 @@ export default defineEventHandler(async (event) => {
   if (movementErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في جلب حركات المخزون: ${movementErr.message}`,
+      message: `فشل في جلب حركات المخزون: ${movementErr.message}`,
     });
   }
 
@@ -107,7 +107,7 @@ export default defineEventHandler(async (event) => {
   if (stockLevelsError) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في جلب مستويات المخزون: ${stockLevelsError.message}`,
+      message: `فشل في جلب مستويات المخزون: ${stockLevelsError.message}`,
     });
   }
 

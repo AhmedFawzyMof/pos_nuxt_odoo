@@ -36,7 +36,7 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل جلب الطلبات: ${rpcErr.message}`,
+      message: `فشل جلب الطلبات: ${rpcErr.message}`,
     });
   }
 

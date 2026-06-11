@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   if (err) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في جلب المواقع: ${err.message}`,
+      message: `فشل في جلب المواقع: ${err.message}`,
     });
   }
 

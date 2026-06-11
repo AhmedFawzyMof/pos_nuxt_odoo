@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   if (countErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في حساب عدد الأقسام: ${countErr.message}`,
+      message: `فشل في حساب عدد الأقسام: ${countErr.message}`,
     });
   }
 
@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
   if (err) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في جلب الأقسام: ${err.message}`,
+      message: `فشل في جلب الأقسام: ${err.message}`,
     });
   }
 

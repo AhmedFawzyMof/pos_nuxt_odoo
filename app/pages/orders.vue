@@ -144,7 +144,7 @@ async function voidOrder(orderId: number, orderName: string) {
       showToastMessage(res.message || "فشل إلغاء الطلب", "error");
     }
   } catch (err: any) {
-    showToastMessage(err.statusMessage || "خطأ في الاتصال بالخادم", "error");
+    showToastMessage(err.message || err.statusMessage || "خطأ في الاتصال بالخادم", "error");
   }
 }
 

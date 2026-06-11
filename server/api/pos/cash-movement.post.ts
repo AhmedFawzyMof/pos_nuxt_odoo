@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   if (!sessionId || amount === 0 || !reason) {
     throw createError({
       statusCode: 400,
-      statusMessage: "session_id, amount, and reason are required",
+      message: "session_id, amount, and reason are required",
     });
   }
 
@@ -26,14 +26,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `RPC failed: ${rpcErr.message}`,
+      message: `RPC failed: ${rpcErr.message}`,
     });
   }
 
   if (rpcResult.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: rpcResult.message || "Cash movement failed",
+      message: rpcResult.message || "Cash movement failed",
     });
   }
 

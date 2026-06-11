@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   if (!validStates.includes(state)) {
     throw createError({
       statusCode: 400,
-      statusMessage: `حالة غير صالحة. الحالات المسموحة: ${validStates.join(", ")}`,
+      message: `حالة غير صالحة. الحالات المسموحة: ${validStates.join(", ")}`,
     });
   }
 
@@ -47,14 +47,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل تحديث حالة الطلب: ${rpcErr.message}`,
+      message: `فشل تحديث حالة الطلب: ${rpcErr.message}`,
     });
   }
 
   if (result?.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: result.message || "فشل تحديث حالة الطلب",
+      message: result.message || "فشل تحديث حالة الطلب",
     });
   }
 

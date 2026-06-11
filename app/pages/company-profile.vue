@@ -169,7 +169,7 @@ const handleSave = async () => {
       initForm();
     }
   } catch (err: any) {
-    actionError.value = err.statusMessage || "حدث خطأ أثناء الحفظ";
+    actionError.value = err.message || err.statusMessage || "حدث خطأ أثناء الحفظ";
   } finally {
     isSaving.value = false;
   }

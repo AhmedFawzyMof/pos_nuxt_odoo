@@ -28,14 +28,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل جلب حالة الوردية: ${rpcErr.message}`,
+      message: `فشل جلب حالة الوردية: ${rpcErr.message}`,
     });
   }
 
   if (rpcResult.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: rpcResult.message,
+      message: rpcResult.message,
     });
   }
 

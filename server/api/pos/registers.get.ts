@@ -12,14 +12,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `RPC Core Error: ${rpcErr.message}`,
+      message: `RPC Core Error: ${rpcErr.message}`,
     });
   }
 
   if (rpcResult.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: rpcResult.message || "فشل جلب أجهزة الكاشير من النظام.",
+      message: rpcResult.message || "فشل جلب أجهزة الكاشير من النظام.",
     });
   }
 

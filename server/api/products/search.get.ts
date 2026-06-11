@@ -36,7 +36,7 @@ export default defineEventHandler(async (event) => {
   if (searchErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في البحث عن المنتجات: ${searchErr.message}`,
+      message: `فشل في البحث عن المنتجات: ${searchErr.message}`,
     });
   }
 

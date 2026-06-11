@@ -32,14 +32,14 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل حذف الصنف من الطلب: ${rpcErr.message}`,
+      message: `فشل حذف الصنف من الطلب: ${rpcErr.message}`,
     });
   }
 
   if (result?.status === "error") {
     throw createError({
       statusCode: 400,
-      statusMessage: result.message || "فشل حذف الصنف من الطلب",
+      message: result.message || "فشل حذف الصنف من الطلب",
     });
   }
 

@@ -137,7 +137,7 @@ async function loadMasterData(page = 1) {
       if (res.locations) locations.value = res.locations;
     }
   } catch (err: any) {
-    error.value = err.statusMessage || err.message || "فشل تحميل البيانات";
+    error.value = err.message || err.statusMessage || "فشل تحميل البيانات";
   } finally {
     loading.value = false;
   }

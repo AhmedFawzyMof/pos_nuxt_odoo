@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   if (rpcErr) {
     throw createError({
       statusCode: 500,
-      statusMessage: `فشل في استلام المنتجات: ${rpcErr.message}`,
+      message: `فشل في استلام المنتجات: ${rpcErr.message}`,
     });
   }
 

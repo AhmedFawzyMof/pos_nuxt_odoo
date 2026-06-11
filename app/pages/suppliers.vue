@@ -75,7 +75,7 @@ const saveSupplier = async (payload: Record<string, any>) => {
       drawerOpen.value = false;
     }
   } catch (err: any) {
-    actionError.value = err.statusMessage || "خطأ في الاتصال بالنظام";
+    actionError.value = err.message || err.statusMessage || "خطأ في الاتصال بالنظام";
   } finally {
     isSaving.value = false;
   }

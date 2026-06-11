@@ -85,7 +85,7 @@ export const useAuthStore = defineStore("auth", () => {
       console.error(error);
       logout();
       throw new Error(
-        error.data?.statusMessage || error.message || "Authentication failed",
+        error.data?.message || error.data?.statusMessage || error.message || "Authentication failed",
       );
     } finally {
       loading.value = false;
