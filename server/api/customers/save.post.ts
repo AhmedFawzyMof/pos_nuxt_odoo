@@ -1,12 +1,15 @@
 import { defineEventHandler, readBody } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
   const body = await readBody(event);
   if (!body) {
-    throw createError({ statusCode: 400, statusMessage: "بيانات العميل مطلوبة" });
+    throw createError({
+      statusCode: 400,
+      statusMessage: "بيانات العميل مطلوبة",
+    });
   }
 
   const partnerVals: Record<string, any> = {};
@@ -54,7 +57,9 @@ export default defineEventHandler(async (event) => {
   if (body.tier || body.points !== undefined) {
     // Check if loyalty card model exists
     const [checkErr, modelExists] = await tryCatch(
-      odoo.execute_kw("loyalty.card", "search_count", [[["partner_id", "=", partnerId]]]),
+      odoo.execute_kw("loyalty.card", "search_count", [
+        [["partner_id", "=", partnerId]],
+      ]),
     );
 
     if (!checkErr && (modelExists as number) > 0 && body.points !== undefined) {
@@ -67,7 +72,9 @@ export default defineEventHandler(async (event) => {
       if (!cardsErr && existingCards) {
         for (const card of existingCards as any[]) {
           await tryCatch(
-            odoo.execute_kw("loyalty.card", "write", [[card.id, { points: body.points }]]),
+            odoo.execute_kw("loyalty.card", "write", [
+              [card.id, { points: body.points }],
+            ]),
           );
         }
       }

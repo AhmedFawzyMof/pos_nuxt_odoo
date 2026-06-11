@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -77,7 +77,16 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const taxMap: Record<number, { id: number; name: string; amount: number; amount_type?: string; price_include?: boolean }> = {};
+  const taxMap: Record<
+    number,
+    {
+      id: number;
+      name: string;
+      amount: number;
+      amount_type?: string;
+      price_include?: boolean;
+    }
+  > = {};
   if (!taxErr && taxData) {
     for (const tax of taxData as any[]) {
       taxMap[tax.id] = tax;

@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {

@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);

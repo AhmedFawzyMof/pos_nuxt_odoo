@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -31,10 +31,13 @@ export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
 
   const [rpcErr, result] = await tryCatch(
-    odoo.execute_kw("custom.order.api", "api_register_order_payments", [[], {
-      order_id: orderId,
-      payments: sanitizedPayments,
-    }]),
+    odoo.execute_kw("custom.order.api", "api_register_order_payments", [
+      [],
+      {
+        order_id: orderId,
+        payments: sanitizedPayments,
+      },
+    ]),
   );
 
   if (rpcErr) {

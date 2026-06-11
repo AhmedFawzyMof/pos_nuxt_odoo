@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -16,10 +16,8 @@ export default defineEventHandler(async (event) => {
 
   const odoo = await getOdooClient(event);
   const [rpcErr, result] = await tryCatch(
-      odoo.execute_kw("vendor.bill.api", "get_vendor_bills", [
-        [paramsPayload],
-      ]),
-    );
+    odoo.execute_kw("vendor.bill.api", "get_vendor_bills", [[paramsPayload]]),
+  );
   if (rpcErr) throw rpcErr;
   return result;
 });

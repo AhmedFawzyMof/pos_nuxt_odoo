@@ -1,28 +1,33 @@
 import { defineEventHandler, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
 
-  const taxes = await odoo.searchRead(
-    "account.tax",
-    [["type_tax_use", "=", "sale"], ["amount", ">", 0]],
-    ["id", "name", "amount", "amount_type", "price_include"],
-    1,
+  const [taxesError, taxesData] = await tryCatch(
+    odoo.searchRead(
+      "account.tax",
+      [
+        ["type_tax_use", "=", "sale"],
+        ["amount", ">", 0],
+      ],
+      ["id", "name", "amount", "amount_type", "price_include"],
+      { limit: 1 },
+    ),
   );
 
-  if (!taxes || taxes.length === 0) {
+  if (taxesError || taxesData.length === 0) {
     return { success: true, tax: null };
   }
 
   return {
     success: true,
     tax: {
-      id: taxes[0].id,
-      name: taxes[0].name,
-      amount: taxes[0].amount,
-      amount_type: taxes[0].amount_type || "percent",
-      price_include: taxes[0].price_include || false,
+      id: (taxesData as any)[0].id,
+      name: (taxesData as any)[0].name,
+      amount: (taxesData as any)[0].amount,
+      amount_type: (taxesData as any)[0].amount_type || "percent",
+      price_include: (taxesData as any)[0].price_include || false,
     },
   };
 });

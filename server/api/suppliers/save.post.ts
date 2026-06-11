@@ -1,12 +1,15 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
   const body = await readBody(event);
   if (!body) {
-    throw createError({ statusCode: 400, statusMessage: "بيانات المورد مطلوبة" });
+    throw createError({
+      statusCode: 400,
+      statusMessage: "بيانات المورد مطلوبة",
+    });
   }
 
   const partnerVals: Record<string, any> = {
@@ -23,7 +26,10 @@ export default defineEventHandler(async (event) => {
   if (body.city) partnerVals.city = body.city;
   if (body.vat) partnerVals.vat = body.vat;
   if (body.payment_term_id) {
-    partnerVals.property_supplier_payment_term_id = parseInt(body.payment_term_id as string, 10);
+    partnerVals.property_supplier_payment_term_id = parseInt(
+      body.payment_term_id as string,
+      10,
+    );
   }
 
   let partnerId: number;

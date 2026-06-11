@@ -57,10 +57,10 @@ export default defineEventHandler(async (event) => {
 
     if (!quantErr && quants) {
       for (const q of quants) {
-        const pid = Array.isArray(q.product_id)
-          ? q.product_id[0]
-          : q.product_id;
-        quantitiesByProduct[pid] = q.quantity || 0;
+        const pid = Array.isArray((q as any).product_id)
+          ? (q as any).product_id[0]
+          : (q as any).product_id;
+        quantitiesByProduct[pid] = (q as any).quantity || 0;
       }
     }
   }
@@ -81,7 +81,7 @@ export default defineEventHandler(async (event) => {
         quantity: locationId ? qty : undefined,
       };
     })
-    .filter((p) => !locationId || p.quantity > 0);
+    .filter((p: any) => !locationId || p.quantity > 0);
 
   return { success: true, data };
 });

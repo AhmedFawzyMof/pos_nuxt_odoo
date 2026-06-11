@@ -1,6 +1,6 @@
 // server/api/customer-details.get.ts
 import { defineEventHandler, getQuery, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -17,11 +17,11 @@ export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
 
   const [rpcErr, result] = await tryCatch(
-      odoo.execute_kw("res.partner", "get_customer_detailed_ledger", [
-        [],
-        { params: { customer_id: customerId } },
-      ]),
-    );
+    odoo.execute_kw("res.partner", "get_customer_detailed_ledger", [
+      [],
+      { params: { customer_id: customerId } },
+    ]),
+  );
 
   if (rpcErr) throw rpcErr;
   return result;

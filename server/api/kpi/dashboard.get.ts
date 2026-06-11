@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -39,11 +39,15 @@ export default defineEventHandler(async (event) => {
   ];
 
   const { date_from, date_to } = getQuery(event);
-  
+
   // Default to current month if not provided
   const now = new Date();
-  const defaultDateFrom = date_from || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const defaultDateTo = date_to || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const defaultDateFrom =
+    date_from ||
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const defaultDateTo =
+    date_to ||
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   const odoo = await getOdooClient(event);
 
@@ -70,5 +74,10 @@ export default defineEventHandler(async (event) => {
   kpis[2]!.change = low_stock_count > 0 ? "عاجل" : "مستقر";
   kpis[2]!.changeType = low_stock_count > 0 ? "warning" : "positive";
 
-  return { success: true, kpis, date_from: defaultDateFrom, date_to: defaultDateTo };
+  return {
+    success: true,
+    kpis,
+    date_from: defaultDateFrom,
+    date_to: defaultDateTo,
+  };
 });

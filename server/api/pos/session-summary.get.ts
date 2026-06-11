@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -16,9 +16,7 @@ export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
 
   const [rpcErr, rpcResult] = await tryCatch(
-    odoo.execute_kw("pos.session", "get_session_summary_rpc", [
-      [sessionId],
-    ]),
+    odoo.execute_kw("pos.session", "get_session_summary_rpc", [[sessionId]]),
   );
 
   if (rpcErr) {

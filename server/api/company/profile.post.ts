@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -19,14 +19,24 @@ export default defineEventHandler(async (event) => {
 
   if (Object.keys(companyVals).length > 0 && body.companyId) {
     const [writeErr] = await tryCatch(
-      odoo.execute_kw("res.company", "write", [[[body.companyId], companyVals]]),
+      odoo.execute_kw("res.company", "write", [
+        [[body.companyId], companyVals],
+      ]),
     );
     if (writeErr) throw writeErr;
   }
 
   if (body.partnerId) {
     const partnerVals: Record<string, any> = {};
-    for (const field of ["email", "phone", "website", "street", "street2", "city", "zip"]) {
+    for (const field of [
+      "email",
+      "phone",
+      "website",
+      "street",
+      "street2",
+      "city",
+      "zip",
+    ]) {
       if (body[field] !== undefined) {
         partnerVals[field] = body[field];
       }
@@ -37,7 +47,9 @@ export default defineEventHandler(async (event) => {
 
     if (Object.keys(partnerVals).length > 0) {
       const [writeErr] = await tryCatch(
-        odoo.execute_kw("res.partner", "write", [[[body.partnerId], partnerVals]]),
+        odoo.execute_kw("res.partner", "write", [
+          [[body.partnerId], partnerVals],
+        ]),
       );
       if (writeErr) throw writeErr;
     }

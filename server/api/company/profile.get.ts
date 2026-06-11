@@ -1,5 +1,5 @@
 import { defineEventHandler, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -7,23 +7,27 @@ export default defineEventHandler(async (event) => {
 
   const session = await getUserSession(event);
   const [userErr, userData] = await tryCatch(
-    odoo.read("res.users", session.user.id, ["company_id"]),
+    odoo.read("res.users", (session.user as any).id, ["company_id"]),
   );
   if (userErr) throw userErr;
 
-  const companyId = userData?.[0]?.company_id?.[0];
+  const companyId = (userData[0] as any).company_id?.[0];
   if (!companyId) {
     throw createError({ statusCode: 404, statusMessage: "Company not found" });
   }
 
   const [companyErr, companyData] = await tryCatch(
     odoo.read("res.company", companyId, [
-      "name", "partner_id", "company_registry", "logo_web", "logo",
+      "name",
+      "partner_id",
+      "company_registry",
+      "logo_web",
+      "logo",
     ]),
   );
   if (companyErr) throw companyErr;
 
-  const company = companyData?.[0];
+  const company: any = companyData?.[0];
   if (!company) {
     throw createError({ statusCode: 404, statusMessage: "Company not found" });
   }
@@ -33,8 +37,15 @@ export default defineEventHandler(async (event) => {
   if (partnerId) {
     const [partnerErr, partnerData] = await tryCatch(
       odoo.read("res.partner", partnerId, [
-        "email", "phone", "website",
-        "street", "street2", "city", "state_id", "zip", "country_id",
+        "email",
+        "phone",
+        "website",
+        "street",
+        "street2",
+        "city",
+        "state_id",
+        "zip",
+        "country_id",
         "vat",
       ]),
     );
@@ -45,7 +56,9 @@ export default defineEventHandler(async (event) => {
 
   let states: any[] = [];
   const [statesErr, statesData] = await tryCatch(
-    odoo.searchRead("res.country.state", [], ["id", "name", "country_id"], { order: "name" }),
+    odoo.searchRead("res.country.state", [], ["id", "name", "country_id"], {
+      order: "name",
+    }),
   );
   if (!statesErr) states = statesData || [];
 

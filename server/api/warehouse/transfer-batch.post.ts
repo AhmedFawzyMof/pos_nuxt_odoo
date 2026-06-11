@@ -1,5 +1,5 @@
 import { defineEventHandler, createError, readBody } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -15,78 +15,78 @@ export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
 
   const moveLines = [];
-    for (const item of items) {
-      let finalProductId = item.productId;
+  for (const item of items) {
+    let finalProductId = item.productId;
 
-      if (!finalProductId && item.createNewProduct && item.productName) {
-        finalProductId = await odoo.create("product.product", {
-          name: item.productName,
-          type: "product",
-          default_code: item.productName,
-        });
-      }
-
-      if (finalProductId) {
-        const productData = (await odoo.searchRead(
-          "product.product",
-          [["id", "=", Number(finalProductId)]],
-          ["uom_id"],
-        )) as any[];
-        const uomId = productData[0]?.uom_id[0] || 1;
-
-        moveLines.push({
-          productId: Number(finalProductId),
-          quantity: Number(item.quantity),
-          uomId: uomId,
-        });
-      }
-    }
-
-    if (moveLines.length === 0) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "لا توجد منتجات صالحة للنقل",
+    if (!finalProductId && item.createNewProduct && item.productName) {
+      finalProductId = await odoo.create("product.product", {
+        name: item.productName,
+        type: "product",
+        default_code: item.productName,
       });
     }
 
-    const pickingTypes = (await odoo.searchRead(
-      "stock.picking.type",
-      [["code", "=", "internal"]],
-      ["id"],
-      { limit: 1 },
-    )) as any[];
+    if (finalProductId) {
+      const productData = (await odoo.searchRead(
+        "product.product",
+        [["id", "=", Number(finalProductId)]],
+        ["uom_id"],
+      )) as any[];
+      const uomId = productData[0]?.uom_id[0] || 1;
 
-    if (!pickingTypes.length) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "لم يتم العثور على نوع عملية النقل الداخلي",
+      moveLines.push({
+        productId: Number(finalProductId),
+        quantity: Number(item.quantity),
+        uomId: uomId,
       });
     }
-    const pickingTypeId = pickingTypes[0].id;
+  }
 
-    const pickingId = await odoo.create("stock.picking", {
-      picking_type_id: pickingTypeId,
+  if (moveLines.length === 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "لا توجد منتجات صالحة للنقل",
+    });
+  }
+
+  const pickingTypes = (await odoo.searchRead(
+    "stock.picking.type",
+    [["code", "=", "internal"]],
+    ["id"],
+    { limit: 1 },
+  )) as any[];
+
+  if (!pickingTypes.length) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "لم يتم العثور على نوع عملية النقل الداخلي",
+    });
+  }
+  const pickingTypeId = pickingTypes[0].id;
+
+  const pickingId = await odoo.create("stock.picking", {
+    picking_type_id: pickingTypeId,
+    location_id: Number(sourceLocationId),
+    location_dest_id: Number(destinationLocationId),
+    origin: "Nuxt Custom Frontend Transfer",
+  });
+
+  for (const line of moveLines) {
+    await odoo.create("stock.move", {
+      picking_id: pickingId,
+      name: `Transfer Line Row`,
+      product_id: line.productId,
+      product_uom_qty: line.quantity,
+      product_uom: line.uomId,
       location_id: Number(sourceLocationId),
       location_dest_id: Number(destinationLocationId),
-      origin: "Nuxt Custom Frontend Transfer",
     });
+  }
 
-    for (const line of moveLines) {
-      await odoo.create("stock.move", {
-        picking_id: pickingId,
-        name: `Transfer Line Row`,
-        product_id: line.productId,
-        product_uom_qty: line.quantity,
-        product_uom: line.uomId,
-        location_id: Number(sourceLocationId),
-        location_dest_id: Number(destinationLocationId),
-      });
-    }
+  await odoo.execute_kw("stock.picking", "action_confirm", [[pickingId]]);
+  await odoo.execute_kw("stock.picking", "action_assign", [[pickingId]]);
 
-    await odoo.execute_kw("stock.picking", "action_confirm", [[pickingId]]);
-    await odoo.execute_kw("stock.picking", "action_assign", [[pickingId]]);
-
-    await odoo.execute_kw("stock.picking", "button_validate", [[pickingId]]);
+  await odoo.execute_kw("stock.picking", "button_validate", [[pickingId]]);
 
   return {
     success: true,

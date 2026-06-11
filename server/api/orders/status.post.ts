@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -11,10 +11,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "معرّف الطلب مطلوب" });
   }
   if (!state) {
-    throw createError({ statusCode: 400, statusMessage: "الحالة المطلوبة مطلوبة" });
+    throw createError({
+      statusCode: 400,
+      statusMessage: "الحالة المطلوبة مطلوبة",
+    });
   }
 
-  const validStates = ["draft", "paid", "done", "cancelled", "invoiced", "refund"];
+  const validStates = [
+    "draft",
+    "paid",
+    "done",
+    "cancelled",
+    "invoiced",
+    "refund",
+  ];
   if (!validStates.includes(state)) {
     throw createError({
       statusCode: 400,
@@ -25,10 +35,13 @@ export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
 
   const [rpcErr, result] = await tryCatch(
-    odoo.execute_kw("custom.order.api", "api_update_order_status", [[], {
-      order_id: orderId,
-      new_status: state,
-    }]),
+    odoo.execute_kw("custom.order.api", "api_update_order_status", [
+      [],
+      {
+        order_id: orderId,
+        new_status: state,
+      },
+    ]),
   );
 
   if (rpcErr) {

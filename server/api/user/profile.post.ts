@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event);
   const session = await getUserSession(event);
-  const uid = session.user.id;
+  const uid = (session.user as any).id;
   const userVals: Record<string, any> = {};
 
   if (body.lang) {
@@ -26,7 +26,9 @@ export default defineEventHandler(async (event) => {
 
   if (body.avatar && body.partnerId) {
     const [avatarErr] = await tryCatch(
-      odoo.execute_kw("res.partner", "write", [[[body.partnerId], { image_1920: body.avatar }]]),
+      odoo.execute_kw("res.partner", "write", [
+        [[body.partnerId], { image_1920: body.avatar }],
+      ]),
     );
     if (avatarErr) throw avatarErr;
   }
