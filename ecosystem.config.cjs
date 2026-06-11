@@ -10,11 +10,11 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3080,
         HOST: "0.0.0.0",
-        DEFAULT_URL: process.env.DEFAULT_URL,
-        DEFAULT_DB: process.env.DEFAULT_DB,
-        NUXT_SESSION_PASSWORD: process.env.NUXT_SESSION_PASSWORD,
-        NUXT_SESSION_MAX_AGE: process.env.NUXT_SESSION_MAX_AGE,
+        DEFAULT_URL: "http://localhost:3080",
+        DEFAULT_DB: "system",
+        NUXT_SESSION_PASSWORD: "69c7cbe863b5484d81b8b686ceb991c2",
+        NUXT_SESSION_MAX_AGE: 604800,
       },
     },
   ],
-}
+};
