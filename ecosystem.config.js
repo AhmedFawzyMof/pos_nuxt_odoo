@@ -1,8 +1,9 @@
-export default {
+module.exports = {
   apps: [
     {
       name: "nuxt-pos",
-      script: "./.output/server/index.mjs",
+      script: ".output/server/index.mjs",
+      cwd: __dirname,
       instances: 1,
       exec_mode: "fork",
       env: {
