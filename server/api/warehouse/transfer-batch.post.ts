@@ -2,12 +2,6 @@ import { defineEventHandler, createError, readBody } from "h3";
 import { connectToOdoo } from "~~/server/utils/client";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
   const body = await readBody(event);
   const { sourceLocationId, destinationLocationId, items } = body;
 
@@ -18,15 +12,9 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
+  const odoo = await getOdooClient(event);
 
-  try {
-    await odoo.connect();
-
-    const moveLines = [];
+  const moveLines = [];
     for (const item of items) {
       let finalProductId = item.productId;
 
@@ -100,16 +88,9 @@ export default defineEventHandler(async (event) => {
 
     await odoo.execute_kw("stock.picking", "button_validate", [[pickingId]]);
 
-    return {
-      success: true,
-      pickingId: pickingId,
-      processedCount: moveLines.length,
-    };
-  } catch (error: any) {
-    console.error("Batch Processing Fail:", error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل في معالجة النقل المخزني: ${error.message}`,
-    });
-  }
+  return {
+    success: true,
+    pickingId: pickingId,
+    processedCount: moveLines.length,
+  };
 });

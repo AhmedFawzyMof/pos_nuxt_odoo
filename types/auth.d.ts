@@ -7,6 +7,7 @@ declare module "#auth-utils" {
   interface UserSession {
     odooPassword: string;
     odooUsername: string;
+    currentCompanyId?: number;
   }
 }
 

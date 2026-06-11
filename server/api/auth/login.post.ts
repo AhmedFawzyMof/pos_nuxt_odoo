@@ -90,6 +90,7 @@ export default defineEventHandler(async (event) => {
     },
     odooPassword: body.password,
     odooUsername: body.username,
+    currentCompanyId: primaryCompanyId,
   });
 
   return {

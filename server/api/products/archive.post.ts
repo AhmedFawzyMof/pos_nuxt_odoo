@@ -1,10 +1,4 @@
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
   const body = await readBody(event);
 
   if (!body.id) {
@@ -14,22 +8,11 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
+  const odoo = await getOdooClient(event);
 
-  try {
-    await odoo.connect();
-    await odoo.execute_kw("product.product", "write", [
-      [[body.id], { active: false }],
-    ]);
+  await odoo.execute_kw("product.product", "write", [
+    [[body.id], { active: false }],
+  ]);
 
-    return { success: true, message: "تم أرشفة المنتج بنجاح" };
-  } catch (error: any) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل في أرشفة المنتج: ${error.message}`,
-    });
-  }
+  return { success: true, message: "تم أرشفة المنتج بنجاح" };
 });

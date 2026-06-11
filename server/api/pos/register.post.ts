@@ -3,12 +3,6 @@ import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
   const body = await readBody(event);
   const name = String(body.name ?? "").trim();
 
@@ -19,18 +13,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
-
-  const [connectErr] = await tryCatch(odoo.connect());
-  if (connectErr) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل الاتصال بالخادم: ${connectErr.message}`,
-    });
-  }
+  const odoo = await getOdooClient(event);
 
   // --- CLEAN FIX HERE ---
   // Call your custom Python RPC method directly instead of rebuilding it in JS

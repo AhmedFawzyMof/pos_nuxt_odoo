@@ -3,12 +3,6 @@ import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
   const body = await readBody(event);
   const { name, type, parentId, barcode } = body;
 
@@ -19,20 +13,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
-
-  const [err] = await tryCatch(odoo.connect());
-
-  if (err) {
-    console.error("Sync Error:", err.message);
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل الاتصال بالخادم: ${err.message}`,
-    });
-  }
+  const odoo = await getOdooClient(event);
 
   const typeMapping: Record<string, string> = {
     internal: "internal",

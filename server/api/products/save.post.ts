@@ -19,17 +19,9 @@ async function safeSearchRead(
 }
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const session = await getUserSession(event);
+  const odoo = await getOdooClient(event);
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
-
-  try {
-    await odoo.connect();
-
-    const productValues: any = {
+  const productValues: any = {
       name: body.name,
       pos_categ_ids: body.pos_categ_ids?.length
         ? [[6, 0, body.pos_categ_ids.map(Number)]]
@@ -192,18 +184,11 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    return {
-      success: true,
-      message: isEditMode ? "تم تحديث المنتج بنجاح" : "تم إنشاء المنتج بنجاح",
-      id: templateId,
-    };
-  } catch (error: any) {
-    console.error("Save Error: ", error);
-    return createError({
-      statusCode: 500,
-      statusMessage: `فشل في حفظ البيانات: ${error.message}`,
-    });
-  }
+  return {
+    success: true,
+    message: isEditMode ? "تم تحديث المنتج بنجاح" : "تم إنشاء المنتج بنجاح",
+    id: templateId,
+  };
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -3,13 +3,6 @@ import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-
-  if (!session?.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
-  // 1. Gather filters and parameters directly from the client query
   const query = getQuery(event);
   const params = {
     page: Math.max(1, parseInt((query.page as string) || "1")),
@@ -20,29 +13,17 @@ export default defineEventHandler(async (event) => {
     dateTo: (query.dateTo as string) || "",
   };
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
-
-  try {
-    await odoo.connect();
-    const [rpcErr, result] = await tryCatch(
+  const odoo = await getOdooClient(event);
+  const [rpcErr, result] = await tryCatch(
       odoo.execute_kw("stock.move.line", "get_frontend_ledger", [
         [],
         { params: params },
       ]),
     );
 
-    if (rpcErr) {
-      throw rpcErr;
-    }
-
-    return result;
-  } catch (error: any) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل في جلب حركات المخزون عبر النظام المخصص: ${error.message}`,
-    });
+  if (rpcErr) {
+    throw rpcErr;
   }
+
+  return result;
 });

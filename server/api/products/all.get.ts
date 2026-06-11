@@ -1,27 +1,15 @@
 import { defineEventHandler } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
   const query = getQuery(event);
   const page = Math.max(1, parseInt((query.page as string) || "1"));
   const limit = 28;
   const offset = (page - 1) * limit;
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
+  const odoo = await getOdooClient(event);
 
-  try {
-    await odoo.connect();
-
-    const productFields = [
+  const productFields = [
       "id",
       "name",
       "display_name",
@@ -150,18 +138,12 @@ export default defineEventHandler(async (event) => {
       };
     });
 
-    return {
-      success: true,
-      totalItems: totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page,
-      itemsPerPage: limit,
-      data: completeProducts,
-    };
-  } catch (error: any) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل في جلب المنتجات: ${error.message}`,
-    });
-  }
+  return {
+    success: true,
+    totalItems: totalCount,
+    totalPages: Math.ceil(totalCount / limit),
+    currentPage: page,
+    itemsPerPage: limit,
+    data: completeProducts,
+  };
 });

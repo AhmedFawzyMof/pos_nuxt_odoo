@@ -1,26 +1,9 @@
 import { defineEventHandler, getQuery, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
+import { getOdooClient } from "~~/server/utils/odooClient";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
-
-  const [connectErr] = await tryCatch(odoo.connect());
-  if (connectErr) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل الاتصال بالخادم: ${connectErr.message}`,
-    });
-  }
+  const odoo = await getOdooClient(event);
 
   const query = getQuery(event);
   const searchQuery = ((query.query as string) || "").trim();

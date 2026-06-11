@@ -56,29 +56,13 @@ function normalizePayment(raw: any) {
 }
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
   const query = getQuery(event);
   const orderId = parseInt((query.id as string) || "0", 10);
   if (!orderId) {
     throw createError({ statusCode: 400, statusMessage: "معرّف الطلب مطلوب" });
   }
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
-
-  const [connectErr] = await tryCatch(odoo.connect());
-  if (connectErr) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل الاتصال بالخادم: ${connectErr.message}`,
-    });
-  }
+  const odoo = await getOdooClient(event);
 
   const [rpcErr, result] = await tryCatch(
     odoo.execute_kw("custom.order.api", "api_get_order_detail", [

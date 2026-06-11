@@ -3,11 +3,6 @@ import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
   const body = await readBody(event);
   const sessionId = Number(body?.session_id) || null;
   if (!sessionId) {
@@ -17,18 +12,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
-
-  const [connectErr] = await tryCatch(odoo.connect());
-  if (connectErr) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `Failed to connect to server: ${connectErr.message}`,
-    });
-  }
+  const odoo = await getOdooClient(event);
 
   const sanitizedPayload = {
     items: (body.items || []).map((item: any) => ({

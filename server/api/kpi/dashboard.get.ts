@@ -38,12 +38,6 @@ export default defineEventHandler(async (event) => {
     },
   ];
 
-  const session = await getUserSession(event);
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
-  // ?date_from=2026-05-01&date_to=2026-05-25  (both optional, default = this month)
   const { date_from, date_to } = getQuery(event);
   
   // Default to current month if not provided
@@ -51,18 +45,7 @@ export default defineEventHandler(async (event) => {
   const defaultDateFrom = date_from || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   const defaultDateTo = date_to || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
-
-  const [connectErr] = await tryCatch(odoo.connect());
-  if (connectErr) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل الاتصال بالخادم: ${connectErr.message}`,
-    });
-  }
+  const odoo = await getOdooClient(event);
 
   const [kpiErr, data] = await tryCatch(
     odoo.execute_kw("kpi.dashboard", "get_kpis", [

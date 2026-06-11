@@ -1,27 +1,16 @@
 import { defineEventHandler, createError } from "h3";
-import { connectToOdoo } from "~~/server/utils/client";
+import { getOdooClient } from "~~/server/utils/odooClient";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-  if (!session.user) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
-
   const body = await readBody(event);
   const ids: number[] = body?.ids || [];
   if (!ids.length) {
     return { success: true, stockMap: {} };
   }
 
-  const odoo = connectToOdoo(
-    session.odooUsername as string,
-    session.odooPassword as string,
-  );
+  const odoo = await getOdooClient(event);
 
-  try {
-    await odoo.connect();
-
-    const [products, locations, quants] = await Promise.all([
+  const [products, locations, quants] = await Promise.all([
       odoo.searchRead(
         "product.product",
         [["id", "in", ids]],
@@ -67,11 +56,5 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    return { success: true, stockMap };
-  } catch (error: any) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `فشل في جلب المخزون المباشر: ${error.message}`,
-    });
-  }
+  return { success: true, stockMap };
 });
