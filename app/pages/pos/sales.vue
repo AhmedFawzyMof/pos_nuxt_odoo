@@ -2,6 +2,16 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import PosSalesWorkspace from "~/components/pos/PosSalesWorkspace.vue";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const router = useRouter();
 const configId = ref("");

@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from "h3";
 import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
+import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -33,6 +34,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getOdooClient(event);
+  await requirePermission(event, 'Point of Sale / Administrator')
 
   const [rpcErr, result] = await tryCatch(
     odoo.execute_kw("custom.order.api", "api_update_order_status", [

@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { AlertCircle, RefreshCcw } from "@lucide/vue";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage, can } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const currentPage = ref(1);
 const itemsPerPage = ref(5);

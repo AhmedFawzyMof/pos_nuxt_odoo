@@ -12,6 +12,16 @@ import {
   FileText,
   Upload,
 } from "@lucide/vue";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 interface CompanyData {
   id: number;

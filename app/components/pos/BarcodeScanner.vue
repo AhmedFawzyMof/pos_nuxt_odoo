@@ -12,6 +12,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   scan: [barcode: string];
   "update:active": [value: boolean];
+  error: [message: string];
 }>();
 
 let uid = 0;
@@ -34,7 +35,8 @@ const {
     emit("scan", barcode);
     setTimeout(done, props.pauseDuration);
   },
-  onError: () => {
+  onError: (errMsg?: string) => {
+    emit("error", errMsg || "");
     emit("update:active", false);
   },
 });

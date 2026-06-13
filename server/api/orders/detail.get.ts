@@ -1,6 +1,7 @@
 import { defineEventHandler, getQuery, createError } from "h3";
 import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
+import { requirePermission } from '~~/server/utils/permissions'
 
 function toTuple(val: any): [number, string] | null {
   if (!val && val !== 0) return null;
@@ -63,6 +64,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getOdooClient(event);
+  await requirePermission(event, 'Point of Sale / User')
 
   const [rpcErr, result] = await tryCatch(
     odoo.execute_kw("custom.order.api", "api_get_order_detail", [

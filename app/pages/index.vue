@@ -18,6 +18,7 @@ import {
   Circle,
 } from "@lucide/vue";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
+const route = useRoute();
 
 const kpiIconMap: Record<string, any> = {
   trending_up: TrendingUp,

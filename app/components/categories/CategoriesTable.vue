@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Edit, Trash2, SearchX, Folder } from "@lucide/vue";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
+import { usePermissions } from "~/composables/usePermissions";
+const { can } = usePermissions();
 
 interface Category {
   id?: number;
@@ -129,6 +131,7 @@ const emit = defineEmits<{
             <td class="px-6 py-4 text-center" @click.stop>
               <div class="flex items-center justify-center gap-2">
                 <button
+                  v-if="can('category.edit')"
                   @click="emit('edit', cat, index)"
                   class="p-2 hover:bg-white-high rounded-full transition-colors text-on-white-variant hover:text-primary active:scale-95"
                   title="تعديل"
@@ -136,6 +139,7 @@ const emit = defineEmits<{
                   <Edit class="w-5 h-5" />
                 </button>
                 <button
+                  v-if="can('category.delete')"
                   @click="emit('delete', cat, index)"
                   class="p-2 hover:bg-error-container rounded-full transition-colors text-on-white-variant hover:text-error active:scale-95"
                   title="حذف"

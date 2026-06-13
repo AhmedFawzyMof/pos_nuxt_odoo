@@ -2,6 +2,8 @@
 import { ref, watch, nextTick } from "vue";
 import { GitMerge, X, AlertTriangle, RefreshCw, VideoOff, ScanBarcode, Trash2 } from '@lucide/vue';
 import { tryWeightBarcodeSearch } from "~/utils/weightBarcode";
+import { usePermissions } from '~/composables/usePermissions'
+const { can } = usePermissions()
 
 interface OdooLocation {
   id: number;
@@ -471,6 +473,7 @@ const closeModal = async () => {
             إلغاء
           </button>
           <button
+            v-if="can('warehouse.transfer')"
             type="button"
             @click="handleSubmitBatchTransfer"
             :disabled="isSaving || transferCart.length === 0"

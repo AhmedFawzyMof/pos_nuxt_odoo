@@ -2,6 +2,8 @@
 import { SearchX } from "@lucide/vue";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import type { Supplier } from "~/types/supplier";
+import { usePermissions } from '~/composables/usePermissions'
+const { can } = usePermissions()
 
 defineProps<{
   suppliers: Supplier[];
@@ -118,6 +120,7 @@ const emit = defineEmits<{
             </td>
             <td class="p-4">
               <button
+                v-if="can('supplier.edit')"
                 @click="emit('edit', supplier)"
                 class="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition-all cursor-pointer"
               >

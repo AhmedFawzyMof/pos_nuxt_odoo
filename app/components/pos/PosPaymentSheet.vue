@@ -18,6 +18,8 @@ import {
 import { usePosCartStore } from "~~/stores/pos-cart";
 import type { PaymentMethod, OrderResponse } from "~/types/pos";
 import type { Customer } from "~/types/customer";
+import { usePermissions } from '~/composables/usePermissions'
+const { can, isManager } = usePermissions()
 
 const props = defineProps<{
   open: boolean;
@@ -527,7 +529,10 @@ function printReceipt() {
           <template v-if="!successMessage">
             <div class="space-y-3">
               <!-- Discount -->
-              <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div
+                v-if="can('cashier.discount')"
+                class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+              >
                 <button
                   @click="showDiscount = !showDiscount"
                   class="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
@@ -581,7 +586,10 @@ function printReceipt() {
               </div>
 
               <!-- Service Fee -->
-              <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div
+                v-if="can('cashier.discount')"
+                class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+              >
                 <button
                   @click="showServiceFee = !showServiceFee"
                   class="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"

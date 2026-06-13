@@ -9,9 +9,26 @@ import { Button } from "../ui/button";
 import { Menu, LogOut, ChevronDown } from "@lucide/vue";
 import { groupedNav } from "~/lib/navlinks";
 import type { NavGroup } from "~/lib/navlinks";
+import { usePermissions } from "~/composables/usePermissions";
 
 const route = useRoute();
 const { logout, user, username } = useAuth();
+const { hasPermission } = usePermissions();
+
+function canSeeLink(link: { requiredPermission?: string }): boolean {
+  if (!link.requiredPermission) return true
+  return hasPermission(link.requiredPermission)
+}
+
+const filteredNav = computed(() =>
+  groupedNav.filter((entry) => {
+    if ("children" in entry) {
+      const visibleChildren = entry.children.filter(canSeeLink)
+      return visibleChildren.length > 0
+    }
+    return canSeeLink(entry)
+  }),
+)
 
 const expanded = ref<Record<string, boolean>>(
   Object.fromEntries(
@@ -26,7 +43,7 @@ const toggleGroup = (name: string) => {
 };
 
 const pageTitle = computed(() => {
-  const allLinks = groupedNav.flatMap((entry) =>
+  const allLinks = filteredNav.value.flatMap((entry) =>
     "children" in entry ? entry.children : [entry],
   );
   const currentLink = allLinks.find((link) => {
@@ -84,7 +101,7 @@ const isGroupActive = (group: NavGroup) =>
       <!-- Navigation Links -->
       <div class="flex-1 overflow-y-auto px-4 py-6">
         <nav class="space-y-1">
-          <template v-for="entry in groupedNav" :key="'children' in entry ? entry.name : entry.path">
+          <template v-for="entry in filteredNav" :key="'children' in entry ? entry.name : entry.path">
             <!-- Group -->
             <div v-if="'children' in entry" class="space-y-0.5">
               <button

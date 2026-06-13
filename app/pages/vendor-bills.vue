@@ -17,6 +17,16 @@ import {
   X,
 } from "@lucide/vue";
 import type { VendorBill, VendorBillApiResponse } from "~/types/vendorBill";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage, can } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const now = new Date();
 const defaultDateFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -427,21 +437,21 @@ const submitPayment = async () => {
                 <td class="p-4">
                   <div class="flex gap-2">
                     <button
-                      v-if="bill.state === 'draft'"
+                      v-if="bill.state === 'draft' && can('vendorBill.post')"
                       @click="postBill(bill.id)"
                       class="px-3 py-1 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 cursor-pointer flex items-center gap-1"
                     >
                       <Send class="w-3 h-3" /> ترحيل
                     </button>
                     <button
-                      v-if="bill.state === 'posted' && bill.payment_state !== 'paid'"
+                      v-if="bill.state === 'posted' && bill.payment_state !== 'paid' && can('vendorBill.pay')"
                       @click="openPayModal(bill)"
                       class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer flex items-center gap-1"
                     >
                       <Landmark class="w-3 h-3" /> دفع
                     </button>
                     <button
-                      v-if="bill.state !== 'paid' && bill.state !== 'cancel'"
+                      v-if="bill.state !== 'paid' && bill.state !== 'cancel' && can('vendorBill.cancel')"
                       @click="cancelBill(bill.id)"
                       class="px-3 py-1 bg-error text-white text-xs font-bold rounded-lg hover:bg-error/90 cursor-pointer flex items-center gap-1"
                     >

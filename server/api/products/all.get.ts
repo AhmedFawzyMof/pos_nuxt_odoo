@@ -1,5 +1,6 @@
 import { defineEventHandler } from "h3";
 import { getOdooClient } from "~~/server/utils/odooClient";
+import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -8,6 +9,7 @@ export default defineEventHandler(async (event) => {
   const offset = (page - 1) * limit;
 
   const odoo = await getOdooClient(event);
+  await requirePermission(event, 'Point of Sale / User')
 
   const productFields = [
     "id",

@@ -17,6 +17,8 @@ import {
   RefreshCw,
   CheckCheck,
 } from "@lucide/vue";
+import { usePermissions } from '~/composables/usePermissions'
+const { can } = usePermissions()
 
 interface OdooLocation {
   id: number;
@@ -460,6 +462,7 @@ const handleSaveLocation = async () => {
 
           <!-- Primary Save Action Button -->
           <button
+            v-if="can('warehouse.createLocation')"
             type="button"
             @click="handleSaveLocation"
             :disabled="isSaving || saveSuccess"

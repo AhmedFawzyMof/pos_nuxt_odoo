@@ -7,6 +7,16 @@ import PosRegisterForm from "~/components/pos/PosRegisterForm.vue";
 import PosTerminalList from "~/components/pos/PosTerminalList.vue";
 import PosActiveConsole from "~/components/pos/PosActiveConsole.vue";
 import type { POSRegister } from "~/types/pos";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const POS_CONFIG_KEY = "pos_config_id";
 const POS_NAME_KEY = "pos_config_name";

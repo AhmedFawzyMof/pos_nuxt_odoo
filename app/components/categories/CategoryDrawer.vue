@@ -9,6 +9,8 @@ import {
   ChevronDown,
   RefreshCw,
 } from "@lucide/vue";
+import { usePermissions } from "~/composables/usePermissions";
+const { can } = usePermissions();
 
 interface Category {
   id?: number;
@@ -320,6 +322,7 @@ const saveCategory = () => {
           class="pt-4 border-t border-outline-variant"
         >
           <button
+            v-if="can('category.delete')"
             @click="emit('delete')"
             class="w-full h-11 flex items-center justify-center gap-2 text-error hover:bg-error/10 rounded-xl transition-colors border border-dashed border-error/30 font-bold text-label-md cursor-pointer"
           >
@@ -340,6 +343,7 @@ const saveCategory = () => {
           إلغاء
         </button>
         <button
+          v-if="mode === 'add' ? can('category.create') : can('category.edit')"
           @click="saveCategory"
           :disabled="isSaving || !formName"
           class="px-6 h-11 text-white text-label-md font-bold rounded-full bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"

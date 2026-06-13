@@ -20,6 +20,16 @@ import ExpensesReport from "~/components/reports/ExpensesReport.vue";
 import ShiftReport from "~/components/reports/ShiftReport.vue";
 import SalespersonReport from "~/components/reports/SalespersonReport.vue";
 import ActivityLogReport from "~/components/reports/ActivityLogReport.vue";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const now = new Date();
 const defaultDateFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;

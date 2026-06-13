@@ -23,6 +23,15 @@ import { Button } from "@/components/ui/button";
 import { usePosCartStore } from "~~/stores/pos-cart";
 import { usePosHotkeys } from "~/composables/usePosHotkeys";
 import type { POSProduct, POSCategory, PaymentMethod } from "~/types/pos";
+import { usePermissions } from "~/composables/usePermissions";
+
+const { canViewPage, can, isManager } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -175,6 +184,10 @@ function handleSearch(val: string) {
   }, 300);
 }
 
+async function handleScannerError(message: string) {
+  showFeedbackToast(message, "error");
+}
+
 async function handleScan(barcode: string) {
   scannerActive.value = false;
   clearTimeout(searchDebounce);
@@ -298,6 +311,7 @@ watch(
             class="flex-1"
             @scan="handleScan"
             @update:model-value="handleSearch"
+            @error="handleScannerError"
           />
         </div>
       </div>
@@ -339,6 +353,7 @@ watch(
             </button>
           </div>
           <div
+            v-if="can('cashier.forceClose')"
             class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
           >
             <LogOut class="w-3.5 h-3.5" />
@@ -389,6 +404,7 @@ watch(
               class="flex-1"
               @scan="handleScan"
               @update:model-value="handleSearch"
+              @error="handleScannerError"
             />
           </div>
         </div>
@@ -429,6 +445,7 @@ watch(
               </button>
             </div>
             <div
+              v-if="can('cashier.forceClose')"
               class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
             >
               <LogOut class="w-3.5 h-3.5" />
@@ -484,6 +501,7 @@ watch(
               class="flex-1"
               @scan="handleScan"
               @update:model-value="handleSearch"
+              @error="handleScannerError"
             />
           </div>
         </div>
@@ -526,6 +544,7 @@ watch(
               </button>
             </div>
             <div
+              v-if="can('cashier.forceClose')"
               class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
             >
               <LogOut class="w-3.5 h-3.5" />

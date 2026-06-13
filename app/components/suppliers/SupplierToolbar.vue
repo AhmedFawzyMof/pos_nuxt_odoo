@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { RefreshCw } from "@lucide/vue";
+import { usePermissions } from '~/composables/usePermissions'
+const { can } = usePermissions()
 
 defineProps<{
   status: string;
@@ -31,6 +33,7 @@ const emit = defineEmits<{
         تحديث
       </button>
       <button
+        v-if="can('supplier.create')"
         @click="emit('add')"
         class="px-4 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 transition-all cursor-pointer"
       >

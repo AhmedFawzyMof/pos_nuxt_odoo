@@ -12,6 +12,17 @@ import {
 import ProductsTable from "~/components/products/ProductsTable.vue";
 import ProductDrawer from "~/components/products/ProductDrawer.vue";
 import type { Product } from "~/types/product";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { can, canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
+
 const currentPage = ref(1);
 
 const {
@@ -254,6 +265,7 @@ const handleDeleteFromDrawer = async () => {
           <span>المخزون المباشر</span>
         </button>
         <button
+          v-if="can('product.create')"
           @click="openAddDrawer"
           class="text-white flex items-center justify-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-bold hover:bg-primary/95 transition-all active:scale-95 cursor-pointer shadow-sm"
         >

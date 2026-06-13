@@ -1,6 +1,7 @@
 import { defineEventHandler, getQuery } from "h3";
 import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
+import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const { type, date_from, date_to, ...filters } = getQuery(event);
@@ -21,6 +22,7 @@ export default defineEventHandler(async (event) => {
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   const odoo = await getOdooClient(event);
+  await requirePermission(event, 'Point of Sale / User')
 
   const [rpcErr, data] = await tryCatch(
     odoo.execute_kw("pos.reports.api", "get_report_data", [

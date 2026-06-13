@@ -19,7 +19,7 @@ export const useAuthStore = defineStore("auth", () => {
     maxAge: 60 * 60 * 24 * 7,
   });
 
-  const permissions = useCookie<string[]>("auth_permissions", {
+  const permissions = useCookie<any[]>("auth_permissions", {
     default: () => [],
     maxAge: 60 * 60 * 24 * 7,
   });
@@ -35,12 +35,13 @@ export const useAuthStore = defineStore("auth", () => {
 
   const currentCompany = computed(() => {
     if (!user.value || !currentCompanyId.value) return null;
-
-    // Always return the actual company object from the allowed list
+    const match = user.value.allowedCompanies.find(
+      (c) => c.id === currentCompanyId.value,
+    );
     return (
-      user.value.primaryCompanyId ||
+      match ||
       user.value.allowedCompanies.find(
-        (c) => c.id === user.value?.primaryCompanyId,
+        (c) => c.id === user.value!.primaryCompanyId,
       ) ||
       null
     );
@@ -92,9 +93,13 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  function switchCompany(companyId: number) {
+  async function switchCompany(companyId: number) {
     const exists = user.value?.allowedCompanies.some((c) => c.id === companyId);
     if (exists) {
+      await $fetch("/api/auth/company", {
+        method: "PUT",
+        body: { companyId },
+      });
       currentCompanyId.value = companyId;
     }
   }
@@ -114,6 +119,7 @@ export const useAuthStore = defineStore("auth", () => {
     email: emailState,
     loading,
     isAuthenticated,
+    permissions,
     login,
     switchCompany,
     logout,

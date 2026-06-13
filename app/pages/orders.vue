@@ -18,6 +18,16 @@ import {
   AlertCircle,
 } from "@lucide/vue";
 import type { POSOrder, OrderListResponse } from "~/types/pos";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage, can } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const searchQuery = ref("");
 const statusFilter = ref("");
@@ -411,7 +421,8 @@ const statusIcons: Record<string, any> = {
                       <button
                         v-if="
                           order.state !== 'cancelled' &&
-                          order.state !== 'refund'
+                          order.state !== 'refund' &&
+                          can('order.void')
                         "
                         @click="voidOrder(order.id, order.name)"
                         class="text-error border border-error/20 px-3 py-1.5 rounded-lg hover:bg-error/10 transition-colors flex items-center gap-2 text-label-md font-bold cursor-pointer"

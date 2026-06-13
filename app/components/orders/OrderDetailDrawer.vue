@@ -20,6 +20,8 @@ import type {
   OrderPayment,
   PaymentMethod,
 } from "~/types/pos";
+import { usePermissions } from '~/composables/usePermissions'
+const { can } = usePermissions()
 
 const props = defineProps<{
   isOpen: boolean;
@@ -357,7 +359,7 @@ const formatDate = (dateStr: string) => {
                 </option>
               </select>
               <button
-                v-if="selectedStatus !== order.state"
+                v-if="selectedStatus !== order.state && can('order.void')"
                 @click="changeStatus"
                 :disabled="saving"
                 class="px-4 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary/95 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
@@ -455,6 +457,7 @@ const formatDate = (dateStr: string) => {
                   </td>
                   <td class="px-3 py-3">
                     <button
+                      v-if="can('order.removeLine')"
                       @click="removeLine(line.id)"
                       :disabled="saving"
                       class="p-1.5 rounded-lg hover:bg-error/10 text-error/70 hover:text-error transition-colors cursor-pointer disabled:opacity-30"
@@ -647,7 +650,7 @@ const formatDate = (dateStr: string) => {
             </div>
 
             <button
-              v-if="payments.length > 0"
+              v-if="payments.length > 0 && can('order.editPayment')"
               @click="savePayments"
               :disabled="saving"
               class="w-full px-5 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary/95 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 text-sm"

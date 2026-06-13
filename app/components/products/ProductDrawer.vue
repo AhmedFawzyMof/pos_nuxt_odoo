@@ -2,6 +2,8 @@
 import { ref, watch, nextTick, computed } from "vue";
 import type { Product } from "~/types/product";
 import { parseWeightBarcode } from "~/utils/weightBarcode";
+import { usePermissions } from "~/composables/usePermissions";
+const { can } = usePermissions();
 import {
   Package,
   X,
@@ -494,7 +496,7 @@ const saveProduct = () => {
                   >السعر البيعي الرئيسي</label
                 >
               </div>
-              <div class="relative">
+              <div v-if="can('product.viewCost')" class="relative">
                 <input
                   v-model="formStandardPrice"
                   class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
@@ -877,6 +879,7 @@ const saveProduct = () => {
           class="pt-4 border-t border-outline-variant"
         >
           <button
+            v-if="can('product.delete')"
             @click="emit('delete')"
             class="w-full h-11 flex items-center justify-center gap-2 text-error hover:bg-error/10 rounded-xl transition-colors border border-dashed border-error/30 font-bold text-label-md cursor-pointer"
           >

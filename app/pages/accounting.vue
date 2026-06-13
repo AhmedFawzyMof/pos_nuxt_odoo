@@ -16,6 +16,16 @@ import {
   CloudOff,
 } from "@lucide/vue";
 import type { VendorBill, VendorBillApiResponse } from "~/types/vendorBill";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const dateFrom = ref("");
 const dateTo = ref("");

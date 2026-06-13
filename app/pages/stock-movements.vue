@@ -16,6 +16,16 @@ import {
   FileX2,
 } from "@lucide/vue";
 import * as XLSX from "@sheetjs/xlsx";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const router = useRouter();
 

@@ -2,6 +2,16 @@
 import { ref, computed } from "vue";
 import { CloudOff, LoaderCircle } from "@lucide/vue";
 import type { Customer, CustomerApiResponse } from "~/types/customer";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const currentPage = ref(1);
 const searchQuery = ref("");

@@ -13,6 +13,8 @@ import {
   Banknote,
 } from "@lucide/vue";
 import type { SessionSummary } from "~/types/pos";
+import { usePermissions } from '~/composables/usePermissions'
+const { can } = usePermissions()
 
 const props = defineProps<{
   open: boolean;

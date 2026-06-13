@@ -7,6 +7,15 @@ import type {
   CustomerDetailResponse,
   CustomerOrder,
 } from "~/types/customer";
+import { usePermissions } from "~/composables/usePermissions";
+
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const route = useRoute();
 const customerId = computed(() => route.query.id as string);

@@ -15,6 +15,7 @@ const emit = defineEmits<{
   "update:modelValue": [value: string];
   "update:scannerActive": [value: boolean];
   scan: [barcode: string];
+  error: [message: string];
 }>();
 
 const localValue = ref(props.modelValue);
@@ -72,6 +73,7 @@ function toggleScanner() {
         :active="scannerActive"
         @scan="handleScan"
         @update:active="(v) => emit('update:scannerActive', v)"
+        @error="(msg) => emit('error', msg)"
       />
     </div>
   </div>

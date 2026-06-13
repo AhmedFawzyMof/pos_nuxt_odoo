@@ -2,6 +2,8 @@
 import { ref, watch } from "vue";
 import { X, RefreshCw } from "@lucide/vue";
 import type { Supplier } from "~/types/supplier";
+import { usePermissions } from '~/composables/usePermissions'
+const { can } = usePermissions()
 
 const props = defineProps<{
   isOpen: boolean;

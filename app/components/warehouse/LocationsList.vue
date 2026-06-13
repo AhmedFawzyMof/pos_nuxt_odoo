@@ -18,6 +18,8 @@ import {
   Building2,
   MapPin,
 } from "@lucide/vue";
+import { usePermissions } from '~/composables/usePermissions'
+const { can } = usePermissions()
 
 defineProps<{
   locations: LocationItem[];
@@ -42,6 +44,7 @@ defineEmits<{
       </h2>
       <div class="flex gap-2 flex-col md:flex-row">
         <button
+          v-if="can('warehouse.createLocation')"
           @click="$emit('create-location')"
           class="px-4 py-2 bg-primary text-white rounded-lg text-label-md font-bold flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-95 cursor-pointer"
         >
@@ -49,6 +52,7 @@ defineEmits<{
           إنشاء موقع جديد
         </button>
         <button
+          v-if="can('warehouse.transfer')"
           @click="$emit('stock-transfer')"
           class="px-4 py-2 bg-primary text-white rounded-lg text-label-md font-bold flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-95 cursor-pointer"
         >

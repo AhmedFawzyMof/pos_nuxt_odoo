@@ -15,6 +15,16 @@ import {
 } from "@lucide/vue";
 import { translateGroup } from "~~/app/utils/permissions";
 import { useColorTheme, themeOptions } from "~/composables/useColorTheme";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const { currentTheme, applyTheme } = useColorTheme();
 

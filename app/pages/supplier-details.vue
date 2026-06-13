@@ -2,6 +2,15 @@
 import { ref, computed, watch } from "vue";
 import { useRoute, navigateTo } from "#app";
 import { CloudOff, RefreshCw } from "@lucide/vue";
+import { usePermissions } from "~/composables/usePermissions";
+
+const { canViewPage } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const route = useRoute();
 const supplierId = computed(() => route.query.id as string);

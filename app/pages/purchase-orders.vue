@@ -12,6 +12,16 @@ import type {
   PurchaseOrderApiResponse,
 } from "~/types/purchaseOrder";
 import CreatePurchaseOrderModal from "~/components/purchase/CreatePurchaseOrderModal.vue";
+import { usePermissions } from "~/composables/usePermissions";
+
+const route = useRoute();
+const { canViewPage, can, isPurchaseUser, isStockUser } = usePermissions();
+
+if (import.meta.client) {
+  if (!canViewPage(route.path)) {
+    navigateTo('/')
+  }
+}
 
 const showCreateModal = ref(false);
 
@@ -175,6 +185,7 @@ const stateClass = (state: string) => {
         </div>
         <div class="flex gap-2">
           <button
+            v-if="can('purchase.create')"
             @click="showCreateModal = true"
             class="h-11 px-4 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 flex items-center gap-2 cursor-pointer"
           >
@@ -277,7 +288,7 @@ const stateClass = (state: string) => {
                 <td class="p-4">
                   <div class="flex gap-2">
                     <button
-                      v-if="po.state === 'draft'"
+                      v-if="po.state === 'draft' && can('purchase.confirm')"
                       @click="confirmPO(po.id)"
                       class="px-3 py-1 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 cursor-pointer"
                     >
@@ -285,7 +296,7 @@ const stateClass = (state: string) => {
                     </button>
                     <button
                       v-if="
-                        po.state === 'purchase' && po.receipt_status !== 'done'
+                        po.state === 'purchase' && po.receipt_status !== 'done' && can('purchase.receive')
                       "
                       @click="receivePO(po.id)"
                       class="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer"
@@ -293,7 +304,7 @@ const stateClass = (state: string) => {
                       استلام
                     </button>
                     <button
-                      v-if="po.state === 'purchase' && po.receipt_status !== 'pending'"
+                      v-if="po.state === 'purchase' && po.receipt_status !== 'pending' && can('purchase.createBill')"
                       @click="createBill(po.id)"
                       class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer"
                     >

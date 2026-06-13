@@ -1,9 +1,11 @@
 import { defineEventHandler, readBody } from "h3";
 import { getOdooClient } from "~~/server/utils/odooClient";
+import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const odoo = await getOdooClient(event);
+  await requirePermission(event, 'Point of Sale / Administrator')
 
   let imageField = "image_128";
   try {

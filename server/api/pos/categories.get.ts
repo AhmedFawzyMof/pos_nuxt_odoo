@@ -1,9 +1,11 @@
 import { defineEventHandler, getQuery } from "h3";
 import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
+import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
+  await requirePermission(event, 'Point of Sale / User')
 
   const query = getQuery(event);
   const page = query.page ? Math.max(1, parseInt(query.page as string)) : null;

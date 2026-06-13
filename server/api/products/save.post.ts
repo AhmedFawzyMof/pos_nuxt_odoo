@@ -6,6 +6,8 @@ async function odooWrite(
 ): Promise<boolean> {
   return await odoo.execute_kw(model, "write", [[ids, values], {}]);
 }
+import { requirePermission } from '~~/server/utils/permissions'
+
 async function safeSearchRead(
   odoo: any,
   model: string,
@@ -20,6 +22,7 @@ async function safeSearchRead(
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const odoo = await getOdooClient(event);
+  await requirePermission(event, 'Point of Sale / Administrator')
 
   const productValues: any = {
       name: body.name,

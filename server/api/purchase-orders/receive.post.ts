@@ -1,9 +1,11 @@
 import { defineEventHandler, readBody, createError } from "h3";
 import { getOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
+import { requireAnyPermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
+  await requireAnyPermission(event, ['Inventory / User', 'Purchase / User'])
   const body = await readBody(event);
   if (!body?.po_id) {
     throw createError({

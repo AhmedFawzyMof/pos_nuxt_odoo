@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
       userPermissions = groupRecords.map((g: any) => ({
         id: g.id,
         name: g.name,
-        fullName: g.full_name,
+        fullName: g.full_name || (g.category_id ? `${g.category_id[1]} / ${g.name}` : g.name),
       }));
     }
   }
