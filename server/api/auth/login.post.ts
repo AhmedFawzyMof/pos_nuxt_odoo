@@ -108,12 +108,21 @@ export default defineEventHandler(async (event) => {
     ).run(localUser.id, g.id, g.name, g.fullName);
   }
 
-  // Get user's local roles
-  const roles = db.prepare(`
+  // Get user's local roles — grant all if none assigned yet
+  let roles = db.prepare(`
     SELECT r.name FROM user_roles ur
     JOIN roles r ON r.id = ur.role_id
     WHERE ur.user_id = ?
   `).all(localUser.id).map((r: any) => r.name);
+
+  if (roles.length === 0) {
+    db.prepare('INSERT INTO user_roles (user_id, role_id) SELECT ?, id FROM roles').run(localUser.id);
+    roles = db.prepare(`
+      SELECT r.name FROM user_roles ur
+      JOIN roles r ON r.id = ur.role_id
+      WHERE ur.user_id = ?
+    `).all(localUser.id).map((r: any) => r.name);
+  }
 
   await setUserSession(event, {
     user: {
