@@ -5,7 +5,7 @@ import { tryCatch } from '~~/server/utils/tryCatch'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event)
-  await requirePermission(event, 'Administration / Access Rights')
+  await requirePermission(event, 'settings_access_rights')
 
   const [groupErr, groups] = await tryCatch(
     odoo.execute_kw('res.groups', 'search_read', [

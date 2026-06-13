@@ -2,11 +2,12 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { getOdooClient } from '~~/server/utils/odooClient'
 import { requirePermission } from '~~/server/utils/permissions'
 import { tryCatch } from '~~/server/utils/tryCatch'
+import { getDb } from '~~/server/db'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event)
   const session = await getUserSession(event)
-  await requirePermission(event, 'Administration / Access Rights')
+  await requirePermission(event, 'settings_access_rights')
 
   const body = await readBody(event)
 
@@ -34,6 +35,45 @@ export default defineEventHandler(async (event) => {
   const [createErr, newId] = await tryCatch(odoo.execute_kw('res.users', 'create', [[vals]]))
   if (createErr) {
     throw createError({ statusCode: 500, message: createErr.message || 'Failed to create user' })
+  }
+
+  // Save to local SQLite
+  const db = getDb()
+  const info = db.prepare(
+    'INSERT INTO users (odoo_user_id, name, login, active) VALUES (?, ?, ?, ?)'
+  ).run(Number(newId), body.name, body.login.trim(), body.active !== false)
+
+  // Save roles
+  const roles = body.roles || []
+  const roleInsert = db.prepare(
+    'INSERT OR IGNORE INTO user_roles (user_id, role_id) VALUES (?, (SELECT id FROM roles WHERE name = ?))'
+  )
+  for (const roleName of roles) {
+    roleInsert.run(info.lastInsertRowid, roleName)
+  }
+
+  // Cache Odoo groups
+  const groupIds = (body.groups_id || []).map(Number)
+  if (groupIds.length > 0) {
+    const [groupErr, groupRecords] = await tryCatch(
+      odoo.execute_kw('res.groups', 'search_read', [
+        [['id', 'in', groupIds]],
+        { fields: ['id', 'name', 'full_name', 'category_id'] },
+      ])
+    )
+    if (!groupErr && groupRecords) {
+      const groupInsert = db.prepare(
+        'INSERT INTO user_odoo_groups (user_id, odoo_group_id, group_name, full_name) VALUES (?, ?, ?, ?)'
+      )
+      for (const g of groupRecords) {
+        groupInsert.run(
+          info.lastInsertRowid,
+          g.id,
+          g.name,
+          g.full_name || `${g.category_id?.[1] || ''} / ${g.name}`
+        )
+      }
+    }
   }
 
   return { success: true, id: newId }

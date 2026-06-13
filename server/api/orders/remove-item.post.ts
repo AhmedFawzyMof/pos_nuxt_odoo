@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / Administrator')
+  await requirePermission(event, 'pos_manager')
 
   const [rpcErr, result] = await tryCatch(
     odoo.execute_kw("custom.order.api", "api_remove_order_line", [

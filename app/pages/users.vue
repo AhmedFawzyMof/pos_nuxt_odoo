@@ -85,9 +85,9 @@ async function handleSave(data: any) {
       body: data,
     })
     if (res.success) {
-      if (res.permissions) {
+      if (res.roles) {
         const auth = useAuthStore()
-        auth.permissions = res.permissions
+        auth.userRoles = res.roles
       }
       drawerOpen.value = false
       await fetchUsers()

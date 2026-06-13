@@ -2,10 +2,11 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { getOdooClient } from '~~/server/utils/odooClient'
 import { requirePermission } from '~~/server/utils/permissions'
 import { tryCatch } from '~~/server/utils/tryCatch'
+import { getDb } from '~~/server/db'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event)
-  await requirePermission(event, 'Administration / Access Rights')
+  await requirePermission(event, 'settings_access_rights')
 
   const body = await readBody(event)
   if (!body.id) {
@@ -18,6 +19,10 @@ export default defineEventHandler(async (event) => {
   if (deactivateErr) {
     throw createError({ statusCode: 500, message: deactivateErr.message || 'Failed to deactivate user' })
   }
+
+  // Mark as inactive in local SQLite
+  const db = getDb()
+  db.prepare('UPDATE users SET active = 0, updated_at = datetime(\'now\') WHERE odoo_user_id = ?').run(Number(body.id))
 
   return { success: true, message: 'User deactivated' }
 })

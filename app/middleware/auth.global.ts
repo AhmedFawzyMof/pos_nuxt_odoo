@@ -16,20 +16,16 @@ export default defineNuxtRouteMiddleware((to) => {
   if (hasValidUserCookie && to.path !== "/login") {
     const permCheck: PermissionCheck | null = getRequiredPermission(to.path)
     if (permCheck) {
-      const permissionsCookie = useCookie<any[]>("auth_permissions")
-      const userPermissions: any[] = permissionsCookie.value || []
-      const groupNames = userPermissions.flatMap((p: any) => {
-        const name = typeof p === 'string' ? p : (p.fullName || p.name)
-        return typeof p === 'object' && p.name ? [name, p.name] : [name]
-      })
+      const rolesCookie = useCookie<string[]>("auth_roles")
+      const userRoles: string[] = rolesCookie.value || []
 
-      const hasRequired = (groups?: string[]) => {
-        if (!groups || groups.length === 0) return true
-        return groups.every(g => groupNames.includes(g))
+      const hasRequired = (roles?: string[]) => {
+        if (!roles || roles.length === 0) return true
+        return roles.every(r => userRoles.includes(r))
       }
-      const hasAny = (groups?: string[]) => {
-        if (!groups || groups.length === 0) return true
-        return groups.some(g => groupNames.includes(g))
+      const hasAny = (roles?: string[]) => {
+        if (!roles || roles.length === 0) return true
+        return roles.some(r => userRoles.includes(r))
       }
 
       let allowed = true

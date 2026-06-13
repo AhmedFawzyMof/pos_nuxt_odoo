@@ -1,14 +1,14 @@
 export const Groups = {
-  POS_USER: 'Point of Sale / User',
-  POS_MANAGER: 'Point of Sale / Administrator',
-  PURCHASE_USER: 'Purchase / User',
-  PURCHASE_MANAGER: 'Purchase / Administrator',
-  ACCOUNT_INVOICE: 'Accounting / Invoicing',
-  ACCOUNT_MANAGER: 'Accounting / Administrator',
-  STOCK_USER: 'Inventory / User',
-  STOCK_MANAGER: 'Inventory / Administrator',
-  SETTINGS_ACCESS_RIGHTS: 'Administration / Access Rights',
-  BASE_USER: 'Internal User',
+  POS_USER: 'pos_user',
+  POS_MANAGER: 'pos_manager',
+  PURCHASE_USER: 'purchase_user',
+  PURCHASE_MANAGER: 'purchase_manager',
+  ACCOUNT_INVOICE: 'account_invoice',
+  ACCOUNT_MANAGER: 'account_manager',
+  STOCK_USER: 'stock_user',
+  STOCK_MANAGER: 'stock_manager',
+  SETTINGS_ACCESS_RIGHTS: 'settings_access_rights',
+  BASE_USER: 'base_user',
 }
 
 export const GroupKeys: Record<string, string> = {
@@ -22,6 +22,19 @@ export const GroupKeys: Record<string, string> = {
   [Groups.STOCK_MANAGER]: 'stock_manager',
   [Groups.SETTINGS_ACCESS_RIGHTS]: 'settings_access_rights',
   [Groups.BASE_USER]: 'base_user',
+}
+
+export const RoleToOdooGroupName: Record<string, string> = {
+  pos_user: 'Point of Sale / User',
+  pos_manager: 'Point of Sale / Administrator',
+  purchase_user: 'Purchase / User',
+  purchase_manager: 'Purchase / Administrator',
+  account_invoice: 'Accounting / Invoicing',
+  account_manager: 'Accounting / Administrator',
+  stock_user: 'Inventory / User',
+  stock_manager: 'Inventory / Administrator',
+  settings_access_rights: 'Administration / Access Rights',
+  base_user: 'Internal User',
 }
 
 export interface PermissionCheck {

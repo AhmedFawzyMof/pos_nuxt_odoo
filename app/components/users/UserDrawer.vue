@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue"
 import { X, RefreshCw, AlertTriangle } from "@lucide/vue"
-import { Groups, categorizeGroups, type EnrichedPage } from "~/types/permissions"
+import { Groups, categorizeGroups, RoleToOdooGroupName, type EnrichedPage } from "~/types/permissions"
 
 const props = defineProps<{
   open: boolean
@@ -44,21 +44,18 @@ function collectLevelIds(page: EnrichedPage, levelId: string): string[] {
   return result
 }
 
-function findGroupByFullName(fullName: string): any | undefined {
-  const expectedName = fullName.includes(' / ') ? fullName.split(' / ')[1] : fullName
+function findGroupByOdooGroupName(odooGroupName: string): any | undefined {
   return props.groups.find((g: any) => {
     const fn = g.fullName || `${g.categoryName} / ${g.name}`
-    if (fn === fullName) return true
-    if (g.name === expectedName) return true
-    if (g.name === fullName) return true
-    return false
+    return fn === odooGroupName || g.name === odooGroupName
   })
 }
 
 const selectedGroupIds = computed(() => {
   const ids: number[] = []
 
-  const baseUser = findGroupByFullName(Groups.BASE_USER)
+  const odooGroupName = RoleToOdooGroupName[Groups.BASE_USER]
+  const baseUser = odooGroupName ? findGroupByOdooGroupName(odooGroupName) : null
   if (baseUser) ids.push(baseUser.id)
 
   for (const page of enrichedPages.value) {
@@ -69,8 +66,11 @@ const selectedGroupIds = computed(() => {
     for (const lid of levelIds) {
       const level = page.levels.find(l => l.id === lid)
       if (!level) continue
-      const match = findGroupByFullName(Groups[level.groupRef])
-      if (match) ids.push(match.id)
+      const odooGroupName = RoleToOdooGroupName[Groups[level.groupRef]]
+      if (odooGroupName) {
+        const match = findGroupByOdooGroupName(odooGroupName)
+        if (match) ids.push(match.id)
+      }
     }
 
     const selectedLevel = page.levels.find(l => l.id === levelId)
@@ -82,6 +82,19 @@ const selectedGroupIds = computed(() => {
     }
   }
   return [...new Set(ids)]
+})
+
+const selectedRoleNames = computed(() => {
+  const roles: string[] = []
+  for (const page of enrichedPages.value) {
+    const levelId = selectedPageLevels.value[page.key]
+    if (!levelId) continue
+    const level = page.levels.find(l => l.id === levelId)
+    if (level) {
+      roles.push(Groups[level.groupRef])
+    }
+  }
+  return roles
 })
 
 function setPageLevel(pageKey: string, levelId: string) {
@@ -104,23 +117,23 @@ watch([() => props.open, () => props.user], ([open, user]) => {
   const userGroupIds = (user.groups || []).map((g: any) => g.id)
 
   const userOwnedGroups = props.groups.filter((g: any) => userGroupIds.includes(g.id))
-  const userGroupNames = new Set(
+  const userOdooGroupNames = new Set(
     userOwnedGroups.map((g: any) => g.fullName || `${g.categoryName} / ${g.name}`)
   )
-  const userGroupSimpleNames = new Set(userOwnedGroups.map((g: any) => g.name))
+  const userSimpleGroupNames = new Set(userOwnedGroups.map((g: any) => g.name))
 
   for (const page of enrichedPages.value) {
     let bestLevel: string | null = null
     for (const level of page.levels) {
       const neededIds = collectLevelIds(page, level.id)
-      const neededNames = neededIds.map(lid => {
+      const neededOdooNames = neededIds.map(lid => {
         const l = page.levels.find(ll => ll.id === lid)!
-        return Groups[l.groupRef]
-      })
-      const hasAll = neededNames.every(n => {
-        if (userGroupNames.has(n)) return true
+        return RoleToOdooGroupName[Groups[l.groupRef]]
+      }).filter(Boolean)
+      const hasAll = neededOdooNames.every(n => {
+        if (userOdooGroupNames.has(n)) return true
         const simpleName = n.includes(' / ') ? n.split(' / ')[1] : n
-        return userGroupSimpleNames.has(simpleName) || userGroupSimpleNames.has(n)
+        return userSimpleGroupNames.has(simpleName) || userSimpleGroupNames.has(n)
       })
       if (hasAll) {
         bestLevel = level.id
@@ -160,6 +173,7 @@ async function handleSave() {
     email: email.value.trim() || login.value.trim(),
     password: password.value || undefined,
     groups_id: selectedGroupIds.value,
+    roles: selectedRoleNames.value,
   })
   saving.value = false
 }

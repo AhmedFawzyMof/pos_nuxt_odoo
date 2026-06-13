@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Inventory / Administrator')
+  await requirePermission(event, 'stock_manager')
 
   const typeMapping: Record<string, string> = {
     internal: "internal",

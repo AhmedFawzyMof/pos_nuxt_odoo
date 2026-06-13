@@ -4,7 +4,7 @@ import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / User')
+  await requirePermission(event, 'pos_user')
 
   const [taxesError, taxesData] = await tryCatch(
     odoo.searchRead(

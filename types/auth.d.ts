@@ -1,8 +1,9 @@
 declare module "#auth-utils" {
   interface User {
-    id: string;
+    id: number;
+    odooUserId: number;
     name: string;
-    userPermissions: string[];
+    roles: string[];
   }
   interface UserSession {
     odooPassword: string;

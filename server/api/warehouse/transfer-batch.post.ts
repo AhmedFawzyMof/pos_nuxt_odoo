@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Inventory / User')
+  await requirePermission(event, 'stock_user')
 
   const moveLines = [];
   for (const item of items) {

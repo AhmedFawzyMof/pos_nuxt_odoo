@@ -5,7 +5,7 @@ import { requireAnyPermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
-  await requireAnyPermission(event, ['Accounting / Invoicing', 'Accounting / Administrator'])
+  await requireAnyPermission(event, ['account_invoice', 'account_manager'])
   const body = await readBody(event);
   if (!body?.bill_id || !body?.status) {
     throw createError({

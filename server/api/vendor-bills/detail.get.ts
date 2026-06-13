@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Accounting / Invoicing')
+  await requirePermission(event, 'account_invoice')
   const [rpcErr, result] = await tryCatch(
     odoo.execute_kw("vendor.bill.api", "get_vendor_bill_detail", [[billId]]),
   );

@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / User')
+  await requirePermission(event, 'pos_user')
 
   const sanitizedPayload = {
     items: (body.items || []).map((item: any) => ({

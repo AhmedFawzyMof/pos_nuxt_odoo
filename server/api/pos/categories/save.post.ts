@@ -5,7 +5,7 @@ import { requirePermission } from '~~/server/utils/permissions'
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / Administrator')
+  await requirePermission(event, 'pos_manager')
 
   let imageField = "image_128";
   try {

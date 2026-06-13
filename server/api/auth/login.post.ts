@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody } from "h3";
 import { connectToOdoo } from "~~/server/utils/client";
 import { tryCatch } from "~~/server/utils/tryCatch";
+import { getDb } from "~~/server/db";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -45,9 +46,10 @@ export default defineEventHandler(async (event) => {
       error: "المستخدم غير موجود",
     };
   }
+
   const groupIds = userDetailsList[0].groups_id || [];
 
-  let userPermissions: any = [];
+  let userPermissions: any[] = [];
 
   if (groupIds.length > 0) {
     const [groupError, groupRecords] = await tryCatch(
@@ -83,24 +85,57 @@ export default defineEventHandler(async (event) => {
 
   const primaryCompanyId = userDetailsList[0].company_id[0];
 
+  // Sync user to local SQLite
+  const db = getDb();
+  let localUser = db.prepare('SELECT * FROM users WHERE odoo_user_id = ?').get(Number(uid)) as any;
+
+  if (!localUser) {
+    const info = db.prepare(
+      'INSERT INTO users (odoo_user_id, name, login, active) VALUES (?, ?, ?, 1)'
+    ).run(Number(uid), userDetailsList[0].name, body.username.trim());
+    localUser = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid) as any;
+  } else {
+    db.prepare(
+      'UPDATE users SET name = ?, login = ?, updated_at = datetime(\'now\') WHERE id = ?'
+    ).run(userDetailsList[0].name, body.username.trim(), localUser.id);
+  }
+
+  // Sync Odoo groups cache
+  db.prepare('DELETE FROM user_odoo_groups WHERE user_id = ?').run(localUser.id);
+  for (const g of userPermissions) {
+    db.prepare(
+      'INSERT INTO user_odoo_groups (user_id, odoo_group_id, group_name, full_name) VALUES (?, ?, ?, ?)'
+    ).run(localUser.id, g.id, g.name, g.fullName);
+  }
+
+  // Get user's local roles
+  const roles = db.prepare(`
+    SELECT r.name FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = ?
+  `).all(localUser.id).map((r: any) => r.name);
+
   await setUserSession(event, {
     user: {
-      id: uid,
+      id: localUser.id,
+      odooUserId: Number(uid),
       name: userDetailsList[0].name,
+      roles,
     },
     odooPassword: body.password,
-    odooUsername: body.username,
+    odooUsername: body.username.trim(),
     currentCompanyId: primaryCompanyId,
   });
 
   return {
     success: true,
     user: {
-      id: uid,
+      id: Number(uid),
       name: userDetailsList[0].name,
       allowedCompanies,
       primaryCompanyId,
       userPermissions,
+      roles,
     },
   };
 });

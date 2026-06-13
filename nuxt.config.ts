@@ -29,6 +29,11 @@ export default defineNuxtConfig({
       maxAge: 60 * 60 * 24 * 7,
     },
   },
+  nitro: {
+    externals: {
+      trace: ['better-sqlite3'],
+    },
+  },
   app: {
     head: {
       htmlAttrs: {

@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / User')
+  await requirePermission(event, 'pos_user')
 
   // --- CLEAN FIX HERE ---
   // Call your custom Python RPC method directly instead of rebuilding it in JS

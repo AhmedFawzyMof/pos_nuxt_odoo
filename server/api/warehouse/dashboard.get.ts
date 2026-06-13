@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
   ];
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, "Inventory / User");
+  await requirePermission(event, "stock_user");
 
   const [kpiErr, data] = await tryCatch(
     odoo.execute_kw("kpi.dashboard", "get_storage_kpi", [[]]),

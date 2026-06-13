@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const offset = (page - 1) * limit;
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / User')
+  await requirePermission(event, 'pos_user')
 
   const productFields = [
     "id",

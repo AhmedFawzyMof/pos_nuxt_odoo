@@ -5,7 +5,7 @@ import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Purchase / User')
+  await requirePermission(event, 'purchase_user')
   const body = await readBody(event);
   if (!body?.partner_id || !body?.lines?.length) {
     throw createError({

@@ -5,7 +5,7 @@ import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / User')
+  await requirePermission(event, 'pos_user')
 
   const [rpcErr, rpcResult] = await tryCatch(
     odoo.execute_kw("pos.config", "get_all_registers_with_status_rpc", [[]]),

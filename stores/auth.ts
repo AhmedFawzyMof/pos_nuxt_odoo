@@ -11,7 +11,7 @@ interface UserSession {
 export const useAuthStore = defineStore("auth", () => {
   const user = useCookie<UserSession | null>("auth_user", {
     default: () => null,
-    maxAge: 60 * 60 * 24 * 7, // 1 week
+    maxAge: 60 * 60 * 24 * 7,
   });
 
   const currentCompanyId = useCookie<number | null>("auth_current_company_id", {
@@ -20,6 +20,11 @@ export const useAuthStore = defineStore("auth", () => {
   });
 
   const permissions = useCookie<any[]>("auth_permissions", {
+    default: () => [],
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
+  const userRoles = useCookie<string[]>("auth_roles", {
     default: () => [],
     maxAge: 60 * 60 * 24 * 7,
   });
@@ -77,6 +82,7 @@ export const useAuthStore = defineStore("auth", () => {
       };
 
       permissions.value = data.user.userPermissions || [];
+      userRoles.value = data.user.roles || [];
 
       currentCompanyId.value = data.user.primaryCompanyId;
       emailState.value = creds.username.trim();
@@ -107,6 +113,7 @@ export const useAuthStore = defineStore("auth", () => {
   function logout() {
     user.value = null;
     currentCompanyId.value = null;
+    userRoles.value = [];
     if (import.meta.client) {
       sessionStorage.removeItem("active_session_p_secret");
     }
@@ -120,6 +127,7 @@ export const useAuthStore = defineStore("auth", () => {
     loading,
     isAuthenticated,
     permissions,
+    userRoles,
     login,
     switchCompany,
     logout,

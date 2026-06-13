@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / Administrator')
+  await requirePermission(event, 'pos_manager')
 
   await odoo.execute_kw("product.product", "unlink", [[body.id]]);
 

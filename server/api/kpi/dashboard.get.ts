@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / User')
+  await requirePermission(event, 'pos_user')
 
   const [kpiErr, data] = await tryCatch(
     odoo.execute_kw("kpi.dashboard", "get_kpis", [

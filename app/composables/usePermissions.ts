@@ -5,24 +5,21 @@ import { ActionPermissions, PagePermissions, Pages, Groups, type ActionKey } fro
 export const usePermissions = () => {
   const auth = useAuthStore()
 
-  const userPermissions = computed(() => auth.permissions || [])
+  const userRoles = computed(() => auth.userRoles || [])
 
-  function hasPermission(groupFullName: string): boolean {
-    if (!groupFullName) return true
-    return userPermissions.value.some((p: any) => {
-      const val = typeof p === 'string' ? p : (p.fullName || p.name)
-      return val === groupFullName || (typeof p === 'object' && p.name === groupFullName)
-    })
+  function hasPermission(roleName: string): boolean {
+    if (!roleName) return true
+    return userRoles.value.includes(roleName)
   }
 
-  function hasAnyPermission(groups: string[]): boolean {
-    if (!groups || groups.length === 0) return true
-    return groups.some(g => hasPermission(g))
+  function hasAnyPermission(roles: string[]): boolean {
+    if (!roles || roles.length === 0) return true
+    return roles.some(r => hasPermission(r))
   }
 
-  function hasAllPermissions(groups: string[]): boolean {
-    if (!groups || groups.length === 0) return true
-    return groups.every(g => hasPermission(g))
+  function hasAllPermissions(roles: string[]): boolean {
+    if (!roles || roles.length === 0) return true
+    return roles.every(r => hasPermission(r))
   }
 
   const can = computed(() => {
@@ -54,14 +51,14 @@ export const usePermissions = () => {
     return true
   }
 
-  const isManager = computed(() => hasPermission('Point of Sale / Administrator'))
-  const isPosUser = computed(() => hasPermission('Point of Sale / User'))
-  const isPurchaseUser = computed(() => hasPermission('Purchase / User'))
-  const isStockUser = computed(() => hasPermission('Inventory / User'))
-  const isAccountUser = computed(() => hasPermission('Accounting / Invoicing'))
+  const isManager = computed(() => hasPermission('pos_manager'))
+  const isPosUser = computed(() => hasPermission('pos_user'))
+  const isPurchaseUser = computed(() => hasPermission('purchase_user'))
+  const isStockUser = computed(() => hasPermission('stock_user'))
+  const isAccountUser = computed(() => hasPermission('account_invoice'))
 
   return {
-    userPermissions,
+    userRoles,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,

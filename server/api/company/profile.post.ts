@@ -5,7 +5,7 @@ import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / Administrator')
+  await requirePermission(event, 'pos_manager')
 
   const body = await readBody(event);
 

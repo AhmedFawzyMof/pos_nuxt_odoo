@@ -5,7 +5,7 @@ import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Point of Sale / User')
+  await requirePermission(event, 'pos_user')
 
   const query = getQuery(event);
   const page = query.page ? Math.max(1, parseInt(query.page as string)) : null;

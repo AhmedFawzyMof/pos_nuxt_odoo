@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   };
 
   const odoo = await getOdooClient(event);
-  await requirePermission(event, 'Purchase / User')
+  await requirePermission(event, 'purchase_user')
   const [rpcErr, result] = await tryCatch(
     odoo.execute_kw("res.partner", "get_pos_suppliers", [[paramsPayload]]),
   );
