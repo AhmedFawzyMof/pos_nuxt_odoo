@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
+import { useBarcodeScanner } from "~/composables/useBarcodeScanner";
 
 const props = withDefaults(
   defineProps<{
@@ -68,7 +69,7 @@ watch(
     >
       <div
         :id="previewId"
-        class="w-full mx-auto max-w-[400px]"
+        class="w-full mx-auto max-w-[400px] min-h-[250px]"
       />
       <div
         class="absolute inset-0 pointer-events-none flex items-center justify-center"

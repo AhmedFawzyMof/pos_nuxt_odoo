@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
   const db = getDb()
   const info = db.prepare(
     'INSERT INTO users (odoo_user_id, name, login, active) VALUES (?, ?, ?, ?)'
-  ).run(Number(newId), body.name, body.login.trim(), body.active !== false)
+  ).run(Number(newId), body.name, body.login.trim(), body.active !== false ? 1 : 0)
 
   // Save roles
   const roles = body.roles || []

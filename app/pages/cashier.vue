@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from "vue";
-import { parseWeightBarcode, tryWeightBarcodeSearch } from "~/utils/weightBarcode";
+import {
+  parseWeightBarcode,
+  tryWeightBarcodeSearch,
+} from "~/utils/weightBarcode";
 import {
   AlertCircle,
   ShoppingCart,
@@ -27,14 +30,15 @@ import { usePermissions } from "~/composables/usePermissions";
 
 const { canViewPage, can, isManager } = usePermissions();
 
+const route = useRoute();
+const router = useRouter();
+
 if (import.meta.client) {
   if (!canViewPage(route.path)) {
-    navigateTo('/')
+    navigateTo("/");
   }
 }
 
-const route = useRoute();
-const router = useRouter();
 const configId = computed(() => {
   const raw = route.query.config_id;
   return Array.isArray(raw) ? raw[0] : (raw ?? "");
@@ -79,7 +83,10 @@ const showToast = ref(false);
 const toastMessage = ref("");
 const toastType = ref<"success" | "error">("success");
 
-function showFeedbackToast(message: string, type: "success" | "error" = "success") {
+function showFeedbackToast(
+  message: string,
+  type: "success" | "error" = "success",
+) {
   toastMessage.value = message;
   toastType.value = type;
   showToast.value = true;
@@ -622,7 +629,7 @@ watch(
 
   <!-- Feedback Toast -->
   <div
-    class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500"
+    class="fixed bottom-10 left-1/2 -translate-x-1/2 z-100 transition-all duration-500"
     :class="
       showToast
         ? 'translate-y-0 opacity-100'
