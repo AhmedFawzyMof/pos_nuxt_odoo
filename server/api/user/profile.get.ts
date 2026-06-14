@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   await requirePermission(event, 'pos_user')
 
   const session = await getUserSession(event);
-  const uid = (session.user as any).id;
+  const uid = (session.user as any).odooUserId;
 
   const [userErr, userData] = await tryCatch(
     odoo.read("res.users", uid, [

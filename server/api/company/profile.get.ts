@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
 
   const session = await getUserSession(event);
   const [userErr, userData] = await tryCatch(
-    odoo.read("res.users", (session.user as any).id, ["company_id"]),
+    odoo.read("res.users", (session.user as any).odooUserId, ["company_id"]),
   );
   if (userErr) throw userErr;
 

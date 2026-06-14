@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event);
   const session = await getUserSession(event);
-  const uid = (session.user as any).id;
+  const uid = (session.user as any).odooUserId;
   const userVals: Record<string, any> = {};
 
   if (body.lang) {
