@@ -65,11 +65,11 @@ watch(
   <div>
     <div
       v-show="active"
-      class="border border-outline-variant rounded-lg overflow-hidden bg-slate-950 relative shadow-inner"
+      class="border border-outline-variant rounded-lg overflow-hidden bg-slate-950 relative shadow-inner max-w-[400px] mx-auto"
     >
       <div
         :id="previewId"
-        class="w-full mx-auto max-w-[400px] min-h-[250px]"
+        class="w-full h-full min-h-[280px]"
       />
       <div
         class="absolute inset-0 pointer-events-none flex items-center justify-center"
@@ -147,5 +147,13 @@ watch(
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
+}
+</style>
+
+<style>
+[id^="barcode-scanner-preview"] video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
 }
 </style>
