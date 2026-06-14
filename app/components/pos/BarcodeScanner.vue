@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from "vue";
-import { useBarcodeScanner } from "~/composables/useBarcodeScanner";
+import { ref, watch } from "vue";
+import { QrcodeStream, type DetectedBarcode, type BarcodeFormat } from "vue-qrcode-reader";
 
 const props = withDefaults(
   defineProps<{
@@ -16,97 +16,180 @@ const emit = defineEmits<{
   error: [message: string];
 }>();
 
-let uid = 0;
-const previewId = `barcode-scanner-preview-${uid++}`;
+const SCANNER_ID = "qrcode-stream-scanner";
 
-const {
-  isPaused,
-  errorMessage,
-  zoomSupported,
-  currentZoom,
-  zoomMin,
-  zoomMax,
-  start,
-  stop,
-  applyZoom,
-} = useBarcodeScanner({
-  elementId: previewId,
-  pauseDuration: props.pauseDuration,
-  onScan: (barcode, done) => {
-    emit("scan", barcode);
-    setTimeout(done, props.pauseDuration);
-  },
-  onError: (errMsg?: string) => {
-    emit("error", errMsg || "");
-    emit("update:active", false);
-  },
-});
-
+const paused = ref(false);
 const error = ref("");
+const zoomSupported = ref(false);
+const currentZoom = ref(1);
+const zoomMin = ref(1);
+const zoomMax = ref(1);
+let videoTrack: MediaStreamTrack | null = null;
 
-watch(errorMessage, (msg) => {
+const barcodeFormats: BarcodeFormat[] = [
+  "ean_13",
+  "ean_8",
+  "upc_a",
+  "upc_e",
+  "code_128",
+  "qr_code",
+];
+
+function onDetect(detectedCodes: DetectedBarcode[]) {
+  if (paused.value || !detectedCodes.length) return;
+  const code = detectedCodes[0];
+  if (!code) return;
+  paused.value = true;
+  playBeep();
+  emit("scan", code.rawValue);
+  setTimeout(() => {
+    paused.value = false;
+  }, props.pauseDuration);
+}
+
+function onCameraOn(caps: Partial<MediaTrackCapabilities>) {
+  const video = document.querySelector<HTMLVideoElement>(
+    `#${SCANNER_ID} video`,
+  );
+  if (video?.srcObject) {
+    videoTrack =
+      (video.srcObject as MediaStream).getVideoTracks()[0] ?? null;
+  }
+  const zoom = (caps as any).zoom as
+    | { min: number; max: number }
+    | undefined;
+  if (zoom && videoTrack) {
+    zoomSupported.value = true;
+    zoomMin.value = zoom.min;
+    zoomMax.value = zoom.max;
+    currentZoom.value = zoom.min;
+  }
+}
+
+function onError(err: Error) {
+  const msg = getErrorMessage(err);
   error.value = msg;
-});
+  emit("error", msg);
+  emit("update:active", false);
+}
+
+function getErrorMessage(err: { name?: string; message?: string }): string {
+  if (!window.isSecureContext) {
+    return "يجب تشغيل هذا النظام عبر رابط آمن HTTPS لتفعيل الكاميرا.";
+  }
+  if (err.name === "NotAllowedError") {
+    return "تم رفض صلاحية الكاميرا. يرجى تفعيلها من إعدادات المتصفح.";
+  }
+  if (err.name === "NotFoundError") {
+    return "لم يتم العثور على كاميرا خلفية متوافقة.";
+  }
+  return `تعذر تشغيل الكاميرا: ${err.message || err}`;
+}
+
+async function applyZoom(value: number) {
+  if (!videoTrack) return;
+  try {
+    await videoTrack.applyConstraints({
+      advanced: [{ zoom: value }] as unknown as MediaTrackConstraintSet[],
+    });
+    currentZoom.value = value;
+  } catch {
+    // zoom not supported for this track
+  }
+}
+
+function playBeep() {
+  try {
+    const audioCtx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )();
+    const osc = audioCtx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.12);
+  } catch {
+    // silent
+  }
+}
 
 watch(
   () => props.active,
   (active) => {
     error.value = "";
-    if (active) {
-      nextTick(() => start());
-    } else {
-      stop();
+    if (!active) {
+      paused.value = false;
     }
   },
 );
 </script>
 
 <template>
-  <div>
+  <div v-show="active" class="w-full max-w-[400px] mx-auto">
     <div
-      v-show="active"
-      class="border border-outline-variant rounded-lg overflow-hidden bg-slate-950 relative shadow-inner max-w-[400px] mx-auto"
+      :id="SCANNER_ID"
+      class="border border-outline-variant rounded-lg bg-slate-950 relative shadow-inner overflow-hidden"
     >
-      <div
-        :id="previewId"
-        class="w-full h-full min-h-[280px]"
-      />
-      <div
-        class="absolute inset-0 pointer-events-none flex items-center justify-center"
+      <QrcodeStream
+        :paused="paused"
+        :formats="barcodeFormats"
+        class="w-full h-[300px] block"
+        @detect="onDetect"
+        @camera-on="onCameraOn"
+        @error="onError"
       >
-        <div class="relative w-[280px] h-[140px]">
-          <div class="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-sky-400 rounded-tl" />
-          <div class="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-sky-400 rounded-tr" />
-          <div class="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-sky-400 rounded-bl" />
-          <div class="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-sky-400 rounded-br" />
-        </div>
-      </div>
-      <div
-        v-if="zoomSupported"
-        class="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10"
-      >
-        <span class="text-white text-[10px] font-bold tabular-nums drop-shadow-sm">
-          {{ currentZoom.toFixed(1) }}x
-        </span>
-        <input
-          type="range"
-          :min="zoomMin"
-          :max="zoomMax"
-          step="0.1"
-          :value="currentZoom"
-          @input="applyZoom(Number(($event.target as HTMLInputElement).value))"
-          class="zoom-slider"
-        />
-      </div>
-      <div
-        v-if="isPaused"
-        class="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-xs"
-      >
-        <span
-          class="bg-blue-600 text-white text-[10px] px-2 py-1 rounded-full font-bold animate-pulse"
-          >تم التقاط الكود بنجاح...</span
+        <div
+          class="absolute inset-0 pointer-events-none flex items-center justify-center"
         >
-      </div>
+          <div class="relative w-[280px] h-[140px]">
+            <div
+              class="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-sky-400 rounded-tl"
+            />
+            <div
+              class="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-sky-400 rounded-tr"
+            />
+            <div
+              class="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-sky-400 rounded-bl"
+            />
+            <div
+              class="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-sky-400 rounded-br"
+            />
+          </div>
+        </div>
+        <div
+          v-if="zoomSupported"
+          class="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10"
+        >
+          <span
+            class="text-white text-[10px] font-bold tabular-nums drop-shadow-sm"
+          >
+            {{ currentZoom.toFixed(1) }}x
+          </span>
+          <input
+            type="range"
+            :min="zoomMin"
+            :max="zoomMax"
+            step="0.1"
+            :value="currentZoom"
+            @input="
+              applyZoom(
+                Number(($event.target as HTMLInputElement).value),
+              )
+            "
+            class="zoom-slider"
+          />
+        </div>
+        <div
+          v-if="paused"
+          class="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-xs"
+        >
+          <span
+            class="bg-blue-600 text-white text-[10px] px-2 py-1 rounded-full font-bold animate-pulse"
+            >تم التقاط الكود بنجاح...</span
+          >
+        </div>
+      </QrcodeStream>
     </div>
     <div
       v-if="error"
@@ -147,13 +230,5 @@ watch(
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-}
-</style>
-
-<style>
-[id^="barcode-scanner-preview"] video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
 }
 </style>

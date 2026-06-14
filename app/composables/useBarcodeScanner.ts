@@ -1,5 +1,5 @@
 import { ref, computed, onBeforeUnmount } from "vue";
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { BarcodeDetector } from "barcode-detector/pure";
 
 export function useBarcodeScanner(options: {
   elementId: string;
@@ -9,7 +9,12 @@ export function useBarcodeScanner(options: {
 }) {
   const { elementId, pauseDuration = 1800, onScan, onError } = options;
 
-  let instance: Html5Qrcode | null = null;
+  let stream: MediaStream | null = null;
+  let videoEl: HTMLVideoElement | null = null;
+  let detector: BarcodeDetector | null = null;
+  let animationId: number | null = null;
+  let scanning = false;
+
   const isPaused = ref(false);
   const errorMessage = ref("");
   const zoomSupported = ref(false);
@@ -17,14 +22,10 @@ export function useBarcodeScanner(options: {
   const zoomMin = ref(1);
   const zoomMax = ref(1);
 
-  const isActive = computed(() => instance?.isScanning ?? false);
+  const isActive = computed(() => scanning);
 
   const getVideoTrack = (): MediaStreamTrack | null => {
-    const videoEl = document.querySelector(
-      `#${elementId} video`,
-    ) as HTMLVideoElement | null;
-    if (!videoEl?.srcObject) return null;
-    return (videoEl.srcObject as MediaStream).getVideoTracks()[0] ?? null;
+    return stream?.getVideoTracks()[0] ?? null;
   };
 
   const getErrorMessage = (err: any): string => {
@@ -68,15 +69,15 @@ export function useBarcodeScanner(options: {
     try {
       const audioCtx = new (
         window.AudioContext || (window as any).webkitAudioContext
-    )();
+      )();
       const osc = audioCtx.createOscillator();
       osc.type = "sine";
       osc.frequency.setValueAtTime(880, audioCtx.currentTime);
       osc.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + 0.12);
-    } catch (e) {
-      console.warn("Audio feedback failed:", e);
+    } catch {
+      // silent
     }
   };
 
@@ -84,60 +85,107 @@ export function useBarcodeScanner(options: {
     isPaused.value = false;
   };
 
+  const createDetector = async () => {
+    try {
+      detector = new BarcodeDetector({
+        formats: [
+          "ean_13",
+          "ean_8",
+          "upc_a",
+          "upc_e",
+          "code_128",
+          "qr_code",
+        ],
+      });
+    } catch {
+      detector = null;
+    }
+  };
+
+  const scanFrame = async () => {
+    if (!scanning) return;
+    if (!detector || !videoEl || isPaused.value) {
+      animationId = requestAnimationFrame(scanFrame);
+      return;
+    }
+    try {
+      const codes = await detector.detect(videoEl);
+      if (codes.length > 0 && !isPaused.value) {
+        const code = codes[0];
+        if (!code) return;
+        isPaused.value = true;
+        playBeep();
+        onScan(code.rawValue, resetPause);
+      }
+    } catch {
+      // detection error, retry next frame
+    }
+    animationId = requestAnimationFrame(scanFrame);
+  };
+
   const start = async () => {
     errorMessage.value = "";
     try {
-      instance = new Html5Qrcode(elementId);
+      const el = document.getElementById(elementId);
+      if (!el) throw new Error("Element not found");
+      if (!el.clientWidth) {
+        el.style.minWidth = "300px";
+      }
 
-      const config = {
-        fps: 10,
-        qrbox: { width: 280, height: 140 },
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.QR_CODE,
-        ],
-      };
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
 
-      await instance.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          if (isPaused.value) return;
-          isPaused.value = true;
-          playBeep();
-          onScan(decodedText, resetPause);
-        },
-        () => {},
-      );
+      videoEl = document.createElement("video");
+      videoEl.srcObject = stream;
+      videoEl.setAttribute("playsinline", "");
+      videoEl.setAttribute("autoplay", "");
+      videoEl.muted = true;
+      videoEl.style.width = "100%";
+      videoEl.style.height = "100%";
+      videoEl.style.objectFit = "cover";
+
+      el.innerHTML = "";
+      el.appendChild(videoEl);
+
+      await videoEl.play();
+
+      await createDetector();
+
+      scanning = true;
+      animationId = requestAnimationFrame(scanFrame);
 
       await checkZoomCapability();
     } catch (err: any) {
       const msg = getErrorMessage(err);
       errorMessage.value = msg;
       onError?.(msg);
-      instance = null;
+      stop();
     }
   };
 
-  const stop = async () => {
-    if (instance && instance.isScanning) {
-      try {
-        await instance.stop();
-      } catch (err) {
-        console.error("Failed to stop scanner", err);
-      }
+  const stop = () => {
+    scanning = false;
+    if (animationId != null) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
     }
-    instance = null;
+    if (videoEl) {
+      videoEl.srcObject = null;
+      videoEl.remove();
+      videoEl = null;
+    }
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = null;
+    }
+    detector = null;
     zoomSupported.value = false;
     currentZoom.value = 1;
   };
 
-  onBeforeUnmount(async () => {
-    await stop();
+  onBeforeUnmount(() => {
+    stop();
   });
 
   return {
