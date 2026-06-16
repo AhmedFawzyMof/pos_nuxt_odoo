@@ -55,6 +55,7 @@ const pageTitle = computed(() => {
   if (route.path.startsWith("/supplier-details")) return "تفاصيل المورد";
   if (route.path.startsWith("/user-profile")) return "الملف الشخصي";
   if (route.path.startsWith("/company-profile")) return "بيانات الشركة";
+  if (route.path.startsWith("/receipt-design")) return "تصميم الفاتورة";
   return "easyweb POS";
 });
 

@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   db.prepare(
-    'INSERT OR REPLACE INTO receipt_configs (company_id, config, updated_at) VALUES (?, ?, datetime("now"))'
+    `INSERT OR REPLACE INTO receipt_configs (company_id, config, updated_at) VALUES (?, ?, datetime('now'))`
   ).run(companyId, JSON.stringify(body));
 
   return { success: true, message: "Receipt configuration saved successfully" };

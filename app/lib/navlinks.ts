@@ -54,6 +54,7 @@ export const navLinks: NavItem[] = [
   { name: "التقارير", path: "/reports", icon: h(FileText), requiredPermission: "pos_user" },
   { name: "الملف الشخصي", path: "/user-profile", icon: h(User) },
   { name: "بيانات الشركة", path: "/company-profile", icon: h(Building2), requiredPermission: "pos_manager" },
+  { name: "تصميم الفاتورة", path: "/receipt-design", icon: h(FileText), requiredPermission: "pos_manager" },
   { name: "الإشعارات", path: "/notifications", icon: h(Bell), requiredPermission: "settings_access_rights" },
 ];
 
