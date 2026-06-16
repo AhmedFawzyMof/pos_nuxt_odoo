@@ -21,7 +21,7 @@ async function safeSearchRead(
 }
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const odoo = await getOdooClient(event);
+  const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_manager')
 
   const productValues: any = {

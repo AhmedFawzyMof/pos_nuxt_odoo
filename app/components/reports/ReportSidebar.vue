@@ -3,7 +3,7 @@ import {
   FileText, TrendingUp, ArrowLeftRight, Receipt, Users,
   UserCog, Warehouse, Package, PackageOpen, ShoppingBag,
   ShoppingCart, List, ClipboardList, Banknote, Timer,
-  UserCheck, Activity,
+  UserCheck, Activity, AlertCircle,
 } from "@lucide/vue";
 
 export interface ReportEntry {
@@ -35,6 +35,7 @@ const categories: ReportCategory[] = [
       { id: "purchases_sales", title: "مشتريات ومبيعات", icon: ArrowLeftRight },
       { id: "tax", title: "الضرائب", icon: Receipt },
       { id: "expenses", title: "المصاريف", icon: Banknote },
+      { id: "late_payments", title: "المدفوعات المتأخرة", icon: AlertCircle },
     ],
   },
   {

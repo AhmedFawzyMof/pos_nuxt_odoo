@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery, createError } from "h3";
-import { getOdooClient } from "~~/server/utils/odooClient";
+import { getAdminOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 import { requirePermission } from '~~/server/utils/permissions'
 
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const dateFrom = (query.date_from as string) || "";
   const dateTo = (query.date_to as string) || "";
 
-  const odoo = await getOdooClient(event);
+  const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_user')
 
   const [rpcErr, result] = await tryCatch(

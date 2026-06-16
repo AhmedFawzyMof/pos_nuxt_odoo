@@ -21,6 +21,25 @@ import type { Customer } from "~/types/customer";
 import { usePermissions } from '~/composables/usePermissions'
 const { can, isManager } = usePermissions()
 
+const receiptConfig = ref<any>(null)
+const receiptConfigLoading = ref(false)
+
+async function fetchReceiptConfig() {
+  receiptConfigLoading.value = true
+  try {
+    const res = await $fetch<any>("/api/receipt/config")
+    if (res.success) {
+      receiptConfig.value = res.data
+    }
+  } catch {
+    receiptConfig.value = null
+  } finally {
+    receiptConfigLoading.value = false
+  }
+}
+
+onMounted(fetchReceiptConfig)
+
 const props = defineProps<{
   open: boolean;
   paymentMethods: PaymentMethod[];
@@ -111,6 +130,7 @@ watch(
   () => props.open,
   (isOpen) => {
     if (!isOpen) return;
+    fetchReceiptConfig();
     nextTick(() => {
       if (props.preselectMethodId) {
         const method = findMethod(props.preselectMethodId);
@@ -322,35 +342,129 @@ function closeCompleted() {
   emit("update:open", false);
 }
 
-function printReceipt() {
+async function printReceipt() {
   const receiptWindow = window.open("", "_blank", "width=300,height=600");
   if (!receiptWindow) return;
+
+  const cfg = receiptConfig.value?.receipt || {};
+  const company = receiptConfig.value?.company || {};
+
+  const paperWidth = cfg.width || 280;
+  const fontFamily = cfg.fontFamily || "Courier New, monospace";
+  const fontSize = cfg.fontSize || 12;
+  const currency = cfg.totals?.currency || "ج.م";
+  const primaryColor = cfg.colors?.primary || "#000000";
+  const secondaryColor = cfg.colors?.secondary || "#333333";
+  const textColor = cfg.colors?.text || "#000000";
+  const bgColor = cfg.colors?.background || "#ffffff";
+  const dividerStyle = cfg.layout?.dividerStyle || "dashed";
+  const showDivider = cfg.layout?.showDivider !== false;
+  const borderStyle = cfg.layout?.borderStyle || "solid";
+  const showBorder = cfg.layout?.showBorder === true;
+  const titleAr = cfg.titleAr || "فاتورة بيع";
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("ar-EG");
   const timeStr = now.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
 
-  const itemsHtml = lastOrderItems.value
-    .map(
-      (item) => `
-      <tr>
-        <td style="text-align:right;padding:4px 0">${item.product.name}</td>
-        <td style="text-align:center;padding:4px 0">${item.quantity}</td>
-        <td style="text-align:left;padding:4px 0">${item.price.toFixed(2)}</td>
-        <td style="text-align:left;padding:4px 0">${(item.price * item.quantity).toFixed(2)}</td>
-      </tr>`,
-    )
-    .join("");
+  const div = (cls: string, style: string) =>
+    showDivider ? `<div class="${cls}" style="${style}"></div>` : "";
 
-  const paymentsHtml = lastOrderPayments.value
-    .map(
-      (p) => `
+  const headerHtml = cfg.header?.enabled ? `
+    <div class="header" style="text-align:center;margin-bottom:12px">
+      ${cfg.header?.companyLogo && company.logo ? `<img src="data:image/png;base64,${company.logo}" style="height:48px;margin-bottom:4px;object-fit:contain" />` : ""}
+      ${cfg.header?.companyName && company.name ? `<h2 style="font-size:${fontSize + 4}px;margin-bottom:4px;color:${primaryColor}">${company.name}</h2>` : ""}
+      ${cfg.header?.companyAddress && company.address?.city ? `<p style="font-size:11px;color:${secondaryColor}">${company.address.street || ""}${company.address.city ? ", " + company.address.city : ""}</p>` : ""}
+      ${cfg.header?.companyPhone && company.phone ? `<p style="font-size:11px;color:${secondaryColor}">${company.phone}</p>` : ""}
+      ${cfg.header?.companyEmail && company.email ? `<p style="font-size:11px;color:${secondaryColor}">${company.email}</p>` : ""}
+      ${cfg.header?.companyWebsite && company.website ? `<p style="font-size:11px;color:${secondaryColor}">${company.website}</p>` : ""}
+      ${cfg.header?.companyVat && company.vat ? `<p style="font-size:11px;color:${secondaryColor}">الرقم الضريبي: ${company.vat}</p>` : ""}
+    </div>
+    ${div("divider", `border-top:1px ${dividerStyle} ${primaryColor};margin:8px 0`)}
+  ` : "";
+
+  const titleHtml = `
+    <div style="text-align:center;font-size:${fontSize + 2}px;font-weight:bold;margin-bottom:8px;color:${primaryColor}">${titleAr}</div>
+    ${cfg.footer?.showOrderNumber || cfg.footer?.showDate || cfg.footer?.showTime ? `<div style="text-align:center;font-size:11px;margin-bottom:8px;color:${secondaryColor}">
+      ${cfg.footer?.showOrderNumber ? `<div>${orderName.value}</div>` : ""}
+      ${cfg.footer?.showDate || cfg.footer?.showTime ? `<div>${cfg.footer?.showDate ? dateStr : ""} ${cfg.footer?.showTime ? timeStr : ""}</div>` : ""}
+    </div>` : ""}
+    ${div("divider", `border-top:1px ${dividerStyle} ${primaryColor};margin:8px 0`)}
+  `;
+
+  const itemsHtml = cfg.items?.enabled ? `
+    <table style="width:100%;border-collapse:collapse;font-size:${fontSize - 1}px">
+      <thead>
+        <tr>
+          <th style="text-align:right;padding:4px 0;border-bottom:1px solid ${primaryColor};color:${primaryColor}">المنتج</th>
+          ${cfg.items?.showQuantity ? `<th style="text-align:center;padding:4px 0;border-bottom:1px solid ${primaryColor};color:${primaryColor}">الكمية</th>` : ""}
+          ${cfg.items?.showPrice ? `<th style="text-align:left;padding:4px 0;border-bottom:1px solid ${primaryColor};color:${primaryColor}">السعر</th>` : ""}
+          ${cfg.items?.showTotal ? `<th style="text-align:left;padding:4px 0;border-bottom:1px solid ${primaryColor};color:${primaryColor}">الإجمالي</th>` : ""}
+        </tr>
+      </thead>
+      <tbody>
+        ${lastOrderItems.value.map((item) => `
+          <tr>
+            <td style="text-align:right;padding:4px 0">${item.product.name}</td>
+            ${cfg.items?.showQuantity ? `<td style="text-align:center;padding:4px 0">${item.quantity}</td>` : ""}
+            ${cfg.items?.showPrice ? `<td style="text-align:left;padding:4px 0">${item.price.toFixed(2)}</td>` : ""}
+            ${cfg.items?.showTotal ? `<td style="text-align:left;padding:4px 0">${(item.price * item.quantity).toFixed(2)}</td>` : ""}
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    ${div("divider", `border-top:1px ${dividerStyle} ${primaryColor};margin:8px 0`)}
+  ` : "";
+
+  const payHtml = lastOrderPayments.value
+    .map((p) => `
       <tr>
-        <td style="text-align:right;padding:2px 0">${p.methodName}</td>
-        <td style="text-align:left;padding:2px 0">${p.amount.toFixed(2)}</td>
-      </tr>`,
-    )
-    .join("");
+        ${cfg.payments?.showMethod ? `<td style="text-align:right;padding:2px 0">${p.methodName}</td>` : ""}
+        ${cfg.payments?.showAmount ? `<td style="text-align:left;padding:2px 0">${p.amount.toFixed(2)} ${currency}</td>` : ""}
+      </tr>
+    `).join("");
+
+  const paymentsHtml = cfg.payments?.enabled ? `
+    <table style="width:100%;border-collapse:collapse;font-size:${fontSize - 1}px">
+      <tr><th style="text-align:right;padding:4px 0;border-bottom:1px solid ${primaryColor};color:${primaryColor}" colspan="2">طرق الدفع</th></tr>
+      ${payHtml}
+    </table>
+    ${div("divider", `border-top:1px ${dividerStyle} ${primaryColor};margin:8px 0`)}
+  ` : "";
+
+  const totalRows = [];
+  if (cfg.totals?.enabled) {
+    if (cfg.totals?.showSubtotal) {
+      totalRows.push(`<tr><td style="text-align:right;padding:2px 0">المجموع</td><td style="text-align:left;padding:2px 0">${lastOrderSubtotal.value.toFixed(2)} ${currency}</td></tr>`);
+    }
+    if (cfg.totals?.showDiscount && lastOrderDiscount.value > 0) {
+      totalRows.push(`<tr><td style="text-align:right;padding:2px 0;color:${secondaryColor}">الخصم</td><td style="text-align:left;padding:2px 0;color:${secondaryColor}">-${lastOrderDiscount.value.toFixed(2)} ${currency}</td></tr>`);
+    }
+    if (cfg.totals?.showServiceFee && lastOrderServiceFee.value > 0) {
+      totalRows.push(`<tr><td style="text-align:right;padding:2px 0;color:${secondaryColor}">رسوم إضافية</td><td style="text-align:left;padding:2px 0;color:${secondaryColor}">+${lastOrderServiceFee.value.toFixed(2)} ${currency}</td></tr>`);
+    }
+    if (cfg.totals?.showGrandTotal) {
+      totalRows.push(`<tr style="font-weight:bold"><td style="text-align:right;padding:4px 0;border-top:1px solid ${primaryColor};color:${primaryColor}">الإجمالي</td><td style="text-align:left;padding:4px 0;border-top:1px solid ${primaryColor};color:${primaryColor}">${lastOrderGrandTotal.value.toFixed(2)} ${currency}</td></tr>`);
+    }
+  }
+
+  const totalsHtml = totalRows.length > 0 ? `
+    <table style="width:100%;border-collapse:collapse;font-size:${fontSize - 1}px">
+      ${totalRows.join("")}
+    </table>
+    ${div("divider", `border-top:1px ${dividerStyle} ${primaryColor};margin:8px 0`)}
+  ` : "";
+
+  const footerHtml = cfg.footer?.enabled ? `
+    <div class="footer" style="text-align:center;margin-top:12px;font-size:11px;color:${secondaryColor}">
+      ${cfg.footer?.showThankYou ? `<p>${cfg.footer?.thankYouText || "شكراً لتسوقكم معنا"}</p>` : ""}
+      ${cfg.footer?.showTerms && cfg.footer?.termsText ? `<p style="margin-top:4px">${cfg.footer.termsText}</p>` : ""}
+    </div>
+  ` : "";
+
+  const borderCss = showBorder
+    ? `border:1px ${borderStyle} ${primaryColor};padding:16px;`
+    : "padding:16px;";
 
   receiptWindow.document.write(`
     <!DOCTYPE html>
@@ -362,66 +476,26 @@ function printReceipt() {
         @page { margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: 'Courier New', monospace;
-          font-size: 12px;
-          padding: 16px;
-          color: #000;
-          width: 280px;
+          font-family: ${fontFamily};
+          font-size: ${fontSize}px;
+          color: ${textColor};
+          background: ${bgColor};
+          width: ${paperWidth}px;
         }
-        .header { text-align: center; margin-bottom: 12px; }
-        .header h2 { font-size: 16px; margin-bottom: 4px; }
-        .header p { font-size: 11px; color: #333; }
-        .divider { border-top: 1px dashed #000; margin: 8px 0; }
-        table { width: 100%; border-collapse: collapse; }
-        th { font-size: 11px; padding: 4px 0; border-bottom: 1px solid #000; }
-        td { font-size: 11px; }
-        .total-row td { font-weight: bold; border-top: 1px solid #000; padding-top: 4px; }
-        .footer { text-align: center; margin-top: 12px; font-size: 11px; }
-        .label { text-align: right; }
-        .value { text-align: left; }
       </style>
     </head>
     <body>
-      <div class="header">
-        <h2>فاتورة بيع</h2>
-        <p>${orderName.value}</p>
-        <p>${dateStr} ${timeStr}</p>
-      </div>
-      <div class="divider"></div>
-      <table>
-        <thead>
-          <tr>
-            <th style="text-align:right">المنتج</th>
-            <th style="text-align:center">الكمية</th>
-            <th style="text-align:left">السعر</th>
-            <th style="text-align:left">الإجمالي</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml}
-        </tbody>
-      </table>
-      <div class="divider"></div>
-      <table>
-        ${lastOrderDiscount.value > 0 ? `<tr><td style="text-align:right">الخصم</td><td style="text-align:left">-${lastOrderDiscount.value.toFixed(2)}</td></tr>` : ""}
-        ${lastOrderServiceFee.value > 0 ? `<tr><td style="text-align:right">رسوم إضافية</td><td style="text-align:left">+${lastOrderServiceFee.value.toFixed(2)}</td></tr>` : ""}
-        <tr class="total-row">
-          <td style="text-align:right">الإجمالي</td>
-          <td style="text-align:left">${lastOrderGrandTotal.value.toFixed(2)} ج.م</td>
-        </tr>
-      </table>
-      <div class="divider"></div>
-      <table>
-        <tr><th style="text-align:right" colspan="2">طرق الدفع</th></tr>
+      <div style="${borderCss}">
+        ${headerHtml}
+        ${titleHtml}
+        ${itemsHtml}
+        ${totalsHtml}
         ${paymentsHtml}
-      </table>
-      <div class="footer">
-        <div class="divider"></div>
-        <p>شكراً لتسوقكم معنا</p>
+        ${footerHtml}
       </div>
       <script>
         window.onload = function() { window.print(); window.close(); };
-      <\\/script>
+      <\/script>
     </body>
     </html>
   `);

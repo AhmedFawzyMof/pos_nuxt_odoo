@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery, createError } from "h3";
-import { getOdooClient } from "~~/server/utils/odooClient";
+import { getAdminOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 import { requirePermission } from '~~/server/utils/permissions'
 
@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
     dateTo: (query.dateTo as string) || "",
   };
 
-  const odoo = await getOdooClient(event);
+  const odoo = await getAdminOdooClient();
   await requirePermission(event, 'stock_user')
   const [rpcErr, result] = await tryCatch(
     odoo.execute_kw("stock.move.line", "get_frontend_ledger", [

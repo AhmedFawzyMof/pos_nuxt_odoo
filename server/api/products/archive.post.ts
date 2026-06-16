@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const odoo = await getOdooClient(event);
+  const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_manager')
 
   await odoo.execute_kw("product.product", "write", [

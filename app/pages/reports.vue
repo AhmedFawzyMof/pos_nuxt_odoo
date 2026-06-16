@@ -20,6 +20,7 @@ import ExpensesReport from "~/components/reports/ExpensesReport.vue";
 import ShiftReport from "~/components/reports/ShiftReport.vue";
 import SalespersonReport from "~/components/reports/SalespersonReport.vue";
 import ActivityLogReport from "~/components/reports/ActivityLogReport.vue";
+import LatePaymentsReport from "~/components/reports/LatePaymentsReport.vue";
 import { usePermissions } from "~/composables/usePermissions";
 
 const route = useRoute();
@@ -59,6 +60,7 @@ const reportComponents: Record<string, any> = {
   shift: markRaw(ShiftReport),
   salesperson: markRaw(SalespersonReport),
   activity_log: markRaw(ActivityLogReport),
+  late_payments: markRaw(LatePaymentsReport),
 };
 
 const activeComponent = computed(() => reportComponents[activeReport.value]);
@@ -81,6 +83,7 @@ const reportTitles: Record<string, string> = {
   shift: "المناوبة",
   salesperson: "مندوب المبيعات",
   activity_log: "سجل النشاطات",
+  late_payments: "المدفوعات المتأخرة",
 };
 
 const onLoading = (v: boolean) => {

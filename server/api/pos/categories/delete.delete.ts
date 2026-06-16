@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody } from "h3";
-import { getOdooClient } from "~~/server/utils/odooClient";
+import { getAdminOdooClient } from "~~/server/utils/odooClient";
 import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const odoo = await getOdooClient(event);
+  const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_manager')
 
   await odoo.execute_kw("pos.category", "unlink", [[body.id]]);

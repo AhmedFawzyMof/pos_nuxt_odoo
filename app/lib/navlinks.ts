@@ -16,6 +16,9 @@ import {
   Building2,
   FileText,
   Shield,
+  Banknote,
+  AlertCircle,
+  Bell,
 } from "@lucide/vue";
 
 export interface NavItem {
@@ -45,10 +48,13 @@ export const navLinks: NavItem[] = [
   { name: "الموردين", path: "/suppliers", icon: h(Truck), requiredPermission: "purchase_user" },
   { name: "أوامر الشراء", path: "/purchase-orders", icon: h(ClipboardList), requiredPermission: "purchase_user" },
   { name: "فواتير الموردين", path: "/vendor-bills", icon: h(ReceiptText), requiredPermission: "account_invoice" },
+  { name: "المدفوعات المتأخرة", path: "/late-payments", icon: h(AlertCircle), requiredPermission: "account_invoice" },
+  { name: "المصروفات التشغيلية", path: "/operational-expenses", icon: h(Banknote), requiredPermission: "purchase_user" },
   { name: "سجل الطلبات", path: "/orders", icon: h(Timer), requiredPermission: "pos_user" },
   { name: "التقارير", path: "/reports", icon: h(FileText), requiredPermission: "pos_user" },
   { name: "الملف الشخصي", path: "/user-profile", icon: h(User) },
   { name: "بيانات الشركة", path: "/company-profile", icon: h(Building2), requiredPermission: "pos_manager" },
+  { name: "الإشعارات", path: "/notifications", icon: h(Bell), requiredPermission: "settings_access_rights" },
 ];
 
 const isActive = (routePath: string, linkPath: string) =>
@@ -90,6 +96,8 @@ export const groupedNav: NavEntry[] = [
       { name: "الموردين", path: "/suppliers", icon: h(Truck), requiredPermission: "purchase_user" },
       { name: "أوامر الشراء", path: "/purchase-orders", icon: h(ClipboardList), requiredPermission: "purchase_user" },
       { name: "فواتير الموردين", path: "/vendor-bills", icon: h(ReceiptText), requiredPermission: "account_invoice" },
+      { name: "المدفوعات المتأخرة", path: "/late-payments", icon: h(AlertCircle), requiredPermission: "account_invoice" },
+      { name: "المصروفات التشغيلية", path: "/operational-expenses", icon: h(Banknote), requiredPermission: "purchase_user" },
     ],
   },
   { name: "العملاء", path: "/customers", icon: h(Users), requiredPermission: "pos_user" },
@@ -101,7 +109,9 @@ export const groupedNav: NavEntry[] = [
     children: [
       { name: "الملف الشخصي", path: "/user-profile", icon: h(User) },
       { name: "بيانات الشركة", path: "/company-profile", icon: h(Building2), requiredPermission: "pos_manager" },
+      { name: "تصميم الفاتورة", path: "/receipt-design", icon: h(FileText), requiredPermission: "pos_manager" },
       { name: "المستخدمين", path: "/users", icon: h(Shield), requiredPermission: "settings_access_rights" },
+      { name: "الإشعارات", path: "/notifications", icon: h(Bell), requiredPermission: "settings_access_rights" },
     ],
   },
 ];

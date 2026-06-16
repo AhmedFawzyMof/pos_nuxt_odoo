@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery } from "h3";
-import { getOdooClient } from "~~/server/utils/odooClient";
+import { getAdminOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 import { requirePermission } from '~~/server/utils/permissions'
 
@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
     date_to ||
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-  const odoo = await getOdooClient(event);
+  const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_user')
 
   const [kpiErr, data] = await tryCatch(

@@ -1,11 +1,11 @@
 import { defineEventHandler, readBody, createError } from 'h3'
-import { getOdooClient } from '~~/server/utils/odooClient'
+import { getAdminOdooClient } from '~~/server/utils/odooClient'
 import { requirePermission } from '~~/server/utils/permissions'
 import { tryCatch } from '~~/server/utils/tryCatch'
 import { getDb } from '~~/server/db'
 
 export default defineEventHandler(async (event) => {
-  const odoo = await getOdooClient(event)
+  const odoo = await getAdminOdooClient()
   await requirePermission(event, 'settings_access_rights')
 
   const body = await readBody(event)

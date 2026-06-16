@@ -1,10 +1,10 @@
 import { defineEventHandler, getQuery } from "h3";
-import { getOdooClient } from "~~/server/utils/odooClient";
+import { getAdminOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
 import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
-  const odoo = await getOdooClient(event);
+  const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_user')
 
   const query = getQuery(event);

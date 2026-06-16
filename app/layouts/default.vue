@@ -45,6 +45,9 @@ const pageTitle = computed(() => {
 
       <!-- Left side: User profile & Current Company details -->
       <div class="flex items-center gap-4">
+        <!-- Notification Bell -->
+        <AppNotificationBell />
+
         <!-- Company Badge & Username Info -->
         <div class="flex flex-col text-left md:text-right">
           <span class="text-sm font-semibold text-foreground hidden md:block">
@@ -60,12 +63,13 @@ const pageTitle = computed(() => {
         </div>
 
         <!-- Avatar with Initial Letter -->
-        <div
+        <NuxtLink
+          to="/user-profile"
           class="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-sm select-none"
           title="الملف الشخصي"
         >
           {{ userInitial }}
-        </div>
+        </NuxtLink>
       </div>
     </header>
 

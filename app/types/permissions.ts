@@ -53,6 +53,7 @@ export type ActionKey =
   | 'purchase.createBill'
   | 'vendorBill.create' | 'vendorBill.post' | 'vendorBill.pay'
   | 'vendorBill.cancel' | 'vendorBill.view'
+  | 'expense.create' | 'expense.view'
   | 'warehouse.view' | 'warehouse.createLocation' | 'warehouse.transfer'
   | 'supplier.create' | 'supplier.edit' | 'supplier.delete' | 'supplier.view'
   | 'customer.view' | 'customer.create' | 'customer.edit'
@@ -89,6 +90,8 @@ export const ActionPermissions: Record<ActionKey, PermissionCheck> = {
   'vendorBill.post': { require: [Groups.ACCOUNT_INVOICE] },
   'vendorBill.pay': { require: [Groups.ACCOUNT_INVOICE] },
   'vendorBill.cancel': { require: [Groups.ACCOUNT_MANAGER] },
+  'expense.view': { require: [Groups.PURCHASE_USER] },
+  'expense.create': { require: [Groups.PURCHASE_USER] },
   'warehouse.view': { require: [Groups.STOCK_USER] },
   'warehouse.createLocation': { require: [Groups.STOCK_MANAGER] },
   'warehouse.transfer': { require: [Groups.STOCK_USER] },
@@ -120,14 +123,18 @@ export const PagePermissions: Record<string, PermissionCheck> = {
   '/reports': { require: [Groups.POS_USER] },
   '/user-profile': { requireAny: [Groups.POS_USER, Groups.BASE_USER] },
   '/company-profile': { require: [Groups.POS_MANAGER] },
+  '/receipt-design': { require: [Groups.POS_MANAGER] },
   '/suppliers': { require: [Groups.PURCHASE_USER] },
   '/supplier-details': { require: [Groups.PURCHASE_USER] },
   '/purchase-orders': { require: [Groups.PURCHASE_USER] },
   '/vendor-bills': { require: [Groups.ACCOUNT_INVOICE] },
+  '/operational-expenses': { require: [Groups.PURCHASE_USER] },
+  '/late-payments': { require: [Groups.ACCOUNT_INVOICE] },
   '/warehouse': { require: [Groups.STOCK_USER] },
   '/stock-movements': { require: [Groups.STOCK_USER] },
   '/accounting': { require: [Groups.ACCOUNT_INVOICE] },
   '/users': { require: [Groups.SETTINGS_ACCESS_RIGHTS] },
+  '/notifications': { require: [Groups.SETTINGS_ACCESS_RIGHTS] },
 }
 
 export function getRequiredPermission(path: string): PermissionCheck | null {
@@ -156,7 +163,7 @@ export const Pages: PageDef[] = [
     key: 'pos',
     label: 'Point of Sale',
     labelAr: 'نقطة البيع',
-    routes: ['/pos', '/pos/sales', '/cashier', '/orders', '/products', '/categories', '/customers', '/customer-details', '/reports', '/company-profile'],
+    routes: ['/pos', '/pos/sales', '/cashier', '/orders', '/products', '/categories', '/customers', '/customer-details', '/reports', '/company-profile', '/receipt-design'],
     levels: [
       { id: 'user', label: 'User', labelAr: 'مستخدم', descriptionAr: 'يمكنه إجراء عمليات البيع، عرض المنتجات والعملاء والطلبات، إغلاق الجلسة', groupRef: 'POS_USER' },
       { id: 'admin', label: 'Administrator', labelAr: 'مدير', dependsOn: 'user', descriptionAr: 'يمكنه تغيير الأسعار وتطبيق الخصومات وإلغاء الطلبات وإدارة إعدادات الشركة وجبر الإغلاق', groupRef: 'POS_MANAGER' },
