@@ -16,15 +16,17 @@ async function safeSearchRead(
   limit = 0,
 ) {
   const params: any[] = [domain, fields];
-  if (limit) params.push(0, limit); // offset=0, limit=N
+  if (limit) params.push(0, limit);
   return await odoo.execute_kw(model, "search_read", [params]);
 }
+
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_manager')
 
-  const productValues: any = {
+  try {
+    const productValues: any = {
       name: body.name,
       pos_categ_ids: body.pos_categ_ids?.length
         ? [[6, 0, body.pos_categ_ids.map(Number)]]
@@ -66,21 +68,32 @@ export default defineEventHandler(async (event) => {
     const isEditMode = !!body.id;
 
     if (isEditMode) {
-      const currentProducts: any = await safeSearchRead(
+      const tmplSearch = await safeSearchRead(
         odoo,
-        "product.product",
+        "product.template",
         [["id", "=", body.id]],
-        ["product_tmpl_id"],
+        ["id"],
       );
 
-      if (!currentProducts || currentProducts.length === 0) {
-        throw createError({
-          statusCode: 404,
-          statusMessage: "المنتج غير موجود بالنظام",
-        });
-      }
+      if (tmplSearch.length > 0) {
+        templateId = body.id;
+      } else {
+        const currentProducts: any = await safeSearchRead(
+          odoo,
+          "product.product",
+          [["id", "=", body.id]],
+          ["product_tmpl_id"],
+        );
 
-      templateId = currentProducts[0].product_tmpl_id[0];
+        if (!currentProducts || currentProducts.length === 0) {
+          throw createError({
+            statusCode: 404,
+            statusMessage: "المنتج غير موجود بالنظام",
+          });
+        }
+
+        templateId = currentProducts[0].product_tmpl_id[0];
+      }
 
       await odooWrite(odoo, "product.template", [templateId], productValues);
     } else {
@@ -89,52 +102,75 @@ export default defineEventHandler(async (event) => {
       ]);
     }
 
+    // ── Variant handling ─────────────────────────────────────────────────────
     if (body.variants && body.variants.length > 0) {
-      const attributeId = await getOrCreateAttribute(odoo, "المواصفات");
-      const valueIds: number[] = [];
-
-      for (const variant of body.variants) {
-        if (variant.name_suffix.trim()) {
-          const valId = await getOrCreateAttributeValue(
-            odoo,
-            attributeId,
-            variant.name_suffix.trim(),
-          );
-          valueIds.push(valId);
-        }
+      const formSuffixes: string[] = [];
+      const formVariantById: Record<number, any> = {};
+      for (const v of body.variants) {
+        const suffix = (v.name_suffix || "").trim();
+        if (suffix) formSuffixes.push(suffix);
+        if (v.id) formVariantById[Number(v.id)] = v;
       }
 
-      if (valueIds.length > 0) {
+      if (formSuffixes.length > 0 || Object.keys(formVariantById).length > 0) {
         const existingLines: any = await safeSearchRead(
           odoo,
           "product.template.attribute.line",
-          [
-            ["product_tmpl_id", "=", templateId],
-            ["attribute_id", "=", attributeId],
-          ],
-          ["id"],
+          [["product_tmpl_id", "=", templateId]],
+          ["id", "attribute_id"],
         );
 
+        let targetAttrId: number;
+
         if (existingLines.length > 0) {
-          // ✅ correct write
-          await odooWrite(
-            odoo,
-            "product.template.attribute.line",
-            [existingLines[0].id],
-            { value_ids: [[6, 0, valueIds]] },
-          );
+          targetAttrId = existingLines[0].attribute_id[0];
         } else {
-          await odoo.execute_kw("product.template.attribute.line", "create", [
-            [
-              {
-                product_tmpl_id: templateId,
-                attribute_id: attributeId,
-                value_ids: [[6, 0, valueIds]],
-              },
-            ],
-          ]);
+          targetAttrId = await getOrCreateAttribute(odoo, "المواصفات");
         }
 
+        // Get or create attribute values for each unique suffix
+        const uniqueSuffixes = [...new Set(formSuffixes)];
+        const suffixToValId: Record<string, number> = {};
+        for (const suffix of uniqueSuffixes) {
+          suffixToValId[suffix] = await getOrCreateAttributeValue(
+            odoo,
+            targetAttrId,
+            suffix,
+          );
+        }
+
+        const valueIds = Object.values(suffixToValId);
+
+        if (valueIds.length > 0) {
+          const existingLine = existingLines.find(
+            (l: any) => Number(l.attribute_id[0]) === targetAttrId,
+          );
+
+          if (existingLine) {
+            await odooWrite(
+              odoo,
+              "product.template.attribute.line",
+              [existingLine.id],
+              { value_ids: [[6, 0, valueIds]] },
+            );
+          } else {
+            await odoo.execute_kw(
+              "product.template.attribute.line",
+              "create",
+              [
+                [
+                  {
+                    product_tmpl_id: templateId,
+                    attribute_id: targetAttrId,
+                    value_ids: [[6, 0, valueIds]],
+                  },
+                ],
+              ],
+            );
+          }
+        }
+
+        // Fetch generated variants and match/update per-variant data
         const generatedVariants: any = await safeSearchRead(
           odoo,
           "product.product",
@@ -142,33 +178,79 @@ export default defineEventHandler(async (event) => {
           ["id", "name", "product_template_attribute_value_ids"],
         );
 
-        for (const variantData of generatedVariants) {
-          const matchedVariantForm = body.variants.find(
-            (v: any) =>
-              variantData.name.includes(v.name_suffix) ||
-              generatedVariants.length === 1,
+        // Fetch attribute value names for matching
+        const allPtavIds = [
+          ...new Set(
+            generatedVariants.flatMap(
+              (v: any) => v.product_template_attribute_value_ids || [],
+            ),
+          ),
+        ];
+        const ptavMap: Record<number, any> = {};
+        if (allPtavIds.length > 0) {
+          const ptavs = await safeSearchRead(
+            odoo,
+            "product.template.attribute.value",
+            [["id", "in", allPtavIds]],
+            ["id", "name"],
           );
+          for (const ptav of ptavs as any[]) ptavMap[ptav.id] = ptav;
+        }
 
-          if (!matchedVariantForm) continue;
+        for (const variantData of generatedVariants) {
+          const vid = variantData.id;
+          const ptavIds = variantData.product_template_attribute_value_ids || [];
+          const ptavNames = ptavIds
+            .map((id: number) => ptavMap[id]?.name || "")
+            .filter(Boolean);
 
-          // ✅ update barcode on product.product
-          if (matchedVariantForm.barcode) {
-            await odooWrite(odoo, "product.product", [variantData.id], {
-              barcode: matchedVariantForm.barcode,
+          // Match: by id, or by attribute value name
+          let matched: any = null;
+          if (formVariantById[vid]) {
+            matched = formVariantById[vid];
+          } else {
+            matched = body.variants.find(
+              (v: any) =>
+                v.name_suffix &&
+                ptavNames.includes(v.name_suffix.trim()),
+            );
+          }
+
+          if (!matched) continue;
+
+          if (matched.barcode) {
+            await odooWrite(odoo, "product.product", [vid], {
+              barcode: matched.barcode,
             });
           }
 
-          // ✅ update price_extra on attribute value
+          if (matched.standard_price !== undefined && !isNaN(Number(matched.standard_price))) {
+            await odooWrite(odoo, "product.product", [vid], {
+              standard_price: Number(matched.standard_price),
+            });
+          }
+
           if (
-            matchedVariantForm.price_extra !== undefined &&
-            variantData.product_template_attribute_value_ids?.length > 0
+            matched.price_extra !== undefined &&
+            ptavIds.length > 0
           ) {
             await odooWrite(
               odoo,
               "product.template.attribute.value",
-              [variantData.product_template_attribute_value_ids[0]],
-              { price_extra: Number(matchedVariantForm.price_extra) },
+              [ptavIds[0]],
+              { price_extra: Number(matched.price_extra) },
             );
+          }
+
+          if (matched.location_qty?.length) {
+            for (const lq of matched.location_qty) {
+              await updateOdooStock(
+                odoo,
+                vid,
+                Number(lq.qty),
+                lq.location_id,
+              );
+            }
           }
         }
       }
@@ -176,9 +258,7 @@ export default defineEventHandler(async (event) => {
 
     // ── Stock (no-variant products only) ─────────────────────────────────────
     if (!body.variants || body.variants.length === 0) {
-      const finalProductId = isEditMode
-        ? body.id
-        : await getVariantIdFromTemplate(odoo, templateId);
+      const finalProductId = await getVariantIdFromTemplate(odoo, templateId);
 
       if (finalProductId && body.location_qty?.length) {
         for (const lq of body.location_qty) {
@@ -187,11 +267,22 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-  return {
-    success: true,
-    message: isEditMode ? "تم تحديث المنتج بنجاح" : "تم إنشاء المنتج بنجاح",
-    id: templateId,
-  };
+    return {
+      success: true,
+      message: isEditMode ? "تم تحديث المنتج بنجاح" : "تم إنشاء المنتج بنجاح",
+      id: templateId,
+    };
+  } catch (err: any) {
+    const message =
+      err.faultString ||
+      err.statusMessage ||
+      err.message ||
+      "فشل في حفظ المنتج.";
+    throw createError({
+      statusCode: 400,
+      statusMessage: message,
+    });
+  }
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -244,6 +335,7 @@ async function getVariantIdFromTemplate(
   );
   return res.length > 0 ? res[0].id : null;
 }
+
 async function updateOdooStock(
   odoo: any,
   productId: number,
@@ -251,7 +343,6 @@ async function updateOdooStock(
   location_id?: number,
 ) {
   try {
-    // 1. Get internal location
     const locations: any = await safeSearchRead(
       odoo,
       "stock.location",
@@ -267,7 +358,6 @@ async function updateOdooStock(
 
     const locationId = location_id ? Number(location_id) : locations[0].id;
 
-    // 2. Find existing quant
     const quants: any = await safeSearchRead(
       odoo,
       "stock.quant",
@@ -283,13 +373,10 @@ async function updateOdooStock(
 
     if (quants.length > 0) {
       quantId = quants[0].id;
-
-      // ✅ VERY IMPORTANT: enable inventory mode
       await odooWrite(odoo, "stock.quant", [quantId], {
         inventory_quantity: newQty,
       });
     } else {
-      // create only if not exists
       quantId = await odoo.execute_kw("stock.quant", "create", [
         [
           {
@@ -301,7 +388,6 @@ async function updateOdooStock(
       ]);
     }
 
-    // 3. Apply inventory adjustment (SET value, not add)
     await odoo.execute_kw("stock.quant", "action_apply_inventory", [[quantId]]);
   } catch (e: any) {
     console.error("Stock update error:", e);

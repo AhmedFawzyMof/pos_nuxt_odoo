@@ -107,32 +107,60 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Group products by template for variant support
+  const rawProducts: any[] = odooData.products || [];
+  const templatesMap = new Map<number, { templateId: number; variants: any[]; attributeLines: any[]; firstProduct: any }>();
+
+  for (const p of rawProducts) {
+    const mapped = {
+      id: p.id,
+      product_tmpl_id: p.product_tmpl_id,
+      name: p.display_name,
+      display_name: p.display_name,
+      barcode: p.barcode || "",
+      list_price: p.lst_price || 0,
+      weight: p.weight || 0,
+      to_weight: p.to_weight || false,
+      type: p.type || "product",
+      pos_categories: p.pos_categories || [],
+      taxes_id: (p.taxes_id || []).filter((id: number) => id > 0),
+      taxes: (p.taxes_id || [])
+        .filter((id: number) => id > 0)
+        .map((id: number) => taxMap[id])
+        .filter(Boolean),
+      stock_by_location: Object.entries(p.stock_by_location || {}).map(
+        ([locId, qty]) => ({
+          location_id: parseInt(locId, 10),
+          location_name: locationMap[parseInt(locId, 10)] || `مخزن #${locId}`,
+          quantity: Number(qty) || 0,
+        }),
+      ),
+      attribute_values: p.attribute_values || [],
+      price_extra: p.price_extra || 0,
+    };
+
+    const tmplId = p.product_tmpl_id;
+    if (!templatesMap.has(tmplId)) {
+      templatesMap.set(tmplId, {
+        templateId: tmplId,
+        variants: [],
+        attributeLines: p.attribute_lines || [],
+        firstProduct: mapped,
+      });
+    }
+    templatesMap.get(tmplId)!.variants.push(mapped);
+  }
+
+  const templates = Array.from(templatesMap.values()).map((t) => ({
+    ...t.firstProduct,
+    variants: t.variants,
+    attribute_lines: t.attributeLines,
+  }));
+
   return {
     success: true,
     products: {
-      data: (odooData.products || []).map((p: any) => ({
-        id: p.id,
-        name: p.display_name,
-        display_name: p.display_name,
-        barcode: p.barcode || "",
-        list_price: p.lst_price || 0,
-        weight: p.weight || 0,
-        to_weight: p.to_weight || false,
-        type: p.type || "product",
-        pos_categories: p.pos_categories || [],
-        taxes_id: (p.taxes_id || []).filter((id: number) => id > 0),
-        taxes: (p.taxes_id || [])
-          .filter((id: number) => id > 0)
-          .map((id: number) => taxMap[id])
-          .filter(Boolean),
-        stock_by_location: Object.entries(p.stock_by_location || {}).map(
-          ([locId, qty]) => ({
-            location_id: parseInt(locId, 10),
-            location_name: locationMap[parseInt(locId, 10)] || `مخزن #${locId}`,
-            quantity: Number(qty) || 0,
-          }),
-        ),
-      })),
+      data: templates,
       totalItems: pagination.total_items || 0,
       totalPages: pagination.total_pages || 1,
       currentPage: pagination.current_page || page,

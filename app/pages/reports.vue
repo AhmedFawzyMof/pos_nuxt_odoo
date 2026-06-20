@@ -90,8 +90,10 @@ const onLoading = (v: boolean) => {
   loading.value = v;
 };
 
+const activeReportRef = ref<any>(null);
+
 const onExport = () => {
-  // BaseReport exports via the table ref
+  activeReportRef.value?.handleExport?.();
 };
 
 const onRefresh = () => {
@@ -121,6 +123,7 @@ const onRefresh = () => {
       <div class="lg:col-span-3">
         <component
           :is="activeComponent"
+          ref="activeReportRef"
           :key="activeReport"
           :date-from="dateFrom"
           :date-to="dateTo"

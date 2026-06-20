@@ -74,6 +74,9 @@ function onInput(e: Event) {
       <h4 class="text-sm font-semibold leading-tight truncate">
         {{ item.product.display_name || item.product.name }}
       </h4>
+      <p v-if="item.variant && item.variant.display_name !== (item.product.display_name || item.product.name)" class="text-[11px] text-muted-foreground">
+        {{ item.variant.attribute_values?.map(v => v.value_name).join(' / ') || item.variant.display_name }}
+      </p>
       <p class="text-xs text-muted-foreground">
         {{ item.price.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
       </p>

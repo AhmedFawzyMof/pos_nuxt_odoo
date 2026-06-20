@@ -291,7 +291,7 @@ async function handleSubmit() {
       body: {
         session_id: props.sessionId,
         items: cart.items.map((item) => ({
-          product_id: item.product.id,
+          product_id: item.variant?.id || item.product.id,
           quantity: item.quantity,
           price: item.price,
           discount: item.discount || 0,
@@ -313,7 +313,11 @@ async function handleSubmit() {
       successMessage.value = res.message;
       orderName.value = res.name;
       lastOrderItems.value = cart.items.map((item) => ({
-        product: { name: item.product.display_name || item.product.name },
+        product: {
+          name: item.variant
+            ? `${item.product.display_name || item.product.name} (${item.variant.attribute_values?.map(v => v.value_name).join('/') || item.variant.display_name})`
+            : (item.product.display_name || item.product.name)
+        },
         quantity: item.quantity,
         price: item.price,
         discount: item.discount || 0,
@@ -343,13 +347,13 @@ function closeCompleted() {
 }
 
 async function printReceipt() {
-  const receiptWindow = window.open("", "_blank", "width=300,height=600");
-  if (!receiptWindow) return;
-
   const cfg = receiptConfig.value?.receipt || {};
   const company = receiptConfig.value?.company || {};
-
   const paperWidth = cfg.width || 280;
+  const popupWidth = Math.min(paperWidth + 120, 700);
+  const receiptWindow = window.open("", "_blank", `width=${popupWidth},height=600`);
+  if (!receiptWindow) return;
+
   const fontFamily = cfg.fontFamily || "Courier New, monospace";
   const fontSize = cfg.fontSize || 12;
   const currency = cfg.totals?.currency || "ج.م";

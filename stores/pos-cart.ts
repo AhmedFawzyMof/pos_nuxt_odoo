@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import type { CartItem, POSProduct, PaymentLine } from "~/types/pos";
+import type { CartItem, POSProduct, POSProductVariant, PaymentLine } from "~/types/pos";
 
 export const usePosCartStore = defineStore("pos-cart", () => {
   const items = ref<CartItem[]>([]);
@@ -69,47 +69,56 @@ export const usePosCartStore = defineStore("pos-cart", () => {
     Math.max(0, grandTotal.value - allocatedTotal.value),
   );
 
-  function findItem(productId: number) {
-    return items.value.find((i) => i.product.id === productId);
+  function findItem(productId: number, variantId?: number) {
+    return items.value.find((i) => {
+      if (variantId && i.variant) return i.variant.id === variantId;
+      return i.product.id === productId;
+    });
   }
 
-  function addItem(product: POSProduct, quantity = 1) {
-    const existing = findItem(product.id);
+  function addItem(product: POSProduct, variant?: POSProductVariant, quantity = 1) {
+    const id = variant ? variant.id : product.id;
+    const existing = findItem(id, variant?.id);
     if (existing) {
       existing.quantity += quantity;
     } else {
+      const price = product.list_price + (variant?.price_extra || 0);
       items.value.push({
         product,
+        variant,
         quantity,
-        price: product.list_price,
+        price,
         discount: 0,
       });
     }
   }
 
-  function removeItem(productId: number) {
-    const idx = items.value.findIndex((i) => i.product.id === productId);
+  function removeItem(productId: number, variantId?: number) {
+    const idx = items.value.findIndex((i) => {
+      if (variantId && i.variant) return i.variant.id === variantId;
+      return i.product.id === productId;
+    });
     if (idx !== -1) items.value.splice(idx, 1);
   }
 
-  function updateQuantity(productId: number, quantity: number) {
-    const item = findItem(productId);
+  function updateQuantity(productId: number, quantity: number, variantId?: number) {
+    const item = findItem(productId, variantId);
     if (item) {
       if (quantity <= 0) {
-        removeItem(productId);
+        removeItem(productId, variantId);
       } else {
         item.quantity = quantity;
       }
     }
   }
 
-  function updatePrice(productId: number, price: number) {
-    const item = findItem(productId);
+  function updatePrice(productId: number, price: number, variantId?: number) {
+    const item = findItem(productId, variantId);
     if (item) item.price = price;
   }
 
-  function updateDiscount(productId: number, discount: number) {
-    const item = findItem(productId);
+  function updateDiscount(productId: number, discount: number, variantId?: number) {
+    const item = findItem(productId, variantId);
     if (item) item.discount = discount;
   }
 

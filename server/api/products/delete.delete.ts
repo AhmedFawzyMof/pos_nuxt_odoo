@@ -13,7 +13,11 @@ export default defineEventHandler(async (event) => {
   const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_manager')
 
-  await odoo.execute_kw("product.product", "unlink", [[body.id]]);
+  const tmplFound = await odoo.execute_kw("product.template", "search", [
+    [["id", "=", body.id]],
+  ]);
+  const model = tmplFound.length > 0 ? "product.template" : "product.product";
+  await odoo.execute_kw(model, "unlink", [[body.id]]);
 
   return {
     success: true,

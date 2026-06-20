@@ -1,26 +1,31 @@
-import { createError } from 'h3'
+import { createError, getCookie } from 'h3'
 
-function checkRole(event: any, requiredRole: string): boolean {
-  const session = event.session || (event as any)._session
-  return session?.user?.roles?.includes(requiredRole) ?? false
+function getRolesFromCookie(event: any): string[] {
+  try {
+    const raw = getCookie(event, 'auth_roles')
+    if (!raw) return []
+    return JSON.parse(decodeURIComponent(raw))
+  } catch {
+    return []
+  }
 }
 
 export async function requirePermission(event: any, requiredRole: string): Promise<void> {
-  const session = await getUserSession(event)
-  if (!session?.user?.id) {
+  const roles = getRolesFromCookie(event)
+  if (!roles.length) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
-  if (!session.user.roles?.includes(requiredRole)) {
+  if (!roles.includes(requiredRole)) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden: insufficient permissions' })
   }
 }
 
 export async function requireAnyPermission(event: any, requiredRoles: string[]): Promise<void> {
-  const session = await getUserSession(event)
-  if (!session?.user?.id) {
+  const roles = getRolesFromCookie(event)
+  if (!roles.length) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
-  if (!requiredRoles.some(r => session.user.roles?.includes(r))) {
+  if (!requiredRoles.some(r => roles.includes(r))) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden: insufficient permissions' })
   }
 }

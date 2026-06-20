@@ -74,13 +74,13 @@ const isEmpty = computed(() => cart.items.length === 0);
       </div>
       <PosCartItem
         v-for="(item, index) in cart.items"
-        :key="item.product.id"
+        :key="item.variant?.id || item.product.id"
         :item="item"
         :is-selected="index === selectedIndex"
         class="cursor-pointer select-none"
         @click="emit('selectItem', index)"
-        @update-quantity="(q) => cart.updateQuantity(item.product.id, q)"
-        @remove="cart.removeItem(item.product.id)"
+        @update-quantity="(q) => cart.updateQuantity(item.product.id, q, item.variant?.id)"
+        @remove="cart.removeItem(item.product.id, item.variant?.id)"
       />
     </div>
 

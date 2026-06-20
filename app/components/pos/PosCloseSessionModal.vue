@@ -37,9 +37,12 @@ const closingCash = ref<number | null>(null);
 const isClosing = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
+const showForceConfirm = ref(false);
+const draftCount = ref(0);
 
 async function fetchSummary() {
   if (!props.sessionId) return;
+  console.log("[POS] fetchSummary session_id:", props.sessionId);
   loadingSummary.value = true;
   summaryError.value = "";
   try {
@@ -49,10 +52,14 @@ async function fetchSummary() {
     );
 
     if (res.success) {
+      console.log("[POS] fetchSummary success:", res.summary);
       summary.value = res.summary;
       closingCash.value = res.summary.cash_balance;
+    } else {
+      console.warn("[POS] fetchSummary not successful", res);
     }
   } catch (err: any) {
+    console.error("[POS] fetchSummary error:", err);
     summaryError.value = err.message || err.statusMessage || "فشل تحميل ملخص الوردية";
   } finally {
     loadingSummary.value = false;
@@ -84,11 +91,13 @@ watch(
   },
 );
 
-async function handleCloseSession() {
+async function handleCloseSession(force = false) {
+  console.log("[POS] handleCloseSession called, force:", force, "closingCash:", closingCash.value);
   errorMessage.value = "";
   successMessage.value = "";
 
   if (closingCash.value === null || closingCash.value < 0) {
+    console.warn("[POS] handleCloseSession invalid cash amount");
     errorMessage.value = "يرجى إدخال الرصيد الختامي";
     return;
   }
@@ -105,21 +114,36 @@ async function handleCloseSession() {
         config_id: parseInt(props.configId, 10),
         action: "close",
         opening_cash: closingCash.value,
+        force_close: force,
       },
     });
 
     if (res.success) {
+      console.log("[POS] handleCloseSession success:", res);
       successMessage.value = res.message || "تم إغلاق الوردية بنجاح";
-      setTimeout(() => {
-        emit("session-closed");
-        emit("update:open", false);
-      }, 1500);
+    } else {
+      console.warn("[POS] handleCloseSession not successful:", res);
     }
   } catch (err: any) {
-    errorMessage.value = err.message || err.statusMessage || "فشل إغلاق الوردية";
+    console.error("[POS] handleCloseSession error:", err);
+    const draftCountVal = err.data?.data?.draft_count || err.data?.draft_count || 0;
+    if (draftCountVal > 0 && !force) {
+      console.log("[POS] handleCloseSession prompt force close, draftCount:", draftCountVal);
+      draftCount.value = draftCountVal;
+      showForceConfirm.value = true;
+      errorMessage.value = "";
+    } else {
+      errorMessage.value = err.message || err.statusMessage || "فشل إغلاق الوردية";
+    }
   } finally {
     isClosing.value = false;
   }
+}
+
+function successDone() {
+  console.log("[POS] successDone - emitting session-closed");
+  emit("session-closed");
+  emit("update:open", false);
 }
 
 function totalCashMovements(): number {
@@ -340,30 +364,72 @@ function totalCashMovements(): number {
           </template>
         </div>
 
+        <!-- Force close confirmation overlay -->
+        <div
+          v-if="showForceConfirm"
+          class="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6"
+        >
+          <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-center">
+            <div class="bg-amber-100 p-3 rounded-full w-14 h-14 mx-auto flex items-center justify-center">
+              <AlertTriangle class="w-7 h-7 text-amber-600" />
+            </div>
+            <div>
+              <h4 class="text-base font-bold text-slate-900 mb-1">يوجد طلبات مسودة</h4>
+              <p class="text-sm text-slate-600">
+                يوجد {{ draftCount }} طلب لم يتم الدفع. الإغلاق القسري سيلغي هذه الطلبات.
+              </p>
+            </div>
+            <div class="flex gap-3">
+              <button
+                @click="showForceConfirm = false"
+                class="flex-1 h-11 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs cursor-pointer"
+              >
+                رجوع
+              </button>
+              <button
+                @click="handleCloseSession(true)"
+                class="flex-1 h-11 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs cursor-pointer"
+              >
+                إغلاق مع الإلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div
           class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3"
         >
-          <button
-            type="button"
-            @click="closeModal"
-            :disabled="isClosing"
-            class="h-11 px-5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs cursor-pointer disabled:opacity-40"
-          >
-            إلغاء
-          </button>
-          <button
-            v-if="!successMessage"
-            type="button"
-            @click="handleCloseSession"
-            :disabled="isClosing || loadingSummary || !summary"
-            class="h-11 px-6 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-2 disabled:opacity-40 cursor-pointer"
-          >
-            <RefreshCw v-if="isClosing" class="w-4 h-4 animate-spin" />
-            <LogOut v-else class="w-4 h-4" />
-            <span>{{
-              isClosing ? "جاري الإغلاق..." : "تأكيد إغلاق الوردية"
-            }}</span>
-          </button>
+          <template v-if="successMessage">
+            <button
+              type="button"
+              @click="successDone"
+              class="h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs cursor-pointer"
+            >
+              تم
+            </button>
+          </template>
+          <template v-else>
+            <button
+              type="button"
+              @click="closeModal"
+              :disabled="isClosing"
+              class="h-11 px-5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs cursor-pointer disabled:opacity-40"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              @click="handleCloseSession()"
+              :disabled="isClosing || loadingSummary || !summary"
+              class="h-11 px-6 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-2 disabled:opacity-40 cursor-pointer"
+            >
+              <RefreshCw v-if="isClosing" class="w-4 h-4 animate-spin" />
+              <LogOut v-else class="w-4 h-4" />
+              <span>{{
+                isClosing ? "جاري الإغلاق..." : "تأكيد إغلاق الوردية"
+              }}</span>
+            </button>
+          </template>
         </div>
       </div>
     </div>

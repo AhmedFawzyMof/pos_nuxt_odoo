@@ -16,6 +16,18 @@ export interface Tax {
   price_include?: boolean;
 }
 
+export interface ProductVariant {
+  id: number;
+  name?: string;
+  display_name?: string;
+  barcode: string;
+  lst_price: number;
+  price_extra?: number;
+  standard_price?: number;
+  product_template_attribute_value_ids: number[];
+  stock_locations?: { location_id: number; location_name: string; qty: number }[];
+}
+
 export interface Product {
   id?: number;
   name: string;
@@ -45,4 +57,5 @@ export interface Product {
   taxes_id?: number[];
   taxes?: Tax[];
   image_1920?: string | null;
+  product_variant_ids?: ProductVariant[];
 }

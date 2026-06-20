@@ -22,6 +22,15 @@ const displayPrice = computed(() => {
   });
 });
 
+const hasVariants = computed(
+  () => props.product.variants && props.product.variants.length > 1,
+);
+
+const variantCount = computed(() => {
+  if (!props.product.variants) return 0;
+  return props.product.variants.length;
+});
+
 const totalStock = computed(() => {
   if (!props.product.stock_by_location?.length) {
     return props.product.qty_available || 0;
@@ -79,6 +88,13 @@ const productImage = computed(() => {
           وزن
         </Badge>
         <Badge
+          v-if="hasVariants"
+          variant="outline"
+          class="text-[10px] px-1.5 py-0 text-blue-600 border-blue-200"
+        >
+          {{ variantCount }} مواصفات
+        </Badge>
+        <Badge
           v-if="stockOut"
           variant="destructive"
           class="text-[10px] px-1.5 py-0"
@@ -104,7 +120,10 @@ const productImage = computed(() => {
         <span class="text-sm font-bold text-primary">
           {{ displayPrice }} ج.م
         </span>
-        <Button @click.stop="emit('addToCart')" :disabled="stockOut">
+        <Button
+          @click.stop="hasVariants ? emit('click') : emit('addToCart')"
+          :disabled="stockOut"
+        >
           <Plus />
         </Button>
       </div>

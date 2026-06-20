@@ -8,17 +8,27 @@ export default defineEventHandler(async (event) => {
   const limit = 28;
   const offset = (page - 1) * limit;
 
+  const archiveFilter = (query.archiveFilter as string) || "all";
+
   const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_user')
 
-  const productFields = [
+  const baseDomain: any[] = [["id", "not in", [1, 2, 3]]];
+  if (archiveFilter === "active") {
+    baseDomain.push(["active", "=", true]);
+  } else if (archiveFilter === "archived") {
+    baseDomain.push(["active", "=", false]);
+  }
+  const odooContext = { active_test: false };
+
+  const templateFields = [
     "id",
     "name",
     "display_name",
     "barcode",
     "type",
     "categ_id",
-    "lst_price",
+    "list_price",
     "standard_price",
     "qty_available",
     "virtual_available",
@@ -34,12 +44,14 @@ export default defineEventHandler(async (event) => {
     "image_1920",
     "taxes_id",
     "to_weight",
+    "product_variant_ids",
   ];
 
-  const [totalCount, categoriesData, locationsData, taxesData, products] =
+  const [totalCount, categoriesData, locationsData, taxesData, templates] =
     await Promise.all([
-      odoo.execute_kw("product.product", "search_count", [
-        [[["id", "not in", [1, 2, 3]]]],
+      odoo.execute_kw("product.template", "search_count", [
+        [baseDomain],
+        { context: odooContext },
       ]),
       odoo.searchRead("pos.category", [], ["id", "name"]),
       odoo.searchRead(
@@ -53,13 +65,14 @@ export default defineEventHandler(async (event) => {
         ["id", "name", "amount", "amount_type", "price_include"],
       ),
       odoo.searchRead(
-        "product.product",
-        [["id", "not in", [1, 2, 3]]],
-        productFields,
+        "product.template",
+        baseDomain,
+        templateFields,
         {
           limit,
           offset,
           order: "id desc",
+          context: odooContext,
         },
       ),
     ]);
@@ -84,17 +97,41 @@ export default defineEventHandler(async (event) => {
   > = {};
   for (const tax of taxesData as any[]) taxMap[tax.id] = tax;
 
-  const productIds = products.map((p: any) => p.id);
-  let productStockLocations: Record<
+  const allVariantIds: number[] = [];
+  for (const tmpl of templates) {
+    const variantIds = (tmpl as any).product_variant_ids || [];
+    for (const vid of variantIds) {
+      const id = Array.isArray(vid) ? vid[0] : vid;
+      if (id && !allVariantIds.includes(id)) {
+        allVariantIds.push(id);
+      }
+    }
+  }
+
+  let variantDetails: Record<number, any> = {};
+  let variantStockLocations: Record<
     number,
     { location_id: number; location_name: string; qty: number }[]
   > = {};
-  if (productIds.length > 0) {
-    const quants = await odoo.searchRead(
-      "stock.quant",
-      [["product_id", "in", productIds]],
-      ["product_id", "location_id", "quantity"],
-    );
+
+  if (allVariantIds.length > 0) {
+    const [variants, quants] = await Promise.all([
+      odoo.searchRead(
+        "product.product",
+        [["id", "in", allVariantIds]],
+        ["id", "display_name", "barcode", "lst_price", "price_extra", "standard_price", "product_template_attribute_value_ids"],
+      ),
+      odoo.searchRead(
+        "stock.quant",
+        [["product_id", "in", allVariantIds]],
+        ["product_id", "location_id", "quantity"],
+      ),
+    ]);
+
+    for (const v of variants) {
+      variantDetails[(v as any).id] = v;
+    }
+
     for (const q of quants) {
       const pid = Array.isArray((q as any).product_id)
         ? (q as any).product_id[0]
@@ -103,8 +140,8 @@ export default defineEventHandler(async (event) => {
         ? (q as any).location_id[0]
         : (q as any).location_id;
       if (lid && locationMap[lid]) {
-        if (!productStockLocations[pid]) productStockLocations[pid] = [];
-        productStockLocations[pid].push({
+        if (!variantStockLocations[pid]) variantStockLocations[pid] = [];
+        variantStockLocations[pid].push({
           location_id: lid,
           location_name: locationMap[lid],
           qty: (q as any).quantity || 0,
@@ -113,8 +150,8 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const completeProducts = products.map((product: any) => {
-    const resolvedPosCategories = (product.pos_categ_ids || []).map(
+  const completeProducts = templates.map((tmpl: any) => {
+    const resolvedPosCategories = (tmpl.pos_categ_ids || []).map(
       (catId: any) => ({
         id: Array.isArray(catId) ? catId[0] : catId,
         name:
@@ -123,9 +160,7 @@ export default defineEventHandler(async (event) => {
       }),
     );
 
-    const stockLocs = productStockLocations[product.id] || [];
-    const firstLoc = stockLocs[0];
-    const rawTaxesId = product.taxes_id || [];
+    const rawTaxesId = tmpl.taxes_id || [];
     const resolvedTaxes = rawTaxesId
       .reduce((acc: number[], t: any) => {
         const id = Array.isArray(t) ? Number(t[0]) : Number(t);
@@ -134,20 +169,62 @@ export default defineEventHandler(async (event) => {
       }, [])
       .map((id: number) => taxMap[id])
       .filter(Boolean);
+
+    const variantIds: number[] = (tmpl.product_variant_ids || []).map(
+      (vid: any) => (Array.isArray(vid) ? vid[0] : vid)
+    );
+    const product_variant_ids = variantIds
+      .map((vid: number) => {
+        const det = variantDetails[vid];
+        if (!det) return null;
+        return {
+          id: det.id,
+          display_name: det.display_name || det.name,
+          barcode: det.barcode || "",
+          lst_price: det.lst_price || 0,
+          price_extra: det.price_extra || 0,
+          standard_price: det.standard_price || 0,
+          product_template_attribute_value_ids: det.product_template_attribute_value_ids || [],
+          stock_locations: variantStockLocations[vid] || [],
+        };
+      })
+      .filter(Boolean);
+
+    const allStockLocs = product_variant_ids.flatMap(
+      (v: any) => v.stock_locations || []
+    );
+    const mergedStockLocs = Object.values(
+      allStockLocs.reduce((acc: any, sl: any) => {
+        if (!acc[sl.location_id]) {
+          acc[sl.location_id] = { ...sl };
+        } else {
+          acc[sl.location_id].qty += sl.qty;
+        }
+        return acc;
+      }, {} as Record<number, { location_id: number; location_name: string; qty: number }>)
+    ) as { location_id: number; location_name: string; qty: number }[];
+
+    const firstLoc = mergedStockLocs[0];
+
+    const firstVariant = variantIds.length > 0 ? variantDetails[variantIds[0]] : null;
+
     return {
-      ...product,
-      list_price: product.lst_price || product.list_price || 0,
+      ...tmpl,
+      list_price: tmpl.list_price || 0,
+      barcode: tmpl.barcode || (firstVariant ? firstVariant.barcode : ""),
+      standard_price: tmpl.standard_price || (firstVariant ? firstVariant.standard_price : 0),
+      product_variant_ids,
       pos_categories: resolvedPosCategories,
       taxes_id: resolvedTaxes.map((t: any) => t.id),
       taxes: resolvedTaxes,
-      internal_category: product.categ_id
-        ? { id: product.categ_id[0], name: product.categ_id[1] }
+      internal_category: tmpl.categ_id
+        ? { id: tmpl.categ_id[0], name: tmpl.categ_id[1] }
         : null,
       location:
-        firstLoc && locationMap[firstLoc.location_id]
+        firstLoc
           ? { id: firstLoc.location_id, name: firstLoc.location_name }
           : null,
-      stock_locations: stockLocs,
+      stock_locations: mergedStockLocs,
     };
   });
 

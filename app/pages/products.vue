@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import {
   Search,
   RefreshCw,
@@ -25,6 +25,9 @@ if (import.meta.client) {
 
 const currentPage = ref(1);
 
+const searchQuery = ref("");
+const archiveFilter = ref<"all" | "active" | "archived">("all");
+
 const {
   data: apiResponse,
   status,
@@ -40,12 +43,16 @@ const {
   data: Product[];
 }>("/api/products/all", {
   lazy: true,
-  query: { page: currentPage },
-  watch: [currentPage],
+  query: { page: currentPage, archiveFilter },
+  watch: [currentPage, archiveFilter],
   transform: (response) => {
     if (!response.data) response.data = [];
     return response;
   },
+});
+
+watch(archiveFilter, () => {
+  currentPage.value = 1;
 });
 
 const products = computed<Product[]>(() => apiResponse.value?.data || []);
@@ -59,8 +66,6 @@ const nextPage = () => {
 const prevPage = () => {
   if (currentPage.value > 1) currentPage.value--;
 };
-
-const searchQuery = ref("");
 
 const filteredProducts = computed(() => {
   if (!searchQuery.value) return products.value;
@@ -193,17 +198,42 @@ const handleSave = async (
   }
 };
 
+const handleRestore = async (product: Product) => {
+  if (!product || !product.id) return;
+  if (!confirm(`هل أنت متأكد من استعادة المنتج "${product.name}"؟`)) return;
+
+  try {
+    isSaving.value = true;
+    const response = await $fetch<{ success: boolean; message: string }>(
+      "/api/products/unarchive",
+      { method: "POST", body: { id: product.id } },
+    );
+    if (response.success) {
+      await refresh();
+    }
+  } catch (err: any) {
+    console.error("Failed to restore product:", err);
+    actionError.value =
+      err.message || err.statusMessage || "فشل في استعادة المنتج.";
+  } finally {
+    isSaving.value = false;
+  }
+};
+
 const handleDeleteFromDrawer = async () => {
   if (selectedProduct.value) {
     isSaving.value = true;
     actionError.value = "";
+
+    const isArchived = selectedProduct.value.active === false;
+    const endpoint = isArchived ? "/api/products/unarchive" : "/api/products/archive";
 
     try {
       const response = await $fetch<{
         success: boolean;
         message: string;
         id: number;
-      }>("/api/products/archive", {
+      }>(endpoint, {
         method: "POST",
         body: { id: selectedProduct.value?.id },
       });
@@ -213,11 +243,11 @@ const handleDeleteFromDrawer = async () => {
         drawerOpen.value = false;
       }
     } catch (err: any) {
-      console.error("Failed to archive product:", err);
+      console.error("Failed to update product archive status:", err);
       actionError.value =
         err.message ||
         err.statusMessage ||
-        "فشل في أرشفة المنتج. يرجى المحاولة مجدداً.";
+        "فشل في تغيير حالة المنتج. يرجى المحاولة مجدداً.";
     } finally {
       isSaving.value = false;
     }
@@ -240,6 +270,29 @@ const handleDeleteFromDrawer = async () => {
           placeholder="بحث بالاسم، الباركود، أو التصنيف..."
           type="text"
         />
+      </div>
+      <div class="flex items-center gap-1 bg-white-low rounded-full p-1 border border-outline-variant">
+        <button
+          @click="archiveFilter = 'all'"
+          class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer"
+          :class="archiveFilter === 'all' ? 'bg-white text-primary shadow-sm' : 'text-on-white-variant hover:text-on-white'"
+        >
+          الكل
+        </button>
+        <button
+          @click="archiveFilter = 'active'"
+          class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer"
+          :class="archiveFilter === 'active' ? 'bg-white text-primary shadow-sm' : 'text-on-white-variant hover:text-on-white'"
+        >
+          النشط
+        </button>
+        <button
+          @click="archiveFilter = 'archived'"
+          class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer"
+          :class="archiveFilter === 'archived' ? 'bg-white text-primary shadow-sm' : 'text-on-white-variant hover:text-on-white'"
+        >
+          المؤرشف
+        </button>
       </div>
       <div class="flex items-center gap-2">
         <button
@@ -320,8 +373,10 @@ const handleDeleteFromDrawer = async () => {
         :all-products-count="totalItems"
         :current-page="currentPage"
         :total-pages="totalPages"
+        :archive-filter="archiveFilter"
         @edit="handleEdit"
         @delete="handleDelete"
+        @restore="handleRestore"
         @next-page="nextPage"
         @prev-page="prevPage"
       />

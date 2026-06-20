@@ -19,8 +19,38 @@ export interface POSCategory {
   productsCount: number;
 }
 
+export interface POSAttributeValue {
+  id: number;
+  name: string;
+  price_extra: number;
+}
+
+export interface POSAttributeLine {
+  id: number;
+  name: string;
+  values: POSAttributeValue[];
+}
+
+export interface POSProductVariant {
+  id: number;
+  product_tmpl_id: number;
+  name: string;
+  display_name: string;
+  barcode: string;
+  list_price: number;
+  price_extra: number;
+  weight: number;
+  to_weight: boolean;
+  type: string;
+  stock_by_location?: { location_id: number; location_name: string; quantity: number }[];
+  attribute_values?: { attr_id: number; attr_name: string; value_id: number; value_name: string }[];
+  taxes_id?: number[];
+  taxes?: import("~/types/product").Tax[];
+}
+
 export interface POSProduct {
   id: number;
+  product_tmpl_id?: number;
   name: string;
   display_name: string;
   barcode: string;
@@ -44,6 +74,18 @@ export interface POSProduct {
   taxes_id?: number[];
   taxes?: import("~/types/product").Tax[];
   stock_by_location?: { location_id: number; location_name: string; quantity: number }[];
+  price_extra?: number;
+  attribute_values?: { attr_id: number; attr_name: string; value_id: number; value_name: string }[];
+  attribute_lines?: POSAttributeLine[];
+  variants?: POSProductVariant[];
+}
+
+export interface CartItem {
+  product: POSProduct;
+  variant?: POSProductVariant;
+  quantity: number;
+  price: number;
+  discount: number;
 }
 
 export interface CartItem {

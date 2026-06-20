@@ -8,6 +8,7 @@ import {
   Package,
   X,
   Trash2,
+  RotateCcw,
   RefreshCw,
   VideoOff,
   ScanBarcode,
@@ -24,7 +25,9 @@ interface ProductVariantLocal {
   id?: number;
   name_suffix: string; // مثل: "أحمر", "كبير", "X Large"
   barcode: string;
+  standard_price: number;
   price_extra: number; // السعر الإضافي الفارق عن السعر الأساسي
+  stock_locations: { locationId: number; locationName: string; quantity: number }[];
 }
 
 const { data: locationsResponse } = await useFetch<{
@@ -122,7 +125,13 @@ const addVariantField = () => {
   formVariants.value.push({
     name_suffix: "",
     barcode: "",
+    standard_price: 0,
     price_extra: 0,
+    stock_locations: formLocationQty.value.map((lq) => ({
+      locationId: lq.locationId,
+      locationName: lq.locationName,
+      quantity: 0,
+    })),
   });
 };
 
@@ -229,14 +238,21 @@ watch(
           ).map((v: any) => ({
             id: v.id,
             name_suffix:
-              v.name
-                .replace(props.product?.name, "")
+              (v.display_name || "")
+                .replace(/^\[.*?\]\s*/, "")
+                .replace(props.product?.name || "", "")
                 .replace(/[\(\)]/g, "")
-                .trim() || v.name,
+                .trim() || v.display_name || "",
             barcode: v.barcode || "",
-            price_extra: v.lst_price
+            standard_price: v.standard_price ?? 0,
+            price_extra: v.price_extra ?? (v.lst_price
               ? v.lst_price - (props.product?.list_price || 0)
-              : 0,
+              : 0),
+            stock_locations: (v.stock_locations || []).map((sl: any) => ({
+              locationId: sl.location_id,
+              locationName: sl.location_name,
+              quantity: sl.qty || 0,
+            })),
           }));
         } else {
           formVariants.value = [];
@@ -289,6 +305,24 @@ const selectedLocationNames = computed(() => {
   return formLocationQty.value.map((lq) => lq.locationName);
 });
 
+const syncLocationToVariants = () => {
+  const activeIds = formLocationQty.value.map((lq) => lq.locationId);
+  for (const v of formVariants.value) {
+    for (const lq of formLocationQty.value) {
+      if (!v.stock_locations.find((sl) => sl.locationId === lq.locationId)) {
+        v.stock_locations.push({
+          locationId: lq.locationId,
+          locationName: lq.locationName,
+          quantity: 0,
+        });
+      }
+    }
+    v.stock_locations = v.stock_locations.filter((sl) =>
+      activeIds.includes(sl.locationId)
+    );
+  }
+};
+
 const addLocation = (loc: any) => {
   if (!formLocationQty.value.find((lq) => lq.locationId === loc.id)) {
     formLocationQty.value.push({
@@ -297,10 +331,12 @@ const addLocation = (loc: any) => {
       quantity: 0,
     });
   }
+  syncLocationToVariants();
 };
 
 const removeLocation = (index: number) => {
   formLocationQty.value.splice(index, 1);
+  syncLocationToVariants();
 };
 
 const saveProduct = () => {
@@ -323,7 +359,13 @@ const saveProduct = () => {
       qty: Number(lq.quantity),
     })),
     image_1920: formImage1920.value,
-    variants: formVariants.value,
+    variants: formVariants.value.map((v) => ({
+      ...v,
+      location_qty: v.stock_locations.map((sl) => ({
+        location_id: sl.locationId,
+        qty: Number(sl.quantity),
+      })),
+    })),
     pos_categ_ids: formPosCategoryIds.value,
     taxes_id: formTaxesId.value,
   });
@@ -511,7 +553,7 @@ const saveProduct = () => {
             </div>
 
             <!-- Multi-location quantity section -->
-            <div class="space-y-3" v-if="formVariants.length === 0">
+            <div class="space-y-3">
               <h3
                 class="text-label-md font-bold text-on-white-variant flex items-center gap-2"
               >
@@ -580,26 +622,28 @@ const saveProduct = () => {
                 </div>
               </div>
 
-              <div
-                v-for="(lq, idx) in formLocationQty"
-                :key="lq.locationId"
-                class="relative"
-              >
-                <input
-                  v-model.number="lq.quantity"
-                  class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
-                  placeholder=" "
-                  type="number"
-                  min="0"
-                />
-                <label
-                  class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
-                  >{{
-                    formIsWeight
-                      ? `الموقع ${idx + 1} الكمية (كجم)`
-                      : `الموقع ${idx + 1} الكمية`
-                  }}</label
+              <div v-if="formVariants.length === 0">
+                <div
+                  v-for="(lq, idx) in formLocationQty"
+                  :key="lq.locationId"
+                  class="relative"
                 >
+                  <input
+                    v-model.number="lq.quantity"
+                    class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
+                    placeholder=" "
+                    type="number"
+                    min="0"
+                  />
+                  <label
+                    class="absolute right-4 top-1 text-[10px] text-on-white-variant peer-placeholder-shown:text-label-md peer-placeholder-shown:top-3 transition-all pointer-events-none"
+                    >{{
+                      formIsWeight
+                        ? `الموقع ${idx + 1} الكمية (كجم)`
+                        : `الموقع ${idx + 1} الكمية`
+                    }}</label
+                  >
+                </div>
               </div>
             </div>
 
@@ -704,6 +748,22 @@ const saveProduct = () => {
                     >
                       <ScanBarcode class="w-3.5 h-3.5" />
                     </button>
+                  </div>
+
+                  <div v-if="variant.stock_locations.length > 0" class="border-t border-dashed border-outline-variant pt-2 mt-1">
+                    <span class="text-[9px] text-on-white-variant block mb-1">الكمية لكل موقع</span>
+                    <div class="grid grid-cols-2 gap-1.5">
+                      <div v-for="sl in variant.stock_locations" :key="sl.locationId" class="relative">
+                        <input
+                          v-model.number="sl.quantity"
+                          class="w-full h-7 px-2 text-[10px] border rounded-lg border-outline focus:border-primary outline-none"
+                          placeholder="0"
+                          type="number"
+                          min="0"
+                        />
+                        <span class="text-[8px] text-on-white-variant block truncate">{{ sl.locationName }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -879,12 +939,20 @@ const saveProduct = () => {
           class="pt-4 border-t border-outline-variant"
         >
           <button
-            v-if="can('product.delete')"
+            v-if="can('product.delete') && product?.active !== false"
             @click="emit('delete')"
             class="w-full h-11 flex items-center justify-center gap-2 text-error hover:bg-error/10 rounded-xl transition-colors border border-dashed border-error/30 font-bold text-label-md cursor-pointer"
           >
             <Trash2 class="w-5 h-5" />
             أرشفة هذا المنتج من النظام (Archive)
+          </button>
+          <button
+            v-if="can('product.delete') && product?.active === false"
+            @click="emit('delete')"
+            class="w-full h-11 flex items-center justify-center gap-2 text-success hover:bg-success/10 rounded-xl transition-colors border border-dashed border-success/30 font-bold text-label-md cursor-pointer"
+          >
+            <RotateCcw class="w-5 h-5" />
+            استعادة هذا المنتج من الأرشيف (Restore)
           </button>
         </div>
       </div>

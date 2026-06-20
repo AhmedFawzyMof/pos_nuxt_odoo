@@ -23,6 +23,7 @@ export const connectToOdoo = (
         const lastIdx = params.length - 1;
         const last = params[lastIdx];
         if (last && typeof last === "object" && !Array.isArray(last)) {
+          // Last param is a kwargs dict — merge context into it
           params[lastIdx] = {
             ...last,
             context: {
@@ -31,6 +32,7 @@ export const connectToOdoo = (
             },
           };
         } else {
+          // Last param is not a kwargs dict — add context as a separate kwargs dict
           params.push({ context: { allowed_company_ids: [companyId] } });
         }
       }

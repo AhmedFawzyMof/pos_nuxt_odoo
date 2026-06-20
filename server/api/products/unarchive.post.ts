@@ -18,18 +18,18 @@ export default defineEventHandler(async (event) => {
       [["id", "=", body.id]],
     ]);
     const model = tmplFound.length > 0 ? "product.template" : "product.product";
-    await odoo.execute_kw(model, "write", [[[body.id], { active: false }]]);
+    await odoo.execute_kw(model, "write", [[[body.id], { active: true }]]);
   } catch (err: any) {
     const message =
       err.faultString ||
       err.statusMessage ||
       err.message ||
-      "فشل في أرشفة المنتج.";
+      "فشل في استعادة المنتج.";
     throw createError({
       statusCode: 400,
       statusMessage: message,
     });
   }
 
-  return { success: true, message: "تم أرشفة المنتج بنجاح" };
+  return { success: true, message: "تم استعادة المنتج بنجاح" };
 });

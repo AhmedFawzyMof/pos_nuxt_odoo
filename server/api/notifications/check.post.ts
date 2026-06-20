@@ -62,18 +62,19 @@ async function runCheck(trigger: string, odoo: any, db: any): Promise<any[]> {
 }
 
 async function checkLowStock(odoo: any): Promise<any[]> {
-  const orderpoints = await odoo.execute_kw("stock.warehouse.orderpoint", "search_read", [
+  const orderpoints = await odoo.searchRead(
+    "stock.warehouse.orderpoint",
     [],
     ["id", "product_id", "product_min_qty", "qty_on_hand", "warehouse_id"],
-    0, 200,
-  ])
+    { offset: 0, limit: 200 },
+  )
   const low: any[] = []
   for (const op of orderpoints) {
     const qtyOnHand = parseFloat(op.qty_on_hand ?? 0)
     const minQty = parseFloat(op.product_min_qty ?? 0)
     if (qtyOnHand > 0 && qtyOnHand <= minQty) {
       const [prodErr, product] = await tryCatch(
-        odoo.execute_kw("product.product", "read", [op.product_id[0], ["display_name"]]),
+        odoo.read("product.product", op.product_id[0], ["display_name"]),
       ) as any
       const name = product?.display_name || `Product #${op.product_id[0]}`
       low.push({
@@ -89,13 +90,14 @@ async function checkLowStock(odoo: any): Promise<any[]> {
 }
 
 async function checkStockDiscrepancy(odoo: any): Promise<any[]> {
-  const quants = await odoo.execute_kw("stock.quant", "search_read", [
-    [["inventory_diff_value", "!=", 0]],
-    ["id", "product_id", "inventory_diff_value", "location_id", "quantity"],
-    0, 100,
-  ])
+  const quants = await odoo.searchRead(
+    "stock.quant",
+    [["inventory_diff_quantity", "!=", 0]],
+    ["id", "product_id", "inventory_diff_quantity", "location_id", "quantity"],
+    { offset: 0, limit: 100 },
+  )
   return quants.map((q: any) => {
-    const diff = parseFloat(q.inventory_diff_value ?? 0)
+    const diff = parseFloat(q.inventory_diff_quantity ?? 0)
     return {
       odoo_ref_id: q.id,
       odoo_ref_model: "stock.quant",
@@ -108,11 +110,12 @@ async function checkStockDiscrepancy(odoo: any): Promise<any[]> {
 
 async function checkPoDelayed(odoo: any): Promise<any[]> {
   const now = new Date().toISOString().slice(0, 19).replace("T", " ")
-  const orders = await odoo.execute_kw("purchase.order", "search_read", [
+  const orders = await odoo.searchRead(
+    "purchase.order",
     [["state", "=", "purchase"], ["date_planned", "<", now]],
     ["id", "name", "partner_id", "date_planned", "amount_total"],
-    0, 100,
-  ])
+    { offset: 0, limit: 100 },
+  )
   return orders.map((po: any) => ({
     odoo_ref_id: po.id,
     odoo_ref_model: "purchase.order",
@@ -138,11 +141,12 @@ async function checkNewInvoice(odoo: any, db: any): Promise<any[]> {
     since = d.toISOString().slice(0, 19).replace("T", " ")
   }
 
-  const invoices = await odoo.execute_kw("account.move", "search_read", [
+  const invoices = await odoo.searchRead(
+    "account.move",
     [["move_type", "=", "in_invoice"], ["state", "=", "posted"], ["invoice_date", ">=", since.slice(0, 10)]],
     ["id", "name", "partner_id", "invoice_date", "amount_total"],
-    0, 100,
-  ])
+    { offset: 0, limit: 100 },
+  )
   return invoices.map((inv: any) => ({
     odoo_ref_id: inv.id,
     odoo_ref_model: "account.move",
@@ -153,14 +157,15 @@ async function checkNewInvoice(odoo: any, db: any): Promise<any[]> {
 }
 
 async function checkCashShortage(odoo: any): Promise<any[]> {
-  const sessions = await odoo.execute_kw("pos.session", "search_read", [
+  const sessions = await odoo.searchRead(
+    "pos.session",
     [["state", "=", "closed"]],
-    ["id", "name", "user_id", "cash_journal_difference", "stop_at"],
-    0, 50,
-  ])
+    ["id", "name", "user_id", "cash_register_difference", "stop_at"],
+    { offset: 0, limit: 50 },
+  )
   const results: any[] = []
   for (const s of sessions) {
-    const diff = parseFloat(s.cash_journal_difference ?? 0)
+    const diff = parseFloat(s.cash_register_difference ?? 0)
     if (Math.abs(diff) > 0.01) {
       const sign = diff > 0 ? "زيادة" : "عجز"
       results.push({
@@ -176,11 +181,12 @@ async function checkCashShortage(odoo: any): Promise<any[]> {
 }
 
 async function checkCreditLimit(odoo: any): Promise<any[]> {
-  const partners = await odoo.execute_kw("res.partner", "search_read", [
+  const partners = await odoo.searchRead(
+    "res.partner",
     [["supplier_rank", ">", 0], ["credit_limit", ">", 0]],
     ["id", "name", "credit", "credit_limit"],
-    0, 200,
-  ])
+    { offset: 0, limit: 200 },
+  )
   const results: any[] = []
   for (const p of partners) {
     const credit = parseFloat(p.credit ?? 0)

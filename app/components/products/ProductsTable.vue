@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Product } from "~/types/product";
-import { Edit, Trash2, SearchX, Package } from "@lucide/vue";
+import { Edit, Trash2, RotateCcw, SearchX, Package } from "@lucide/vue";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 
 const props = defineProps<{
@@ -9,10 +9,12 @@ const props = defineProps<{
   allProductsCount: number;
   currentPage?: number;
   totalPages?: number;
+  archiveFilter?: "all" | "active" | "archived";
 }>();
 const emit = defineEmits<{
   (e: "edit", product: Product, index: number): void;
   (e: "delete", product: Product, index: number): void;
+  (e: "restore", product: Product, index: number): void;
   (e: "next-page"): void;
   (e: "prev-page"): void;
 }>();
@@ -111,9 +113,17 @@ const emit = defineEmits<{
                   <Package v-else class="w-5 h-5 text-on-white-variant/60" />
                 </div>
                 <div>
-                  <p class="font-bold text-on-white text-body-md">
-                    {{ prod.display_name || prod.name }}
-                  </p>
+                  <div class="flex items-center gap-2">
+                    <p class="font-bold text-on-white text-body-md">
+                      {{ prod.display_name || prod.name }}
+                    </p>
+                    <span
+                      v-if="prod.active === false"
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-error/10 text-error border border-error/20"
+                    >
+                      مؤرشف
+                    </span>
+                  </div>
                   <div class="flex items-center gap-1.5 mt-0.5">
                     <span
                       class="text-[11px] px-1.5 py-0.2 bg-white-variant rounded text-on-white-variant"
@@ -130,7 +140,19 @@ const emit = defineEmits<{
               </div>
             </td>
             <td class="px-6 py-4 font-mono text-label-md text-on-white-variant">
-              {{ prod.barcode || "-" }}
+              <template v-if="prod.product_variant_ids?.length">
+                <div
+                  v-for="v in prod.product_variant_ids"
+                  :key="v.id"
+                  class="text-[11px] leading-relaxed"
+                >
+                  <span v-if="v.barcode" class="text-on-white-variant">{{ v.barcode }}</span>
+                  <span v-else class="text-outline">&mdash;</span>
+                </div>
+              </template>
+              <template v-else>
+                {{ prod.barcode || "—" }}
+              </template>
             </td>
             <td class="px-6 py-4 text-primary font-bold text-label-md">
               {{
@@ -215,11 +237,20 @@ const emit = defineEmits<{
                   <Edit class="w-5 h-5" />
                 </button>
                 <button
+                  v-if="prod.active !== false"
                   @click="emit('delete', prod, index)"
                   class="p-2 hover:bg-error-container rounded-full transition-colors text-on-white-variant hover:text-error active:scale-95"
                   title="أرشفة / حذف"
                 >
                   <Trash2 class="w-5 h-5" />
+                </button>
+                <button
+                  v-else
+                  @click="emit('restore', prod, index)"
+                  class="p-2 hover:bg-success/10 rounded-full transition-colors text-on-white-variant hover:text-success active:scale-95"
+                  title="استعادة المنتج"
+                >
+                  <RotateCcw class="w-5 h-5" />
                 </button>
               </div>
             </td>

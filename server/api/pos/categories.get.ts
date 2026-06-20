@@ -32,9 +32,10 @@ export default defineEventHandler(async (event) => {
   // Find the available image field in Odoo dynamically
   let imageField = "image_128";
   try {
+    // Pass attributes as a keyword dict, not as a positional array
     const fields: any = await odoo.execute_kw("pos.category", "fields_get", [
       [],
-      ["image_128", "image", "image_medium"],
+      { attributes: ["image_128", "image", "image_medium"] },
     ]);
     if (fields.image_128) {
       imageField = "image_128";

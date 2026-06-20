@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   try {
     const fields: any = await odoo.execute_kw("pos.category", "fields_get", [
       [],
-      ["image_128", "image", "image_medium"],
+      { attributes: ["image_128", "image", "image_medium"] },
     ]);
     if (fields.image_128) {
       imageField = "image_128";
