@@ -379,7 +379,7 @@ const saveProduct = () => {
     @click="closeDrawer"
   >
     <div
-      class="h-full w-full max-w-[480px] bg-white shadow-2xl flex flex-col relative transition-transform duration-300 bg-white"
+      class="h-full w-full bg-white shadow-2xl flex flex-col relative transition-transform duration-300"
       @click.stop
     >
       <div

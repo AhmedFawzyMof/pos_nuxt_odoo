@@ -112,7 +112,7 @@ function handleAddToCart() {
 
 <template>
   <Sheet :open="open" @update:open="handleClose">
-    <SheetContent side="left" class="w-full sm:max-w-md overflow-y-auto">
+    <SheetContent side="left" class="w-full overflow-y-auto">
       <SheetHeader class="mb-4">
         <SheetTitle class="text-lg">{{ product?.display_name || product?.name }}</SheetTitle>
         <SheetClose as-child>

@@ -8,6 +8,7 @@ export const useNotificationsStore = defineStore("notifications", () => {
   const total = ref(0)
   const page = ref(1)
   const limit = ref(20)
+  const categories = ref<string[]>([])
   const loading = ref(false)
   const unreadFilter = ref(false)
   const categoryFilter = ref("")
@@ -20,8 +21,8 @@ export const useNotificationsStore = defineStore("notifications", () => {
       const params = new URLSearchParams({
         page: String(page.value),
         limit: String(limit.value),
-        unread: String(unreadFilter.value),
       })
+      if (unreadFilter.value) params.set("unread", "true")
       if (categoryFilter.value) params.set("category", categoryFilter.value)
 
       const res = await $fetch<NotificationsListResponse>(`/api/notifications?${params}`)
@@ -33,6 +34,14 @@ export const useNotificationsStore = defineStore("notifications", () => {
       total.value = res.total
     } finally {
       loading.value = false
+    }
+  }
+
+  async function fetchCategories() {
+    try {
+      categories.value = await $fetch<string[]>("/api/notifications/categories")
+    } catch {
+      // silent
     }
   }
 
@@ -75,6 +84,7 @@ export const useNotificationsStore = defineStore("notifications", () => {
       if (res.created > 0) {
         await fetchNotifications()
         await fetchUnreadCount()
+        await fetchCategories()
       }
       return res
     } catch {
@@ -101,6 +111,7 @@ export const useNotificationsStore = defineStore("notifications", () => {
 
   return {
     notifications,
+    categories,
     unreadCount,
     total,
     page,
@@ -110,6 +121,7 @@ export const useNotificationsStore = defineStore("notifications", () => {
     categoryFilter,
     unread,
     fetchNotifications,
+    fetchCategories,
     fetchUnreadCount,
     markRead,
     markAllRead,

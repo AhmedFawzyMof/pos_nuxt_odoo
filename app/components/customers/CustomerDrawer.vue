@@ -84,7 +84,7 @@ const saveCustomer = () => {
     @click="closeDrawer"
   >
     <div
-      class="h-full bg-white w-full max-w-xl bg-white shadow-2xl flex flex-col relative transition-transform duration-300"
+      class="h-full w-full bg-white shadow-2xl flex flex-col relative transition-transform duration-300"
       @click.stop
     >
       <div

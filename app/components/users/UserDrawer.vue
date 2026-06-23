@@ -194,7 +194,7 @@ async function handleSave() {
       @click.self="emit('update:open', false)"
     >
       <div
-        class="fixed inset-y-0 left-0 w-full max-w-lg bg-white shadow-xl flex flex-col"
+        class="fixed inset-y-0 left-0 w-full bg-white shadow-xl flex flex-col"
         dir="rtl"
       >
         <div class="p-4 border-b border-gray-200 flex items-center justify-between">

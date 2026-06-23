@@ -67,7 +67,7 @@ const saveSupplier = () => {
       @click.self="closeDrawer"
     >
       <div
-        class="w-full max-w-xl bg-white h-full overflow-y-auto p-8 shadow-xl"
+        class="w-full bg-white h-full overflow-y-auto shadow-xl"
       >
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-headline-md font-bold text-on-white">

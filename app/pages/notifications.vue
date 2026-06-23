@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue"
 import { useRouter } from "#app"
-import { Bell, CheckCheck, Filter, AlertCircle } from "@lucide/vue"
+import { Bell, CheckCheck, Filter } from "@lucide/vue"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
@@ -20,11 +20,6 @@ const tabs = [
   { label: "غير مقروء", value: "unread" },
 ]
 
-const categories = computed(() => {
-  const cats = new Set(store.notifications.map((n) => n.category))
-  return Array.from(cats)
-})
-
 const activeTab = ref("")
 
 onMounted(async () => {
@@ -35,12 +30,8 @@ onMounted(async () => {
   store.setUnreadFilter(false)
   await store.fetchNotifications()
   await store.fetchUnreadCount()
+  await store.fetchCategories()
 })
-
-function filterUnread() {
-  activeTab.value = activeTab.value === "unread" ? "" : "unread"
-  store.setUnreadFilter(activeTab.value === "unread")
-}
 
 function selectCategory(cat: string) {
   store.setCategoryFilter(store.categoryFilter === cat ? "" : cat)
@@ -100,13 +91,13 @@ const priorityConfig: Record<string, { label: string; class: string }> = {
           :key="tab.value"
           class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
           :class="activeTab === tab.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="selectCategory(''); activeTab = tab.value; store.setUnreadFilter(tab.value === 'unread')"
+          @click="activeTab = tab.value; store.setUnreadFilter(tab.value === 'unread')"
         >
           {{ tab.label }}
         </button>
       </div>
 
-      <div v-if="categories.length > 1" class="flex items-center gap-2 mr-auto">
+      <div v-if="store.categories.length > 1" class="flex items-center gap-2 mr-auto">
         <Filter class="w-4 h-4 text-muted-foreground" />
         <select
           class="text-sm border border-border rounded-lg px-3 py-1.5 bg-background"
@@ -114,7 +105,7 @@ const priorityConfig: Record<string, { label: string; class: string }> = {
           @change="(e: any) => store.setCategoryFilter(e.target.value)"
         >
           <option value="">كل التصنيفات</option>
-          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+          <option v-for="cat in store.categories" :key="cat" :value="cat">{{ cat }}</option>
         </select>
       </div>
     </div>

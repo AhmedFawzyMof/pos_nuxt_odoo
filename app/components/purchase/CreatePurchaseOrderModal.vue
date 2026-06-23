@@ -124,15 +124,8 @@ const resetForm = () => {
   <Transition name="modal-scale">
     <div
       v-if="props.open"
-      class="fixed inset-0 z-50 flex items-center justify-center"
+      class="fixed inset-0 z-50 bg-white flex flex-col overflow-hidden"
     >
-      <div
-        class="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        @click="closeModal"
-      />
-      <div
-        class="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden"
-      >
         <!-- Header -->
         <div
           class="flex items-center justify-between p-6 border-b border-outline-variant"
@@ -271,28 +264,21 @@ const resetForm = () => {
             <template v-else>إنشاء أمر الشراء</template>
           </button>
         </div>
-      </div>
     </div>
   </Transition>
 </template>
 
 <style scoped>
 .modal-scale-enter-active {
-  transition: all 0.2s ease-out;
+  transition: opacity 0.2s ease-out;
 }
 .modal-scale-leave-active {
-  transition: all 0.15s ease-in;
+  transition: opacity 0.15s ease-in;
 }
 .modal-scale-enter-from {
   opacity: 0;
 }
-.modal-scale-enter-from > div:last-child {
-  transform: scale(0.95);
-}
 .modal-scale-leave-to {
   opacity: 0;
-}
-.modal-scale-leave-to > div:last-child {
-  transform: scale(0.95);
 }
 </style>

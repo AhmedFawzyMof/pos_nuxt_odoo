@@ -102,12 +102,9 @@ async function handleSubmit() {
   >
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm"
+      class="fixed inset-0 z-50 bg-white flex flex-col font-sans text-slate-800"
       dir="rtl"
     >
-      <div
-        class="relative bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col font-sans text-slate-800 border border-slate-200"
-      >
         <div
           class="p-6 pb-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between"
         >
@@ -239,7 +236,6 @@ async function handleSubmit() {
             }}</span>
           </button>
         </div>
-      </div>
     </div>
   </Transition>
 </template>

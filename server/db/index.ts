@@ -16,6 +16,20 @@ export function getDb(): Database.Database {
   db = new Database(dbPath)
   db.pragma('journal_mode = WAL')
   db.pragma('foreign_keys = ON')
+
+  const integrity = db.pragma('integrity_check', { simple: true }) as string
+  if (integrity !== 'ok') {
+    console.warn('Database corruption detected, recreating database...')
+    db.close()
+    db = null
+    fs.unlinkSync(dbPath)
+    try { fs.unlinkSync(dbPath + '-wal') } catch {}
+    try { fs.unlinkSync(dbPath + '-shm') } catch {}
+    db = new Database(dbPath)
+    db.pragma('journal_mode = WAL')
+    db.pragma('foreign_keys = ON')
+  }
+
   initSchema(db)
   return db
 }

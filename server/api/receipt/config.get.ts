@@ -93,11 +93,15 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   let savedConfig = {};
-  const row = db.prepare('SELECT config FROM receipt_configs WHERE company_id = ?').get(companyId) as any;
-  if (row) {
-    try {
-      savedConfig = JSON.parse(row.config);
-    } catch { }
+  try {
+    const row = db.prepare('SELECT config FROM receipt_configs WHERE company_id = ?').get(companyId) as any;
+    if (row) {
+      try {
+        savedConfig = JSON.parse(row.config);
+      } catch { }
+    }
+  } catch (dbError) {
+    console.error('Database error reading receipt config:', dbError);
   }
 
   const company: Record<string, any> = {};

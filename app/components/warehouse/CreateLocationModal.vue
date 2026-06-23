@@ -201,13 +201,9 @@ const handleSaveLocation = async () => {
   >
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm"
+      class="fixed inset-0 z-50 bg-white flex flex-col font-sans text-on-white"
       dir="rtl"
     >
-      <!-- Form Dialog Container Card: Simple standard modal matching the app's clean primary layout -->
-      <div
-        class="relative bg-white w-full max-w-lg bg-white border border-outline-variant rounded-2xl shadow-xl overflow-hidden flex flex-col font-sans text-on-white"
-      >
         <!-- Form Header Section -->
         <div
           class="p-6 pb-4 border-b border-outline-variant bg-white-low flex items-center justify-between"
@@ -489,7 +485,6 @@ const handleSaveLocation = async () => {
             </span>
           </button>
         </div>
-      </div>
     </div>
   </Transition>
 </template>
