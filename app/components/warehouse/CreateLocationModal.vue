@@ -41,6 +41,7 @@ const selectedParentLocation = ref<OdooLocation | null>(null);
 const newLocationName = ref("");
 const newLocationType = ref("internal");
 const newLocationBarcode = ref("");
+const maxCapacity = ref(5000);
 
 const isSearchDropdownOpen = ref(false);
 const parentSearchQuery = ref("");
@@ -66,33 +67,33 @@ watch(
   { immediate: true },
 );
 
-const autoGenerateBarcode = () => {
-  if (
-    validationError.value.includes("barcode") ||
-    validationError.value.includes("اسم")
-  ) {
-    validationError.value = "";
-  }
+  const autoGenerateBarcode = () => {
+    if (
+      validationError.value.includes("barcode") ||
+      validationError.value.includes("اسم")
+    ) {
+      validationError.value = "";
+    }
 
-  const parentPath = selectedParentLocation.value
-    ? selectedParentLocation.value.name
-    : "WH";
-  const namePart = newLocationName.value.trim()
-    ? newLocationName.value.trim()
-    : "SLOT";
+    const parentPath = selectedParentLocation.value
+      ? selectedParentLocation.value.name
+      : "المخزن";
+    const namePart = newLocationName.value.trim()
+      ? newLocationName.value.trim()
+      : "SLOT";
 
-  const cleanPath = `${parentPath}/${namePart}`
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "-")
-    .replace(/-+/g, "-"); // compress redundant dashes
+    const cleanPath = `${parentPath}/${namePart}`
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "-")
+      .replace(/-+/g, "-"); // compress redundant dashes
 
-  newLocationBarcode.value = `LOC-${cleanPath}`;
-};
+    newLocationBarcode.value = `LOC-${cleanPath}`;
+  };
 
 const breadcrumbPreview = computed(() => {
   const parentPath = selectedParentLocation.value
     ? selectedParentLocation.value.name
-    : "WH/Stock";
+    : "المخزن/المخزون";
   const namePart = newLocationName.value.trim()
     ? newLocationName.value.trim()
     : "___";
@@ -120,7 +121,7 @@ const handleSaveLocation = async () => {
   validationError.value = "";
 
   if (!newLocationName.value.trim()) {
-    validationError.value = "اسم الموقع مطلوب (Location Name is required)";
+    validationError.value = "اسم الموقع مطلوب";
     return;
   }
 
@@ -138,6 +139,7 @@ const handleSaveLocation = async () => {
             ? selectedParentLocation.value.id
             : null,
           barcode: newLocationBarcode.value || null,
+          maxCapacity: maxCapacity.value,
         },
       },
     );
@@ -145,7 +147,7 @@ const handleSaveLocation = async () => {
     if (response.success) {
       const parentPath = selectedParentLocation.value
         ? selectedParentLocation.value.name
-        : "WH/Stock";
+        : "المستودع/المخزون";
       const finalPath = `${parentPath}/${newLocationName.value.trim()}`;
 
       emit("created", {
@@ -153,10 +155,10 @@ const handleSaveLocation = async () => {
         name: finalPath,
         address:
           newLocationType.value === "internal"
-            ? "رف تخزين داخلي (Internal Shelf)"
+            ? "رف تخزين داخلي"
             : newLocationType.value === "scrap"
-              ? "مخزن تالف / حجر صحي (Scrap / Quarantine)"
-              : "مجلد هيكلي عرض (Abstract View Folder)",
+              ? "مخلفات التصنيع / الحجر الصحي"
+              : "مجلد هيكلي عرض",
         status: "نشط",
         statusColor:
           "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
@@ -183,7 +185,7 @@ const handleSaveLocation = async () => {
     console.error(error);
     validationError.value =
       error.statusMessage ||
-      "حدث خطأ أثناء المزامنة (Error syncing)";
+      "حدث خطأ أثناء المزامنة";
   } finally {
     isSaving.value = false;
   }
@@ -233,7 +235,7 @@ const handleSaveLocation = async () => {
 
         <!-- Form Content Block -->
         <div
-          class="p-6 space-y-5 overflow-y-auto max-h-[60vh] custom-scrollbar text-right"
+          class="p-6 space-y-5 overflow-y-auto custom-scrollbar text-right max-w-7xl mx-auto w-full"
         >
           <!-- Monospace Dynamic Real-Time Breadcrumb Path Preview -->
           <div class="p-3.5 bg-white rounded-xl border border-outline-variant">
@@ -254,7 +256,7 @@ const handleSaveLocation = async () => {
           <!-- Field 1: Parent Location Selector (Searchable Dropdown) -->
           <div class="space-y-2">
             <label class="block text-label-md font-bold text-on-white-variant"
-              >الموقع الأب / Parent Location</label
+              >الموقع الأب</label
             >
 
             <div class="relative">
@@ -270,7 +272,7 @@ const handleSaveLocation = async () => {
                   {{
                     selectedParentLocation
                       ? selectedParentLocation.name
-                      : "Select Parent Location"
+                      : "اختر الموقع الأب"
                   }}
                   <Folder class="text-primary w-5 h-5" />
                 </span>
@@ -340,7 +342,7 @@ const handleSaveLocation = async () => {
           <!-- Field 2: Location Name Input -->
           <div class="space-y-2">
             <label class="block text-label-md font-bold text-on-white-variant"
-              >اسم الموقع المحدد / Location Name</label
+              >اسم الموقع المحدد</label
             >
             <input
               v-model="newLocationName"
@@ -365,7 +367,7 @@ const handleSaveLocation = async () => {
           <!-- Field 3: Location Type Selection (Simplified segment chips matching primary colors) -->
           <div class="space-y-2">
             <label class="block text-label-md font-bold text-on-white-variant"
-              >نوع التخزين / Location Type</label
+              >نوع التخزين</label
             >
 
             <div class="grid grid-cols-3 gap-2">
@@ -396,7 +398,7 @@ const handleSaveLocation = async () => {
                 "
               >
                 <Trash2 class="w-5 h-5" />
-                <span class="text-xs">تالف / تصفية</span>
+                <span class="text-xs">مخلفات التصنيع / التصفي</span>
               </button>
 
               <!-- Option 3: View Folder -->
@@ -419,7 +421,7 @@ const handleSaveLocation = async () => {
           <!-- Field 4: Barcode Configurations -->
           <div class="space-y-3">
             <label class="block text-label-md font-bold text-on-white-variant"
-              >الباركود المخصص / Barcode</label
+              >الباركود المخصص</label
             >
             <div class="flex gap-2">
               <!-- Auto-Generate Trigger Action Button -->
@@ -439,6 +441,26 @@ const handleSaveLocation = async () => {
                 placeholder="الرمز الشريطي للرف..."
                 class="h-11 w-full bg-background border border-outline rounded-lg px-4 text-on-white font-mono text-sm tracking-wider placeholder-on-white-variant/40 focus:outline-none focus:ring-2 focus:ring-primary text-right"
               />
+            </div>
+          </div>
+
+          <!-- Field 5: Max Capacity -->
+          <div v-if="newLocationType === 'internal'" class="space-y-2">
+            <label class="block text-label-md font-bold text-on-white-variant"
+              >السعة القصوى</label
+            >
+            <div class="relative">
+              <input
+                v-model.number="maxCapacity"
+                type="number"
+                min="1"
+                step="100"
+                class="h-11 w-full bg-background border border-outline rounded-lg px-4 text-on-white font-mono text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <span
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-on-white-variant"
+              >وحدة</span
+              >
             </div>
           </div>
         </div>

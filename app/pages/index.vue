@@ -108,8 +108,8 @@ const modules = [
     color: "text-orange-600",
   },
   {
-    name: "أوامر الشراء",
-    description: "إنشاء ومتابعة أوامر الشراء للمخزون والمواد.",
+    name: "قائمة مشترايات",
+    description: "إنشاء ومتابعة قائمة مشترايات للمخزون والمواد.",
     path: "/purchase-orders",
     icon: ClipboardList,
     bg: "bg-cyan-500/10",

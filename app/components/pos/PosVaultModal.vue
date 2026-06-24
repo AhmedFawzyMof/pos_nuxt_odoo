@@ -127,7 +127,7 @@ async function handleSubmit() {
           </button>
         </div>
 
-        <div class="p-6 space-y-5 overflow-y-auto text-right">
+        <div class="p-6 space-y-5 overflow-y-auto text-right max-w-7xl mx-auto w-full">
           <div
             v-if="errorMessage"
             class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-semibold flex items-center gap-2"

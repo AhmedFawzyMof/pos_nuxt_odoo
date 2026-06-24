@@ -5,7 +5,7 @@ import { requirePermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { name, type, parentId, barcode } = body;
+  const { name, type, parentId, barcode, maxCapacity } = body;
 
   if (!name) {
     throw createError({
@@ -19,16 +19,20 @@ export default defineEventHandler(async (event) => {
 
   const typeMapping: Record<string, string> = {
     internal: "internal",
-    scrap: "inventory",
+    scrap: "مخلفات التصنيع",
     view: "view",
   };
 
-  const odooPayload = {
+  const odooPayload: Record<string, any> = {
     name: name.trim(),
     usage: typeMapping[type] || "internal",
     location_id: parentId ? Number(parentId) : false,
     barcode: barcode || false,
   };
+
+  if (maxCapacity) {
+    odooPayload.max_capacity = Number(maxCapacity);
+  }
 
   const [newLocationError, newLocationId] = await tryCatch(
     odoo.create("stock.location", odooPayload),

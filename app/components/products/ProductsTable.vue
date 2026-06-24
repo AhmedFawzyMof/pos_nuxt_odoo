@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Product } from "~/types/product";
-import { Edit, Trash2, RotateCcw, SearchX, Package } from "@lucide/vue";
+import { Edit, Trash2, RotateCcw, SearchX, Package, History } from "@lucide/vue";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 
 const props = defineProps<{
@@ -15,6 +15,7 @@ const emit = defineEmits<{
   (e: "edit", product: Product, index: number): void;
   (e: "delete", product: Product, index: number): void;
   (e: "restore", product: Product, index: number): void;
+  (e: "view-stock-movements", product: Product, index: number): void;
   (e: "next-page"): void;
   (e: "prev-page"): void;
 }>();
@@ -229,6 +230,13 @@ const emit = defineEmits<{
             </td>
             <td class="px-6 py-4 text-center" @click.stop>
               <div class="flex items-center justify-center gap-2">
+                <button
+                  @click="emit('view-stock-movements', prod, index)"
+                  class="p-2 hover:bg-primary/10 rounded-full transition-colors text-on-white-variant hover:text-primary active:scale-95"
+                  title="عرض حركات المخزون"
+                >
+                  <History class="w-5 h-5" />
+                </button>
                 <button
                   @click="emit('edit', prod, index)"
                   class="p-2 hover:bg-white-high rounded-full transition-colors text-on-white-variant hover:text-primary active:scale-95"

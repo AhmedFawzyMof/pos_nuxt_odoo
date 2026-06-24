@@ -138,7 +138,7 @@ const resetForm = () => {
             </div>
             <div>
               <h2 class="text-headline-sm font-bold text-on-white">
-                إنشاء أمر شراء
+                إنشاء فتورة شراء
               </h2>
               <p class="text-label-md text-on-white-variant">
                 إضافة أمر شراء جديد للمورد
@@ -180,7 +180,7 @@ const resetForm = () => {
         </div>
 
         <!-- Body -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 max-w-7xl mx-auto w-full">
           <!-- Success -->
           <div
             v-if="saveSuccess"

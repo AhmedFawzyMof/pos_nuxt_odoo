@@ -37,11 +37,17 @@ const passwordVal = ref("");
 const showPassword = ref(false);
 const localError = ref<string | null>(null);
 
+function normalizeUsername(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.includes("@")) return trimmed;
+  return `${trimmed}@gmail.com`;
+}
+
 const handleLogin = async () => {
   localError.value = null;
 
   if (!usernameVal.value) {
-    localError.value = "يرجى إدخال اسم المستخدم أو البريد الإلكتروني.";
+    localError.value = "يرجى إدخال اسم المستخدم.";
     return;
   }
   if (!passwordVal.value) {
@@ -51,7 +57,7 @@ const handleLogin = async () => {
 
   try {
     await auth.login({
-      username: usernameVal.value,
+      username: normalizeUsername(usernameVal.value),
       password: passwordVal.value,
     });
     await refreshSession();
@@ -214,7 +220,7 @@ const handleLogin = async () => {
                 <!-- Username -->
                 <div class="space-y-1">
                   <Label for="username" class="text-xs text-muted-foreground"
-                    >اسم المستخدم / البريد الإلكتروني</Label
+                    >اسم المستخدم</Label
                   >
                   <div class="relative">
                     <User
@@ -224,7 +230,7 @@ const handleLogin = async () => {
                       id="username"
                       v-model="usernameVal"
                       type="text"
-                      placeholder="admin@example.com"
+                      placeholder="اسم المستخدم"
                       class="pr-10 text-left ltr focus-visible:ring-primary/40 focus-visible:border-primary"
                       required
                     />

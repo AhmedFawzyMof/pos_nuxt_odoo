@@ -122,6 +122,7 @@ function handleAddToCart() {
         </SheetClose>
       </SheetHeader>
 
+      <div class="max-w-7xl mx-auto">
       <template v-if="product">
         <div class="aspect-square bg-muted/30 rounded-xl flex items-center justify-center overflow-hidden mb-4">
           <img
@@ -234,6 +235,7 @@ function handleAddToCart() {
           </Button>
         </div>
       </template>
+      </div>
     </SheetContent>
   </Sheet>
 </template>

@@ -190,7 +190,7 @@ function totalCashMovements(): number {
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-6 space-y-5 text-right">
+        <div class="flex-1 overflow-y-auto p-6 space-y-5 text-right max-w-7xl mx-auto w-full">
           <div
             v-if="summaryError"
             class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-semibold flex items-center gap-2"

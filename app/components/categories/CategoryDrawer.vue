@@ -176,7 +176,7 @@ const saveCategory = () => {
       </div>
 
       <!-- Scrollable Form Container -->
-      <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar max-w-7xl mx-auto w-full">
         <!-- Category Image Upload -->
         <div
           class="flex flex-col items-center justify-center pb-4 border-b border-outline-variant"

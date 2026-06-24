@@ -20,8 +20,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  const locations = rawLocations as any[];
+
   return {
     success: true,
-    data: rawLocations as any[],
+    data: locations.filter((loc) => !loc.partner_id && !loc.is_virtual),
   };
 });

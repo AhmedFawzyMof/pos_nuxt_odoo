@@ -116,7 +116,7 @@ export default defineEventHandler(async (event) => {
   return {
     success: true,
     kpis,
-    locations,
+    locations: locations.filter((loc) => !loc.partner_id && !loc.is_virtual),
     movement,
     stockLevels,
   };

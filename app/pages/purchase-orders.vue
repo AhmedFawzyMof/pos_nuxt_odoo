@@ -12,6 +12,7 @@ import type {
   PurchaseOrderApiResponse,
 } from "~/types/purchaseOrder";
 import CreatePurchaseOrderModal from "~/components/purchase/CreatePurchaseOrderModal.vue";
+import EditPurchaseOrderModal from "~/components/purchase/EditPurchaseOrderModal.vue";
 import { usePermissions } from "~/composables/usePermissions";
 
 const route = useRoute();
@@ -19,11 +20,13 @@ const { canViewPage, can, isPurchaseUser, isStockUser } = usePermissions();
 
 if (import.meta.client) {
   if (!canViewPage(route.path)) {
-    navigateTo('/')
+    navigateTo("/");
   }
 }
 
 const showCreateModal = ref(false);
+const showEditModal = ref(false);
+const editingPO = ref<PurchaseOrder | null>(null);
 
 const currentPage = ref(1);
 const searchQuery = ref("");
@@ -114,7 +117,10 @@ const createBill = async (poId: number) => {
       { method: "POST", body: { po_id: poId } },
     );
     if (res.success) {
-      showToastMessage(res.message || "تم إنشاء فاتورة المورد بنجاح", "success");
+      showToastMessage(
+        res.message || "تم إنشاء فاتورة المورد بنجاح",
+        "success",
+      );
       refresh();
     } else {
       showToastMessage(res.message || "فشل إنشاء الفاتورة", "error");
@@ -128,6 +134,28 @@ const createBill = async (poId: number) => {
       "error",
     );
   }
+};
+
+const canEdit = computed(() => can.value("purchase.create"));
+
+const openEdit = (po: PurchaseOrder) => {
+  editingPO.value = po;
+  showEditModal.value = true;
+};
+
+const handleEditSaved = (updated: Partial<PurchaseOrder> & { id: number }) => {
+  if (!apiResponse.value?.data) return;
+  const idx = apiResponse.value.data.findIndex((p) => p.id === updated.id);
+  if (idx !== -1) {
+    const apiData: any = {
+      ...apiResponse.value.data[idx],
+      ...updated,
+    };
+    apiResponse.value.data[idx] = apiData;
+    console.log("✅ UPDATED", updated);
+    console.log("✅ apiData", apiData);
+  }
+  showToastMessage("تم حفظ التعديلات بنجاح", "success");
 };
 
 const receiptStatusText = (status: string) => {
@@ -171,16 +199,18 @@ const stateClass = (state: string) => {
     >
       <div class="flex flex-col items-center gap-3 text-on-white-variant">
         <LoaderCircle class="w-8 h-8 animate-spin text-primary" />
-        <span class="text-[13px]">جاري تحميل أوامر الشراء...</span>
+        <span class="text-[13px]">جاري تحميل قائمة مشترايات...</span>
       </div>
     </div>
 
     <template v-else>
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-headline-lg font-bold text-on-white">أوامر الشراء</h1>
+          <h1 class="text-headline-lg font-bold text-on-white">
+            قائمة مشترايات
+          </h1>
           <p class="text-on-white-variant text-label-md">
-            إدارة أوامر الشراء واستلام المخزون من الموردين
+            إدارة قائمة مشترايات واستلام المخزون من الموردين
           </p>
         </div>
         <div class="flex gap-2">
@@ -189,7 +219,7 @@ const stateClass = (state: string) => {
             @click="showCreateModal = true"
             class="h-11 px-4 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 flex items-center gap-2 cursor-pointer"
           >
-            <Plus class="w-4 h-4" /> إنشاء أمر شراء
+            <Plus class="w-4 h-4" /> إنشاء فتورة شراء
           </button>
           <select
             v-model="filterState"
@@ -249,6 +279,7 @@ const stateClass = (state: string) => {
                 <th class="p-4 text-label-md font-bold">التاريخ</th>
                 <th class="p-4 text-label-md font-bold">الحالة</th>
                 <th class="p-4 text-label-md font-bold">حالة الاستلام</th>
+                <th class="p-4 text-label-md font-bold">المجموع الفرعي</th>
                 <th class="p-4 text-label-md font-bold">الإجمالي</th>
                 <th class="p-4 text-label-md font-bold">الإجراءات</th>
               </tr>
@@ -259,7 +290,9 @@ const stateClass = (state: string) => {
               <tr
                 v-for="po in poList"
                 :key="po.id"
+                @click="canEdit ? openEdit(po) : undefined"
                 class="hover:bg-primary/5 transition-colors"
+                :class="canEdit ? 'cursor-pointer' : ''"
               >
                 <td class="p-4 font-bold">{{ po.name }}</td>
                 <td class="p-4">
@@ -282,30 +315,39 @@ const stateClass = (state: string) => {
                     {{ receiptStatusText(po.receipt_status) }}
                   </span>
                 </td>
+                <td class="p-4 text-on-white-variant">
+                  {{ (po.amount_untaxed || 0).toLocaleString("ar-EG") }} ج.م
+                </td>
                 <td class="p-4 font-bold text-primary">
-                  {{ po.amount_total.toLocaleString("ar-EG") }} ج.م
+                  {{ (po.amount_total || 0).toLocaleString("ar-EG") }} ج.م
                 </td>
                 <td class="p-4">
                   <div class="flex gap-2">
                     <button
                       v-if="po.state === 'draft' && can('purchase.confirm')"
-                      @click="confirmPO(po.id)"
+                      @click.stop="confirmPO(po.id)"
                       class="px-3 py-1 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 cursor-pointer"
                     >
                       تأكيد
                     </button>
                     <button
                       v-if="
-                        po.state === 'purchase' && po.receipt_status !== 'done' && can('purchase.receive')
+                        po.state === 'purchase' &&
+                        po.receipt_status !== 'done' &&
+                        can('purchase.receive')
                       "
-                      @click="receivePO(po.id)"
+                      @click.stop="receivePO(po.id)"
                       class="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer"
                     >
                       استلام
                     </button>
                     <button
-                      v-if="po.state === 'purchase' && po.receipt_status !== 'pending' && can('purchase.createBill')"
-                      @click="createBill(po.id)"
+                      v-if="
+                        po.state === 'purchase' &&
+                        po.receipt_status !== 'pending' &&
+                        can('purchase.createBill')
+                      "
+                      @click.stop="createBill(po.id)"
                       class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer"
                     >
                       إنشاء فاتورة
@@ -343,6 +385,14 @@ const stateClass = (state: string) => {
     :open="showCreateModal"
     @update:open="showCreateModal = $event"
     @created="refresh"
+  />
+
+  <EditPurchaseOrderModal
+    :key="editingPO?.id || 0"
+    :open="showEditModal"
+    :purchase-order="editingPO"
+    @update:open="showEditModal = $event"
+    @saved="handleEditSaved"
   />
 
   <!-- Feedback Toast -->

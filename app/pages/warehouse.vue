@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { AlertCircle, RefreshCcw } from "@lucide/vue";
+import { ref, computed, onMounted } from "vue";
+import { AlertCircle, RefreshCcw, CheckCheck } from "@lucide/vue";
 import { usePermissions } from "~/composables/usePermissions";
 
 const route = useRoute();
@@ -8,7 +8,7 @@ const { canViewPage, can } = usePermissions();
 
 if (import.meta.client) {
   if (!canViewPage(route.path)) {
-    navigateTo('/')
+    navigateTo("/");
   }
 }
 
@@ -35,9 +35,17 @@ const errorMessage = computed(() => {
 const kpis = computed(() =>
   data.value?.success ? (data.value as any).kpis : [],
 );
-const locations = computed(() =>
-  data.value?.success ? (data.value as any).locations : [],
-);
+const locations = computed(() => {
+  return data.value?.success
+    ? (data.value as any).locations.filter(
+        (loc: any) =>
+          loc.name !== "الشركاء" &&
+          loc.name !== "المواقع الافتراضية" &&
+          loc.name !== "مواقع الشركاء" &&
+          loc.name !== "تسوية المخزون",
+      )
+    : [];
+});
 const movements = computed(() =>
   data.value?.success ? (data.value as any).movement : [],
 ); // Aligned to '.moves' key
@@ -47,6 +55,29 @@ const stockLevels = computed(() =>
 
 const openTransfer = ref(false);
 const openCreateLoctaion = ref(false);
+
+const toastMessage = ref("");
+const toastType = ref<"success" | "error">("success");
+
+function showToastMessage(message: string, type: "success" | "error") {
+  toastMessage.value = message;
+  toastType.value = type;
+  setTimeout(() => (toastMessage.value = ""), 3000);
+}
+
+onMounted(async () => {
+  if (!import.meta.client) return;
+  try {
+    const result = await $fetch("/api/warehouse/translate-locations", {
+      method: "POST",
+    });
+    if ((result as any).translated > 0) {
+      showToastMessage((result as any).message, "success");
+    }
+  } catch {
+    // silent fail - translation is non-critical
+  }
+});
 </script>
 
 <template>
@@ -141,6 +172,24 @@ const openCreateLoctaion = ref(false);
         @transfer-completed="refresh"
       />
     </div>
+
+    <Transition name="fade">
+      <div
+        v-if="toastMessage"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-999 flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl border border-outline-variant"
+        :class="
+          toastType === 'success'
+            ? 'bg-on-white text-white'
+            : 'bg-error text-on-error'
+        "
+      >
+        <component
+          :is="toastType === 'success' ? CheckCheck : AlertCircle"
+          class="w-5 h-5 shrink-0"
+        />
+        <p class="font-bold text-sm">{{ toastMessage }}</p>
+      </div>
+    </Transition>
   </div>
 </template>
 

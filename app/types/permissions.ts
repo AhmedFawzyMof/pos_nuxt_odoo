@@ -175,7 +175,7 @@ export const Pages: PageDef[] = [
     labelAr: 'المشتريات',
     routes: ['/suppliers', '/supplier-details', '/purchase-orders'],
     levels: [
-      { id: 'user', label: 'User', labelAr: 'مستخدم', descriptionAr: 'يمكنه إنشاء أوامر الشراء وتأكيد الاستلام وعرض الموردين', groupRef: 'PURCHASE_USER' },
+      { id: 'user', label: 'User', labelAr: 'مستخدم', descriptionAr: 'يمكنه إنشاء قائمة مشترايات وتأكيد الاستلام وعرض الموردين', groupRef: 'PURCHASE_USER' },
       { id: 'admin', label: 'Administrator', labelAr: 'مدير', dependsOn: 'user', descriptionAr: 'يمكنه إدارة كاملة للمشتريات وحذف الموردين', groupRef: 'PURCHASE_MANAGER' },
     ],
   },

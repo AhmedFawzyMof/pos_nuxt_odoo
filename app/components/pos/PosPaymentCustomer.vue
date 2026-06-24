@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
-import { X } from "@lucide/vue";
+import { X, Plus } from "@lucide/vue";
 import { usePosCartStore } from "~~/stores/pos-cart";
 import type { Customer } from "~/types/customer";
 
@@ -115,19 +115,26 @@ fetchCustomers();
       </div>
     </button>
     <div v-if="show" class="px-4 pb-4 space-y-3">
-      <div class="relative">
+      <div class="flex items-center gap-2">
         <input
           v-model="customerSearchQuery"
           @input="onCustomerSearch(customerSearchQuery)"
           placeholder="بحث عن عميل..."
-          class="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+          class="flex-1 h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
         />
+        <button
+          @click="showCustomerDrawer = true"
+          class="shrink-0 w-10 h-10 flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors cursor-pointer"
+          title="إضافة عميل جديد"
+        >
+          <Plus class="w-5 h-5" />
+        </button>
       </div>
       <div v-if="loadingCustomers" class="text-center text-xs text-slate-400 py-4">
         جاري التحميل...
       </div>
       <div v-else-if="customers.length === 0" class="text-center py-4">
-        <p class="text-xs text-slate-400 mb-2">لا يوجد عملاء بهذا الاسم</p>
+        <p class="text-xs text-slate-400 mb-2">لا يوجد عملاء</p>
         <button
           @click="showCustomerDrawer = true"
           class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
@@ -147,7 +154,10 @@ fetchCustomers();
               : 'hover:bg-slate-100 text-slate-700',
           ]"
         >
-          {{ customer.name }}
+            <div class="flex items-center justify-between w-full">
+              <span>{{ customer.name }}</span>
+              <span class="text-slate-400 text-[10px]" dir="ltr">{{ customer.phone }}</span>
+            </div>
         </button>
       </div>
     </div>

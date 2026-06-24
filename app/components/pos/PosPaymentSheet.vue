@@ -232,7 +232,7 @@ function handlePrintReceipt() {
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-6 space-y-5 text-right">
+        <div class="flex-1 overflow-y-auto p-6 space-y-5 text-right max-w-7xl mx-auto w-full">
           <!-- Error -->
           <div
             v-if="errorMessage"

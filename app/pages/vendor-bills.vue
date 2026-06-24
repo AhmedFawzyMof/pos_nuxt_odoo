@@ -18,6 +18,7 @@ import {
 } from "@lucide/vue";
 import type { VendorBill, VendorBillApiResponse } from "~/types/vendorBill";
 import { usePermissions } from "~/composables/usePermissions";
+import EditVendorBillModal from "~/components/vendor-bills/EditVendorBillModal.vue";
 
 const route = useRoute();
 const { canViewPage, can } = usePermissions();
@@ -135,6 +136,14 @@ function showToastMessage(message: string, type: "success" | "error") {
   setTimeout(() => {
     showToast.value = false;
   }, 3000);
+}
+
+const showEditModal = ref(false);
+const editingBillId = ref<number | null>(null);
+
+function openEditModal(bill: VendorBill) {
+  editingBillId.value = bill.id;
+  showEditModal.value = true;
 }
 
 const showPaymentModal = ref(false);
@@ -437,6 +446,12 @@ const submitPayment = async () => {
                 <td class="p-4">
                   <div class="flex gap-2">
                     <button
+                      @click="openEditModal(bill)"
+                      class="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 cursor-pointer flex items-center gap-1"
+                    >
+                      <Receipt class="w-3 h-3" /> عرض
+                    </button>
+                    <button
                       v-if="bill.state === 'draft' && can('vendorBill.post')"
                       @click="postBill(bill.id)"
                       class="px-3 py-1 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 cursor-pointer flex items-center gap-1"
@@ -606,6 +621,13 @@ const submitPayment = async () => {
       </div>
     </div>
   </div>
+
+  <!-- Edit Vendor Bill Modal -->
+  <EditVendorBillModal
+    v-model:open="showEditModal"
+    :bill-id="editingBillId"
+    @saved="refresh"
+  />
 
   <!-- Feedback Toast -->
   <div

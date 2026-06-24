@@ -12,6 +12,7 @@ export interface ProductResult {
 }
 
 export interface POLineInput {
+  id?: number;
   product_id: number | null;
   product_name: string;
   quantity: number;

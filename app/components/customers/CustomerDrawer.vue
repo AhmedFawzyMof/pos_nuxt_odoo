@@ -107,7 +107,7 @@ const saveCustomer = () => {
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar max-w-7xl mx-auto w-full">
         <div
           v-if="actionError"
           class="flex items-start gap-3 bg-error-container/20 border border-error/30 px-4 py-3 rounded-xl"

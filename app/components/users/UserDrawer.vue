@@ -145,6 +145,12 @@ watch([() => props.open, () => props.user], ([open, user]) => {
   }
 })
 
+function normalizeLogin(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.includes("@")) return trimmed;
+  return `${trimmed}@gmail.com`;
+}
+
 async function handleSave() {
   error.value = ""
 
@@ -165,12 +171,14 @@ async function handleSave() {
     return
   }
 
+  const finalLogin = normalizeLogin(login.value);
+
   saving.value = true
   emit("save", {
     id: props.user?.id,
     name: name.value.trim(),
-    login: login.value.trim(),
-    email: email.value.trim() || login.value.trim(),
+    login: finalLogin,
+    email: email.value.trim() || finalLogin,
     password: password.value || undefined,
     groups_id: selectedGroupIds.value,
     roles: selectedRoleNames.value,
@@ -209,7 +217,7 @@ async function handleSave() {
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 text-right">
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 text-right max-w-7xl mx-auto w-full">
           <div
             v-if="error"
             class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2"

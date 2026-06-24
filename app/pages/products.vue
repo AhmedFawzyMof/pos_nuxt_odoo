@@ -8,6 +8,12 @@ import {
   AlertCircle,
   X,
   LoaderCircle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Package,
+  DollarSign,
+  Tag,
 } from "@lucide/vue";
 import ProductsTable from "~/components/products/ProductsTable.vue";
 import ProductDrawer from "~/components/products/ProductDrawer.vue";
@@ -27,6 +33,10 @@ const currentPage = ref(1);
 
 const searchQuery = ref("");
 const archiveFilter = ref<"all" | "active" | "archived">("all");
+type SortField = "qty_available" | "standard_price" | "list_price";
+type SortOrder = "asc" | "desc";
+const sortField = ref<SortField>("qty_available");
+const sortOrder = ref<SortOrder>("desc");
 
 const {
   data: apiResponse,
@@ -67,16 +77,40 @@ const prevPage = () => {
   if (currentPage.value > 1) currentPage.value--;
 };
 
+const sortLabels: Record<SortField, string> = {
+  qty_available: "المخزون",
+  standard_price: "سعر الشراء",
+  list_price: "سعر البيع",
+};
+
+const toggleSort = (field: SortField) => {
+  if (sortField.value === field) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortField.value = field;
+    sortOrder.value = "desc";
+  }
+};
+
 const filteredProducts = computed(() => {
-  if (!searchQuery.value) return products.value;
-  const query = searchQuery.value.toLowerCase();
-  return products.value.filter(
-    (p) =>
-      p.name.toLowerCase().includes(query) ||
-      (p.display_name && p.display_name.toLowerCase().includes(query)) ||
-      (p.barcode && p.barcode.includes(query)) ||
-      p.pos_categories?.some((c) => c.name.toLowerCase().includes(query)),
-  );
+  let result = products.value;
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        (p.display_name && p.display_name.toLowerCase().includes(query)) ||
+        (p.barcode && p.barcode.includes(query)) ||
+        p.pos_categories?.some((c) => c.name.toLowerCase().includes(query)),
+    );
+  }
+  return [...result].sort((a, b) => {
+    const aVal = a[sortField.value] ?? 0;
+    const bVal = b[sortField.value] ?? 0;
+    return sortOrder.value === "asc"
+      ? (aVal as number) - (bVal as number)
+      : (bVal as number) - (aVal as number);
+  });
 });
 
 // Drawer System Management
@@ -116,6 +150,12 @@ const checkLiveStock = async () => {
     console.error("Failed to fetch live stock:", err);
   } finally {
     liveStockLoading.value = false;
+  }
+};
+
+const handleViewStockMovements = (product: Product) => {
+  if (product.id) {
+    navigateTo(`/stock-movements/product/${product.id}`);
   }
 };
 
@@ -294,6 +334,22 @@ const handleDeleteFromDrawer = async () => {
           المؤرشف
         </button>
       </div>
+      <div class="flex items-center gap-1 bg-white-low rounded-full p-1 border border-outline-variant">
+        <button
+          v-for="field in (['qty_available', 'standard_price', 'list_price'] as SortField[])"
+          :key="field"
+          @click="toggleSort(field)"
+          class="px-3 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer flex items-center gap-1.5"
+          :class="sortField === field ? 'bg-white text-primary shadow-sm' : 'text-on-white-variant hover:text-on-white'"
+        >
+          <Package v-if="field === 'qty_available'" class="w-3.5 h-3.5" />
+          <DollarSign v-if="field === 'standard_price'" class="w-3.5 h-3.5" />
+          <Tag v-if="field === 'list_price'" class="w-3.5 h-3.5" />
+          {{ sortLabels[field] }}
+          <ArrowUp v-if="sortField === field && sortOrder === 'asc'" class="w-3 h-3" />
+          <ArrowDown v-if="sortField === field && sortOrder === 'desc'" class="w-3 h-3" />
+        </button>
+      </div>
       <div class="flex items-center gap-2">
         <button
           @click="refresh()"
@@ -377,6 +433,7 @@ const handleDeleteFromDrawer = async () => {
         @edit="handleEdit"
         @delete="handleDelete"
         @restore="handleRestore"
+        @view-stock-movements="handleViewStockMovements"
         @next-page="nextPage"
         @prev-page="prevPage"
       />

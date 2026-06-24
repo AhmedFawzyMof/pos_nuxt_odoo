@@ -105,7 +105,7 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
               : 'text-on-white-variant hover:text-primary'
           "
         >
-          أوامر الشراء
+          قائمة مشترايات
         </button>
         <button
           @click="activeTab = 'bills'"
@@ -185,7 +185,7 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
           <h3 class="text-headline-sm font-bold text-on-white mb-4">ملخص</h3>
           <div class="space-y-4">
             <div>
-              <p class="text-xs text-on-white-variant">عدد أوامر الشراء</p>
+              <p class="text-xs text-on-white-variant">عدد قائمة مشترايات</p>
               <p class="font-bold text-on-white">
                 {{ supplier.purchase_orders?.length || 0 }}
               </p>

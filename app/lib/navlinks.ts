@@ -9,6 +9,7 @@ import {
   Warehouse,
   Timer,
   History,
+  ArrowLeftRight,
   Truck,
   ClipboardList,
   ReceiptText,
@@ -42,11 +43,12 @@ export const navLinks: NavItem[] = [
   { name: "المحاسبة", path: "/accounting", icon: h(Landmark), requiredPermission: "account_invoice" },
   { name: "المخزون", path: "/warehouse", icon: h(Warehouse), requiredPermission: "stock_user" },
   { name: "حركات المخزون", path: "/stock-movements", icon: h(History), requiredPermission: "stock_user" },
+  { name: "نقل مخزني", path: "/stock-transfers", icon: h(ArrowLeftRight), requiredPermission: "stock_user" },
   { name: "المنتجات", path: "/products", icon: h(ShoppingBag), requiredPermission: "pos_user" },
   { name: "الأقسام", path: "/categories", icon: h(LayoutGrid), requiredPermission: "pos_user" },
   { name: "العملاء", path: "/customers", icon: h(Users), requiredPermission: "pos_user" },
   { name: "الموردين", path: "/suppliers", icon: h(Truck), requiredPermission: "purchase_user" },
-  { name: "أوامر الشراء", path: "/purchase-orders", icon: h(ClipboardList), requiredPermission: "purchase_user" },
+  { name: "قائمة مشترايات", path: "/purchase-orders", icon: h(ClipboardList), requiredPermission: "purchase_user" },
   { name: "فواتير الموردين", path: "/vendor-bills", icon: h(ReceiptText), requiredPermission: "account_invoice" },
   { name: "المدفوعات المتأخرة", path: "/late-payments", icon: h(AlertCircle), requiredPermission: "account_invoice" },
   { name: "المصروفات التشغيلية", path: "/operational-expenses", icon: h(Banknote), requiredPermission: "purchase_user" },
@@ -88,6 +90,7 @@ export const groupedNav: NavEntry[] = [
     children: [
       { name: "المخزون", path: "/warehouse", icon: h(Warehouse), requiredPermission: "stock_user" },
       { name: "حركات المخزون", path: "/stock-movements", icon: h(History), requiredPermission: "stock_user" },
+      { name: "نقل مخزني", path: "/stock-transfers", icon: h(ArrowLeftRight), requiredPermission: "stock_user" },
     ],
   },
   {
@@ -95,7 +98,7 @@ export const groupedNav: NavEntry[] = [
     icon: h(Truck),
     children: [
       { name: "الموردين", path: "/suppliers", icon: h(Truck), requiredPermission: "purchase_user" },
-      { name: "أوامر الشراء", path: "/purchase-orders", icon: h(ClipboardList), requiredPermission: "purchase_user" },
+      { name: "قائمة مشترايات", path: "/purchase-orders", icon: h(ClipboardList), requiredPermission: "purchase_user" },
       { name: "فواتير الموردين", path: "/vendor-bills", icon: h(ReceiptText), requiredPermission: "account_invoice" },
       { name: "المدفوعات المتأخرة", path: "/late-payments", icon: h(AlertCircle), requiredPermission: "account_invoice" },
       { name: "المصروفات التشغيلية", path: "/operational-expenses", icon: h(Banknote), requiredPermission: "purchase_user" },

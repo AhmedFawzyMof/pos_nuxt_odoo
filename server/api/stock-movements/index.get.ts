@@ -7,11 +7,13 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const params = {
     page: Math.max(1, parseInt((query.page as string) || "1")),
-    limit: Math.min(50, Math.max(1, parseInt((query.limit as string) || "8"))), // Matches your template's default (8)
+    limit: Math.min(50, Math.max(1, parseInt((query.limit as string) || "26"))), // Matches the frontend default (26)
     search: (query.search as string) || "",
     type: (query.type as string) || "all",
+    usage: (query.usage as string) || "",
     dateFrom: (query.dateFrom as string) || "",
     dateTo: (query.dateTo as string) || "",
+    productId: (query.productId as string) || "",
   };
 
   const odoo = await getAdminOdooClient();

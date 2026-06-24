@@ -153,6 +153,84 @@ export interface SessionSummary {
   opening_cash: number;
   cash_balance: number;
   cash_movements: CashMovement[];
+  user_name: string;
+  config_name: string;
+  start_at: string;
+  stop_at: string;
+  session_state: string;
+}
+
+export interface SessionDetailProduct {
+  product_id: number;
+  product_name: string;
+  code: string;
+  quantity: number;
+  price_unit: number;
+  discount: number;
+  uom: string;
+  total_paid: number;
+  base_amount: number;
+}
+
+export interface SessionDetailCategory {
+  name: string;
+  products: SessionDetailProduct[];
+  total: number;
+  qty: number;
+}
+
+export interface SessionDetailPayment {
+  id: number;
+  name: string;
+  session: number;
+  cash: boolean;
+  total: number;
+  final_count: number;
+  money_counted: number;
+  money_difference: number;
+  cash_moves: { name: string; amount: number }[];
+  count: boolean;
+}
+
+export interface SessionDetailTax {
+  name: string;
+  tax_amount: number;
+  base_amount: number;
+}
+
+export interface SessionDetail {
+  state: string;
+  currency: {
+    symbol: string;
+    position: boolean;
+    total_paid: number;
+    precision: number;
+  };
+  nbr_orders: number;
+  date_start: string;
+  date_stop: string;
+  session_name: string;
+  config_names: string[];
+  company_name: string;
+  payments: SessionDetailPayment[];
+  taxes: SessionDetailTax[];
+  taxes_info: { tax_amount: number; base_amount: number };
+  products: SessionDetailCategory[];
+  products_info: { total: number; qty: number };
+  refund_taxes: SessionDetailTax[];
+  refund_taxes_info: { tax_amount: number; base_amount: number };
+  refund_info: { total: number; qty: number };
+  refund_products: SessionDetailCategory[];
+  discount_number: number;
+  discount_amount: number;
+  invoiceList: { name: string; invoices: any[] }[];
+  invoiceTotal: number;
+  total_paid: number;
+  payments_per_method: { name: string; total: number }[];
+  show_payment_per_method: boolean;
+  cash_rounding_total: number;
+  opening_note: string;
+  closing_note: string;
 }
 
 export interface POSOrder {

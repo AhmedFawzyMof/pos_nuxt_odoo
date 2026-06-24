@@ -15,11 +15,17 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Name, login, and password are required' })
   }
 
+  function normalizeLogin(raw: string): string {
+    const trimmed = raw.trim();
+    if (trimmed.includes("@")) return trimmed;
+    return `${trimmed}@gmail.com`;
+  }
+
   const vals: any = {
     name: body.name,
-    login: body.login,
+    login: normalizeLogin(body.login),
     password: body.password,
-    email: body.email || body.login,
+    email: body.email || normalizeLogin(body.login),
     active: body.active !== false,
   }
 

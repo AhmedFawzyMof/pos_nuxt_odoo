@@ -13,6 +13,7 @@ import {
   Plus,
   Banknote,
   Wallet,
+  Printer,
 } from "@lucide/vue";
 import type {
   POSOrder,
@@ -21,7 +22,9 @@ import type {
   PaymentMethod,
 } from "~/types/pos";
 import { usePermissions } from '~/composables/usePermissions'
+import { useReceiptPrint } from '~/composables/useReceiptPrint'
 const { can } = usePermissions()
+const { fetchReceiptConfig, printReceipt } = useReceiptPrint()
 
 const props = defineProps<{
   isOpen: boolean;
@@ -84,6 +87,7 @@ watch(
   (open) => {
     if (open && props.orderId) {
       fetchDetail(props.orderId);
+      fetchReceiptConfig();
     }
   },
 );
@@ -270,6 +274,30 @@ async function removeLine(lineId: number) {
   }
 }
 
+function handlePrintReceipt() {
+  if (!order.value) return;
+  printReceipt({
+    orderName: order.value.name,
+    lastOrderItems: lines.value.map((l) => ({
+      product: { name: l.product_id?.[1] || `#${l.product_id?.[0] || ""}` },
+      quantity: l.qty,
+      price: l.price_unit,
+      discount: l.discount,
+    })),
+    lastOrderPayments: payments.value.map((p) => ({
+      methodName: p.payment_method_id?.[1] || `#${p.payment_method_id?.[0] || ""}`,
+      amount: p.amount,
+    })),
+    lastOrderSubtotal: totalFromLines.value,
+    lastOrderDiscount: lines.value.reduce(
+      (sum, l) => sum + ((l.price_unit * l.qty * l.discount) / 100),
+      0,
+    ),
+    lastOrderServiceFee: 0,
+    lastOrderGrandTotal: order.value.amount_total,
+  });
+}
+
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
@@ -337,7 +365,7 @@ const formatDate = (dateStr: string) => {
       <!-- Content -->
       <div
         v-else-if="order"
-        class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar"
+        class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar max-w-7xl mx-auto w-full"
       >
         <!-- Status Change -->
         <div class="flex items-center gap-4 flex-wrap">
@@ -691,7 +719,15 @@ const formatDate = (dateStr: string) => {
       </div>
 
       <!-- Footer -->
-      <div class="p-4 bg-white-high border-t border-outline-variant shrink-0">
+      <div class="p-4 bg-white-high border-t border-outline-variant shrink-0 space-y-3">
+        <button
+          v-if="lines.length > 0 && order?.state !== 'cancelled'"
+          @click="handlePrintReceipt"
+          class="w-full py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary/95 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+        >
+          <Printer class="w-4 h-4" />
+          طباعة الفاتورة
+        </button>
         <button
           @click="closeDrawer"
           class="w-full py-3 rounded-xl border border-outline font-bold text-on-white hover:bg-white transition-all cursor-pointer active:scale-95 text-center"

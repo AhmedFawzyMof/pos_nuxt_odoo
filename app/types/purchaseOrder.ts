@@ -4,6 +4,7 @@ export interface PurchaseOrder {
   partner_id: [number, string] | false;
   date_order: string;
   amount_total: number;
+  amount_untaxed: number;
   state: string;
   receipt_status: string;
   order_line_count: number;

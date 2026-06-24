@@ -406,7 +406,7 @@ const saveProduct = () => {
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar max-w-7xl mx-auto w-full">
         <!-- قسم رفع صورة المنتج -->
         <div
           class="flex flex-col items-center justify-center pb-4 border-b border-outline-variant"
@@ -723,6 +723,21 @@ const saveProduct = () => {
                     </div>
                   </div>
 
+                  <div v-if="can('product.viewCost')" class="relative">
+                    <input
+                      v-model.number="variant.standard_price"
+                      class="w-full h-9 px-2 text-xs border rounded-lg border-outline focus:border-primary outline-none"
+                      placeholder="0.00"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                    />
+                    <span
+                      class="absolute -top-2 right-2 text-[9px] bg-white px-1 text-on-white-variant"
+                      >تكلفة المتغير (Cost)</span
+                    >
+                  </div>
+
                   <div class="relative flex items-center">
                     <input
                       v-model="variant.barcode"
@@ -909,7 +924,7 @@ const saveProduct = () => {
                 <div class="flex flex-col">
                   <span>يمكن شراؤه وتوريده (Can be Purchased)</span>
                   <span class="text-[10px] text-on-white-variant"
-                    >تفعيل هذا الخيار لإتاحة المنتج في أوامر الشراء من
+                    >تفعيل هذا الخيار لإتاحة المنتج في قائمة مشترايات من
                     الموردين.</span
                   >
                 </div>

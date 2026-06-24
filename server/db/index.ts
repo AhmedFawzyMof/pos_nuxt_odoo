@@ -99,6 +99,13 @@ function initSchema(database: Database.Database) {
       config TEXT NOT NULL,
       updated_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS location_translations (
+      location_id INTEGER PRIMARY KEY,
+      odoo_name TEXT NOT NULL,
+      arabic_name TEXT NOT NULL,
+      translated_at TEXT DEFAULT (datetime('now'))
+    );
   `)
 
   const count = database.prepare('SELECT COUNT(*) as count FROM roles').get() as any

@@ -132,7 +132,7 @@ const payBill = async (billId: number) => {
         <div>
           <h1 class="text-headline-lg font-bold text-on-white">المدفوعات المتأخرة</h1>
           <p class="text-on-white-variant text-label-md">
-            متابعة الفواتير وأوامر الشراء المتأخرة
+            متابعة الفواتير وقائمة مشترايات المتأخرة
           </p>
         </div>
         <button @click="refresh()"
@@ -193,7 +193,7 @@ const payBill = async (billId: number) => {
           class="h-11 px-3 bg-white border border-outline-variant rounded-lg text-sm cursor-pointer min-w-[140px]">
           <option value="">الكل</option>
           <option value="bill">فواتير الموردين</option>
-          <option value="po">أوامر الشراء</option>
+          <option value="po">قائمة مشترايات</option>
         </select>
         <select v-model="filterAging"
           class="h-11 px-3 bg-white border border-outline-variant rounded-lg text-sm cursor-pointer min-w-[140px]">
@@ -209,7 +209,7 @@ const payBill = async (billId: number) => {
       <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
         <div v-if="lateList.length === 0" class="p-12 text-center text-on-white-variant">
           <p class="font-bold">لا توجد مدفوعات متأخرة</p>
-          <p class="text-sm mt-1">كل الفواتير وأوامر الشراء في الموعد المحدد</p>
+          <p class="text-sm mt-1">كل الفواتير وقائمة مشترايات في الموعد المحدد</p>
         </div>
         <div v-else class="overflow-x-auto">
           <table class="w-full text-right border-collapse">

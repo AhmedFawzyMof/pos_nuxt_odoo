@@ -46,6 +46,11 @@ export default defineEventHandler(async (event) => {
       opening_cash: financials.cash_register_balance_start || 0,
       cash_balance: financials.cash_register_balance_end || 0,
       cash_movements: rpcResult.cash_movements || [],
+      user_name: rpcResult.user?.name || "",
+      config_name: rpcResult.config?.name || "",
+      start_at: rpcResult.start_at || "",
+      stop_at: rpcResult.stop_at || "",
+      session_state: rpcResult.state || "",
     },
   };
 });

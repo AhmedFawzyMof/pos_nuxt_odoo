@@ -4,7 +4,9 @@ import { X, LoaderCircle } from "@lucide/vue";
 import type { Supplier } from "~/types/purchase";
 
 const modelValue = defineModel<Supplier | null>("supplier");
-
+const props = defineProps<{
+  selectedSupplier?: Supplier | null;
+}>();
 const search = ref("");
 const results = ref<Supplier[]>([]);
 const isSearching = ref(false);
@@ -36,6 +38,17 @@ watch(search, (q) => {
     }
   }, 300);
 });
+
+watch(
+  () => props.selectedSupplier,
+  () => {
+    if (props.selectedSupplier) {
+      modelValue.value = props.selectedSupplier;
+      search.value = props.selectedSupplier.name;
+    }
+  },
+  { immediate: true },
+);
 
 const select = (s: Supplier) => {
   modelValue.value = s;

@@ -49,6 +49,16 @@ const pageTitle = computed(() => {
         <!-- Notification Bell -->
         <AppNotificationBell />
 
+        <!-- POS Shortcut Button -->
+        <NuxtLink
+          to="/pos"
+          class="flex items-center gap-1.5 px-3 h-9 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors text-sm font-semibold"
+          title="نقاط البيع"
+        >
+          <Receipt class="w-4 h-4" />
+          <span>نقاط البيع</span>
+        </NuxtLink>
+
         <!-- Company Badge & Username Info -->
         <div class="flex flex-col text-left md:text-right">
           <span class="text-sm font-semibold text-foreground hidden md:block">

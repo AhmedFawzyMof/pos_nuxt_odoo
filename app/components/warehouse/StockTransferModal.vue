@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
-import { GitMerge, X, AlertTriangle, RefreshCw, VideoOff, ScanBarcode, Trash2 } from '@lucide/vue';
+import {
+  GitMerge,
+  X,
+  AlertTriangle,
+  RefreshCw,
+  VideoOff,
+  ScanBarcode,
+  Trash2,
+} from "@lucide/vue";
 import { tryWeightBarcodeSearch } from "~/utils/weightBarcode";
-import { usePermissions } from '~/composables/usePermissions'
-const { can } = usePermissions()
+import { usePermissions } from "~/composables/usePermissions";
+const { can } = usePermissions();
 
 interface OdooLocation {
   id: number;
   name: string;
+  type: string;
 }
 
 interface Product {
@@ -35,6 +44,12 @@ const emit = defineEmits<{
 
 const sourceLocation = ref<OdooLocation | null>(null);
 const destinationLocation = ref<OdooLocation | null>(null);
+
+const transferableLocations = computed(() =>
+  props.existingLocations.filter((loc) =>
+    ["internal", "scrap"].includes(loc.type)
+  )
+);
 
 const transferCart = ref<TransferItem[]>([]);
 
@@ -81,7 +96,7 @@ watch(searchQuery, (newQuery) => {
         {
           params: {
             query: actualQuery,
-            locationId: sourceLocation.value.id,
+            locationId: sourceLocation.value?.id,
           },
         },
       );
@@ -103,14 +118,14 @@ const toggleCameraScanner = async () => {
   }
 };
 
-
-
 const addProductToCart = (prod: Product, autoCreate = false) => {
   const existingLine = transferCart.value.find(
     (item) => item.product.id === prod.id && !autoCreate,
   );
 
-  const maxQty = (prod.quantity !== undefined ? prod.quantity : Infinity) as number;
+  const maxQty = (
+    prod.quantity !== undefined ? prod.quantity : Infinity
+  ) as number;
 
   if (existingLine) {
     existingLine.quantity = Math.min(existingLine.quantity + 1, maxQty);
@@ -221,272 +236,266 @@ const closeModal = async () => {
       class="fixed inset-0 z-50 bg-white flex flex-col font-sans text-slate-800"
       dir="rtl"
     >
-        <div
-          class="p-6 pb-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between"
-        >
-          <div class="flex items-center gap-3">
-            <GitMerge class="text-primary bg-primary/10 p-2 rounded-lg w-10 h-10" />
-            <div>
-              <h3 class="text-lg font-bold text-slate-900">
-                نقل مخزني متعدد المنتجات
-              </h3>
-              <p class="text-xs text-slate-500">
-                تحويل مجموعة من المنتجات دفعة واحدة بين المواقع
-              </p>
-            </div>
+      <div
+        class="p-6 pb-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <GitMerge
+            class="text-primary bg-primary/10 p-2 rounded-lg w-10 h-10"
+          />
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">
+              نقل مخزني متعدد المنتجات
+            </h3>
+            <p class="text-xs text-slate-500">
+              تحويل مجموعة من المنتجات دفعة واحدة بين المواقع
+            </p>
           </div>
-          <button
-            @click="closeModal"
-            class="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600"
-          >
-            <X class="w-6 h-6" />
-          </button>
+        </div>
+        <button
+          @click="closeModal"
+          class="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+        >
+          <X class="w-6 h-6" />
+        </button>
+      </div>
+
+      <div
+        class="p-6 space-y-5 overflow-y-auto text-right max-w-7xl mx-auto w-full"
+      >
+        <div
+          v-if="errorMessage"
+          class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-semibold flex items-center gap-2"
+        >
+          <AlertTriangle class="w-4 h-4" />
+          {{ errorMessage }}
         </div>
 
-        <div class="p-6 space-y-5 overflow-y-auto max-h-[70vh] text-right">
-          <div
-            v-if="errorMessage"
-            class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-semibold flex items-center gap-2"
-          >
-            <AlertTriangle class="w-4 h-4" />
-            {{ errorMessage }}
-          </div>
-
-          <div
-            class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100"
-          >
-            <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-slate-600"
-                >من موقع (المصدر)</label
-              >
-              <select
-                v-model="sourceLocation"
-                class="w-full h-11 bg-white border border-slate-200 rounded-lg px-3 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
-                <option :value="null" disabled>اختر مستودع المصدر</option>
-                <option
-                  v-for="loc in existingLocations"
-                  :key="loc.id"
-                  :value="loc"
-                >
-                  {{ loc.name }}
-                </option>
-              </select>
-            </div>
-            <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-slate-600"
-                >إلى موقع (الوجهة)</label
-              >
-              <select
-                v-model="destinationLocation"
-                class="w-full h-11 bg-white border border-slate-200 rounded-lg px-3 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
-                <option :value="null" disabled>اختر مستودع الوجهة</option>
-                <option
-                  v-for="loc in existingLocations"
-                  :key="loc.id"
-                  :value="loc"
-                >
-                  {{ loc.name }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <div class="space-y-1.5 relative">
+        <div
+          class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100"
+        >
+          <div class="space-y-1.5">
             <label class="block text-xs font-bold text-slate-600"
-              >إضافة مواد عبر البحث والمسح الشريطي</label
+              >من موقع (المصدر)</label
             >
-
-            <div
-              v-show="isScannerActive"
-              class="mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-950 relative shadow-inner"
+            <select
+              v-model="sourceLocation"
+              class="w-full h-11 bg-white border border-slate-200 rounded-lg px-3 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
-              <div
-                id="camera-preview"
-                class="w-full mx-auto max-w-[450px]"
-              ></div>
-              <div
-                v-if="isScanningPaused"
-                class="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-xs"
+              <option :value="null" disabled>اختر مستودع المصدر</option>
+              <option
+                v-for="loc in transferableLocations"
+                :key="loc.id"
+                :value="loc"
               >
-                <span
-                  class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-bold animate-pulse"
-                  >تم التقاط الكود بنجاح...</span
-                >
-              </div>
-            </div>
-
-            <div class="relative flex items-center">
-              <input
-                v-model="searchQuery"
-                type="text"
-                :disabled="!sourceLocation"
-                :placeholder="
-                  sourceLocation
-                    ? 'امسح الباركود أو ابحث باسم المادة لإضافتها للشحنة...'
-                    : 'يرجى اختيار موقع المصدر أولاً'
-                "
-                class="w-full h-11 bg-slate-50 border border-slate-200 rounded-lg pr-4 pl-12 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-      />
-
-              <RefreshCw
-                v-if="isSearching"
-                class="absolute left-12 text-slate-400 animate-spin w-5 h-5"
-              />
-
-              <button
-                type="button"
-                @click="toggleCameraScanner"
-                :disabled="!sourceLocation"
-                :class="[
-                  'absolute left-1.5 h-8 w-9 flex items-center justify-center rounded-md transition-all border outline-hidden',
-                  !sourceLocation
-                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                    : isScannerActive
-                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
-                ]"
-                title="تشغيل كاميرا مسح الباركود"
-              >
-                <VideoOff v-if="isScannerActive" class="w-5 h-5" />
-                <ScanBarcode v-else class="w-5 h-5" />
-              </button>
-            </div>
-
-            <div
-              v-if="showDropdown && searchResults.length > 0"
-              class="absolute bg-white left-0 right-0 mt-1 z-50 border border-slate-200 rounded-xl shadow-xl max-h-40 overflow-y-auto divide-y divide-slate-100"
-            >
-              <button
-                v-for="prod in searchResults"
-                :key="prod.id"
-                type="button"
-                @click="addProductToCart(prod)"
-                class="w-full px-4 py-2.5 text-right text-xs hover:bg-slate-50 flex justify-between items-center"
-              >
-                <span class="font-bold text-slate-800">{{ prod.name }}</span>
-                <span class="flex items-center gap-2">
-                  <span
-                    v-if="prod.quantity !== undefined"
-                    class="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded"
-                  >
-                    متوفر: {{ prod.quantity }}
-                  </span>
-                  <span
-                    class="text-[10px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded"
-                  >
-                    كود: {{ prod.barcode || "N/A" }}
-                  </span>
-                </span>
-              </button>
-            </div>
-
-
+                {{ loc.name }}
+              </option>
+            </select>
           </div>
-
-          <div class="border border-slate-200 rounded-xl overflow-hidden">
-            <div
-              class="bg-slate-50 p-3 border-b border-slate-200 text-xs font-bold text-slate-600 grid grid-cols-12 gap-2"
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-600"
+              >إلى موقع (الوجهة)</label
             >
-              <div class="col-span-6 text-right">المنتج</div>
-              <div class="col-span-3 text-center">الكمية</div>
-              <div class="col-span-2 text-center">الحالة</div>
-              <div class="col-span-1 text-center">إجراء</div>
-            </div>
-
-            <div
-              v-if="transferCart.length === 0"
-              class="p-8 text-center text-slate-400 text-xs"
+            <select
+              v-model="destinationLocation"
+              class="w-full h-11 bg-white border border-slate-200 rounded-lg px-3 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
-              القائمة فارغة. يرجى مسح أو إضافة منتجات لبدء عملية النقل المخزني.
-            </div>
-
-            <div
-              v-else
-              class="divide-y divide-slate-100 max-h-48 overflow-y-auto"
-            >
-              <div
-                v-for="(item, index) in transferCart"
-                :key="item.product.id"
-                class="p-3 text-xs grid grid-cols-12 gap-2 items-center hover:bg-slate-50/60"
+              <option :value="null" disabled>اختر مستودع الوجهة</option>
+              <option
+                v-for="loc in transferableLocations"
+                :key="loc.id"
+                :value="loc"
               >
-                <div
-                  class="col-span-6 text-right font-medium text-slate-900 truncate"
-                >
-                  {{ item.product.name }}
-                </div>
-                <div class="col-span-3 flex flex-col items-center gap-0.5">
-                  <input
-                    v-model.number="item.quantity"
-                    type="number"
-                    min="1"
-                    :max="item.product.quantity ?? 99999"
-                    class="w-16 h-8 text-center font-mono border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 focus:outline-none bg-white text-xs"
-                  />
-                  <span
-                    v-if="
-                      item.product.quantity !== undefined &&
-                      item.quantity > item.product.quantity
-                    "
-                    class="text-[10px] text-red-600 font-bold"
-                  >
-                    يتجاوز المتوفر ({{ item.product.quantity }})
-                  </span>
-                </div>
-                <div class="col-span-2 text-center">
-                  <span
-                    v-if="item.createNewProduct"
-                    class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-bold"
-                    >جديد</span
-                  >
-                  <span
-                    v-else
-                    class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold"
-                    >مسجل</span
-                  >
-                </div>
-                <div class="col-span-1 flex justify-center">
-                  <button
-                    @click="removeCartItem(index)"
-                    class="text-red-500 hover:text-red-700 p-1 flex items-center justify-center"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+                {{ loc.name }}
+              </option>
+            </select>
           </div>
         </div>
 
-        <div
-          class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3"
-        >
-          <button
-            type="button"
-            @click="closeModal"
-            class="h-11 px-5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs"
+        <div class="space-y-1.5 relative">
+          <label class="block text-xs font-bold text-slate-600"
+            >إضافة مواد عبر البحث والمسح الشريطي</label
           >
-            إلغاء
-          </button>
-          <button
-            v-if="can('warehouse.transfer')"
-            type="button"
-            @click="handleSubmitBatchTransfer"
-            :disabled="isSaving || transferCart.length === 0"
-            class="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-2 disabled:opacity-40"
+
+          <div
+            v-show="isScannerActive"
+            class="mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-950 relative shadow-inner"
           >
-            <RefreshCw
-              v-if="isSaving"
-              class="w-4 h-4 animate-spin"
+            <div id="camera-preview" class="w-full mx-auto max-w-[450px]"></div>
+            <div
+              v-if="isScanningPaused"
+              class="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-xs"
+            >
+              <span
+                class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-bold animate-pulse"
+                >تم التقاط الكود بنجاح...</span
+              >
+            </div>
+          </div>
+
+          <div class="relative flex items-center">
+            <input
+              v-model="searchQuery"
+              type="text"
+              :disabled="!sourceLocation"
+              :placeholder="
+                sourceLocation
+                  ? 'امسح الباركود أو ابحث باسم المادة لإضافتها للشحنة...'
+                  : 'يرجى اختيار موقع المصدر أولاً'
+              "
+              class="w-full h-11 bg-slate-50 border border-slate-200 rounded-lg pr-4 pl-12 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <span>{{
-              isSaving
-                ? "جاري ترحيل الباقة..."
-                : "ترحيل الشحنة كاملة والمزامنة"
-            }}</span>
-          </button>
+
+            <RefreshCw
+              v-if="isSearching"
+              class="absolute left-12 text-slate-400 animate-spin w-5 h-5"
+            />
+
+            <button
+              type="button"
+              @click="toggleCameraScanner"
+              :disabled="!sourceLocation"
+              :class="[
+                'absolute left-1.5 h-8 w-9 flex items-center justify-center rounded-md transition-all border outline-hidden',
+                !sourceLocation
+                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                  : isScannerActive
+                    ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
+              ]"
+              title="تشغيل كاميرا مسح الباركود"
+            >
+              <VideoOff v-if="isScannerActive" class="w-5 h-5" />
+              <ScanBarcode v-else class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div
+            v-if="showDropdown && searchResults.length > 0"
+            class="absolute bg-white left-0 right-0 mt-1 z-50 border border-slate-200 rounded-xl shadow-xl max-h-40 overflow-y-auto divide-y divide-slate-100"
+          >
+            <button
+              v-for="prod in searchResults"
+              :key="prod.id"
+              type="button"
+              @click="addProductToCart(prod)"
+              class="w-full px-4 py-2.5 text-right text-xs hover:bg-slate-50 flex justify-between items-center"
+            >
+              <span class="font-bold text-slate-800">{{ prod.name }}</span>
+              <span class="flex items-center gap-2">
+                <span
+                  v-if="prod.quantity !== undefined"
+                  class="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded"
+                >
+                  متوفر: {{ prod.quantity }}
+                </span>
+                <span
+                  class="text-[10px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded"
+                >
+                  كود: {{ prod.barcode || "N/A" }}
+                </span>
+              </span>
+            </button>
+          </div>
         </div>
+
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <div
+            class="bg-slate-50 p-3 border-b border-slate-200 text-xs font-bold text-slate-600 grid grid-cols-12 gap-2"
+          >
+            <div class="col-span-6 text-right">المنتج</div>
+            <div class="col-span-3 text-center">الكمية</div>
+            <div class="col-span-2 text-center">الحالة</div>
+            <div class="col-span-1 text-center">إجراء</div>
+          </div>
+
+          <div
+            v-if="transferCart.length === 0"
+            class="p-8 text-center text-slate-400 text-xs"
+          >
+            القائمة فارغة. يرجى مسح أو إضافة منتجات لبدء عملية النقل المخزني.
+          </div>
+
+          <div
+            v-else
+            class="divide-y divide-slate-100 max-h-48 overflow-y-auto"
+          >
+            <div
+              v-for="(item, index) in transferCart"
+              :key="item.product.id"
+              class="p-3 text-xs grid grid-cols-12 gap-2 items-center hover:bg-slate-50/60"
+            >
+              <div
+                class="col-span-6 text-right font-medium text-slate-900 truncate"
+              >
+                {{ item.product.name }}
+              </div>
+              <div class="col-span-3 flex flex-col items-center gap-0.5">
+                <input
+                  v-model.number="item.quantity"
+                  type="number"
+                  min="1"
+                  :max="item.product.quantity ?? 99999"
+                  class="w-16 h-8 text-center font-mono border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 focus:outline-none bg-white text-xs"
+                />
+                <span
+                  v-if="
+                    item.product.quantity !== undefined &&
+                    item.quantity > item.product.quantity
+                  "
+                  class="text-[10px] text-red-600 font-bold"
+                >
+                  يتجاوز المتوفر ({{ item.product.quantity }})
+                </span>
+              </div>
+              <div class="col-span-2 text-center">
+                <span
+                  v-if="item.createNewProduct"
+                  class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-bold"
+                  >جديد</span
+                >
+                <span
+                  v-else
+                  class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold"
+                  >مسجل</span
+                >
+              </div>
+              <div class="col-span-1 flex justify-center">
+                <button
+                  @click="removeCartItem(index)"
+                  class="text-red-500 hover:text-red-700 p-1 flex items-center justify-center"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3"
+      >
+        <button
+          type="button"
+          @click="closeModal"
+          class="h-11 px-5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs"
+        >
+          إلغاء
+        </button>
+        <button
+          v-if="can('warehouse.transfer')"
+          type="button"
+          @click="handleSubmitBatchTransfer"
+          :disabled="isSaving || transferCart.length === 0"
+          class="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-2 disabled:opacity-40"
+        >
+          <RefreshCw v-if="isSaving" class="w-4 h-4 animate-spin" />
+          <span>{{
+            isSaving ? "جاري ترحيل الباقة..." : "ترحيل الشحنة كاملة والمزامنة"
+          }}</span>
+        </button>
+      </div>
     </div>
   </Transition>
 </template>
