@@ -8,6 +8,7 @@ export interface ProductResult {
   name: string;
   barcode: string;
   standard_price?: number;
+  list_price?: number;
   taxes_id?: number[];
 }
 
@@ -17,6 +18,7 @@ export interface POLineInput {
   product_name: string;
   quantity: number;
   price_unit: number;
+  list_price?: number;
   tax_ids: number[];
 }
 

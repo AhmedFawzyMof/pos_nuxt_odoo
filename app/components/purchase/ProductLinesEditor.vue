@@ -12,6 +12,7 @@ const showDropdown = ref(false);
 const showCreateForm = ref(false);
 const newProductName = ref("");
 const newProductPrice = ref(0);
+const newProductSellingPrice = ref(0);
 const newProductBarcode = ref("");
 const isCreating = ref(false);
 const createError = ref("");
@@ -48,6 +49,7 @@ watch(search, (q) => {
 const openCreateForm = () => {
   newProductName.value = search.value.trim();
   newProductPrice.value = 0;
+  newProductSellingPrice.value = 0;
   newProductBarcode.value = "";
   createError.value = "";
   showCreateForm.value = true;
@@ -74,7 +76,7 @@ const createAndAdd = async () => {
         body: {
           name,
           standard_price: newProductPrice.value || 0,
-          list_price: newProductPrice.value || 0,
+          list_price: newProductSellingPrice.value || 0,
           barcode: newProductBarcode.value || undefined,
           type: "consu",
           sale_ok: false,
@@ -90,6 +92,7 @@ const createAndAdd = async () => {
         product_name: name,
         quantity: 1,
         price_unit: newProductPrice.value || 0,
+        list_price: newProductSellingPrice.value || 0,
         tax_ids: [],
       });
       search.value = "";
@@ -111,6 +114,7 @@ const addLine = (p: ProductResult) => {
     product_name: p.name,
     quantity: 1,
     price_unit: p.standard_price || 0,
+    list_price: p.list_price || 0,
     tax_ids: p.taxes_id || [],
   });
   search.value = "";
@@ -160,11 +164,12 @@ const grandTotal = computed(() =>
             <div class="font-bold text-body-md">{{ p.name }}</div>
             <div class="text-label-md text-on-white-variant">
               {{ p.barcode || "—" }}
-              {{
-                p.standard_price
-                  ? `| ${p.standard_price.toLocaleString("ar-EG")} ج.م`
-                  : ""
-              }}
+              <span v-if="p.standard_price" class="text-error/70 ms-2">
+                شراء: {{ p.standard_price.toLocaleString("ar-EG") }} ج.م
+              </span>
+              <span v-if="p.list_price" class="text-emerald-600 ms-2">
+                بيع: {{ p.list_price.toLocaleString("ar-EG") }} ج.م
+              </span>
             </div>
           </div>
         </button>
@@ -211,7 +216,15 @@ const grandTotal = computed(() =>
             min="0"
             step="0.01"
             class="flex-1 h-10 px-3 border border-outline-variant rounded-lg text-body-md outline-none focus:ring-2 focus:ring-primary"
-            placeholder="السعر"
+            placeholder="سعر الشراء"
+          />
+          <input
+            v-model.number="newProductSellingPrice"
+            type="number"
+            min="0"
+            step="0.01"
+            class="flex-1 h-10 px-3 border border-outline-variant rounded-lg text-body-md outline-none focus:ring-2 focus:ring-primary"
+            placeholder="سعر البيع"
           />
           <input
             v-model="newProductBarcode"
@@ -250,7 +263,8 @@ const grandTotal = computed(() =>
           <tr>
             <th class="p-3 text-label-md font-bold">المنتج</th>
             <th class="p-3 text-label-md font-bold">الكمية</th>
-            <th class="p-3 text-label-md font-bold">السعر</th>
+            <th class="p-3 text-label-md font-bold">سعر الشراء</th>
+            <th class="p-3 text-label-md font-bold">سعر البيع</th>
             <th class="p-3 text-label-md font-bold">الإجمالي</th>
             <th class="p-3 w-10"></th>
           </tr>
@@ -282,6 +296,15 @@ const grandTotal = computed(() =>
                 class="w-24 h-9 px-2 border border-outline-variant rounded-lg text-center text-body-md outline-none focus:ring-2 focus:ring-primary"
               />
             </td>
+            <td class="p-3">
+              <input
+                v-model.number="line.list_price"
+                type="number"
+                min="0"
+                step="0.01"
+                class="w-24 h-9 px-2 border border-outline-variant rounded-lg text-center text-body-md outline-none focus:ring-2 focus:ring-primary"
+              />
+            </td>
             <td class="p-3 font-bold">
               {{ lineTotal(line).toLocaleString("ar-EG") }} ج.م
             </td>
@@ -297,7 +320,7 @@ const grandTotal = computed(() =>
         </tbody>
         <tfoot class="bg-white-low">
           <tr>
-            <td colspan="2" class="p-3 text-label-md text-on-white-variant">
+            <td colspan="3" class="p-3 text-label-md text-on-white-variant">
               {{ lines.length }} صنف
             </td>
             <td class="p-3 text-label-md font-bold text-on-white-variant">

@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { X, LoaderCircle } from "@lucide/vue";
+import { X, LoaderCircle, Plus } from "@lucide/vue";
 import type { Supplier } from "~/types/purchase";
 
 const modelValue = defineModel<Supplier | null>("supplier");
 const props = defineProps<{
   selectedSupplier?: Supplier | null;
 }>();
+
+const emit = defineEmits<{
+  (e: "create"): void;
+}>();
+
 const search = ref("");
 const results = ref<Supplier[]>([]);
 const isSearching = ref(false);
@@ -71,6 +76,13 @@ const clear = () => {
     >
     <div class="relative">
       <div class="flex items-center gap-2">
+        <button
+          @click.prevent="emit('create')"
+          class="shrink-0 w-11 h-11 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center justify-center cursor-pointer"
+          title="إنشاء مورد"
+        >
+          <Plus class="w-5 h-5" />
+        </button>
         <input
           v-model="search"
           :disabled="!!modelValue"

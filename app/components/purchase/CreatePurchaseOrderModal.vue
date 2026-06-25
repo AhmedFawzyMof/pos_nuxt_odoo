@@ -29,6 +29,11 @@ const isSaving = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref("");
 
+const drawerOpen = ref(false);
+const drawerMode = ref<"add" | "edit">("add");
+const isSavingSupplier = ref(false);
+const actionError = ref("");
+
 const validationError = computed(() => {
   if (!selectedSupplier.value) return "يرجى اختيار المورد";
   if (lines.value.length === 0) return "يرجى إضافة منتج واحد على الأقل";
@@ -58,6 +63,35 @@ const onBillSelected = (detail: {
   lines.value = detail.lines;
 };
 
+const openAddSupplier = () => {
+  drawerMode.value = "add";
+  actionError.value = "";
+  drawerOpen.value = true;
+};
+
+const saveSupplier = async (payload: Record<string, any>) => {
+  isSavingSupplier.value = true;
+  actionError.value = "";
+  try {
+    const response = await $fetch<{
+      success: boolean;
+      id: number;
+      message: string;
+    }>("/api/suppliers/save", { method: "POST", body: payload });
+    if (response.success) {
+      selectedSupplier.value = {
+        id: response.id,
+        name: payload.name
+      };
+      drawerOpen.value = false;
+    }
+  } catch (err: any) {
+    actionError.value = err.message || err.statusMessage || "خطأ في الاتصال بالنظام";
+  } finally {
+    isSavingSupplier.value = false;
+  }
+};
+
 const submit = async () => {
   if (validationError.value) return;
   isSaving.value = true;
@@ -72,6 +106,7 @@ const submit = async () => {
         product_id: l.product_id,
         quantity: l.quantity,
         price_unit: l.price_unit,
+        list_price: l.list_price || 0,
         name: l.product_name,
         tax_ids: l.tax_ids,
       })),
@@ -199,7 +234,7 @@ const resetForm = () => {
             <span class="font-bold">{{ saveError }}</span>
           </div>
 
-          <PurchaseSupplierSearchSelect v-model:supplier="selectedSupplier" />
+          <PurchaseSupplierSearchSelect v-model:supplier="selectedSupplier" @create="openAddSupplier" />
 
           <!-- Date -->
           <div class="space-y-1.5">
@@ -266,6 +301,17 @@ const resetForm = () => {
         </div>
     </div>
   </Transition>
+
+  <SuppliersSupplierDrawer
+    :is-open="drawerOpen"
+    :mode="drawerMode"
+    :supplier="null"
+    :is-saving="isSavingSupplier"
+    :action-error="actionError"
+    @update:is-open="drawerOpen = $event"
+    @update:action-error="actionError = $event"
+    @save="saveSupplier"
+  />
 </template>
 
 <style scoped>

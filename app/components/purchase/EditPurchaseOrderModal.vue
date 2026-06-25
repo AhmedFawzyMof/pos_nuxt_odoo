@@ -75,6 +75,7 @@ function polineToInput(line: POLine): POLineInput {
     product_name: line.name,
     quantity: line.product_qty,
     price_unit: line.price_unit,
+    list_price: line.list_price,
     tax_ids: line.tax_ids.map((t: any) => t.id),
   };
 }
@@ -139,6 +140,7 @@ const save = async () => {
         product_id: l.product_id,
         quantity: l.quantity,
         price_unit: l.price_unit,
+        list_price: l.list_price || 0,
         name: l.product_name,
         tax_ids: l.tax_ids,
       })),

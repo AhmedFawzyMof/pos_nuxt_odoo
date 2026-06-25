@@ -160,7 +160,7 @@ const saveSupplier = () => {
                 v-if="isSaving"
                 class="w-5 h-5 inline-block animate-spin ml-1"
               />
-              {{ isSaving ? "جاري الحفظ..." : "حفظ" }}
+              {{ isSaving ? "جاري الحفظ..." : "تاكيد فاتورة الشراء" }}
             </button>
             <button
               type="button"

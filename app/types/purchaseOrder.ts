@@ -22,6 +22,7 @@ export interface POLine {
   price_unit: number;
   price_subtotal: number;
   price_total: number;
+  list_price: number;
   date_planned: string;
   tax_ids: { id: number; name: string }[];
 }

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { QrcodeStream, type DetectedBarcode, type BarcodeFormat } from "vue-qrcode-reader";
+import {
+  QrcodeStream,
+  type DetectedBarcode,
+  type BarcodeFormat,
+} from "vue-qrcode-reader";
 
 const props = withDefaults(
   defineProps<{
@@ -52,12 +56,9 @@ function onCameraOn(caps: Partial<MediaTrackCapabilities>) {
     `#${SCANNER_ID} video`,
   );
   if (video?.srcObject) {
-    videoTrack =
-      (video.srcObject as MediaStream).getVideoTracks()[0] ?? null;
+    videoTrack = (video.srcObject as MediaStream).getVideoTracks()[0] ?? null;
   }
-  const zoom = (caps as any).zoom as
-    | { min: number; max: number }
-    | undefined;
+  const zoom = (caps as any).zoom as { min: number; max: number } | undefined;
   if (zoom && videoTrack) {
     zoomSupported.value = true;
     zoomMin.value = zoom.min;
@@ -162,23 +163,23 @@ watch(
           class="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10"
         >
           <span
-            class="text-white text-[10px] font-bold tabular-nums drop-shadow-sm"
+            class="text-white text-[10px] font-bold tabular-nums drop-shadow-sm mb-10"
           >
             {{ currentZoom.toFixed(1) }}x
           </span>
-          <input
-            type="range"
-            :min="zoomMin"
-            :max="zoomMax"
-            step="0.1"
-            :value="currentZoom"
-            @input="
-              applyZoom(
-                Number(($event.target as HTMLInputElement).value),
-              )
-            "
-            class="zoom-slider"
-          />
+          <div class="relative w-[14px] h-[96px] flex items-center justify-center">
+            <input
+              type="range"
+              :min="zoomMin"
+              :max="zoomMax"
+              step="0.1"
+              :value="currentZoom"
+              @input="
+                applyZoom(Number(($event.target as HTMLInputElement).value))
+              "
+              class="zoom-slider absolute"
+            />
+          </div>
         </div>
         <div
           v-if="paused"
@@ -204,12 +205,12 @@ watch(
 .zoom-slider {
   appearance: none;
   cursor: pointer;
-  height: 96px;
-  width: 4px;
+  width: 96px;
+  height: 4px;
   background: rgba(255, 255, 255, 0.3);
   border-radius: 9999px;
-  writing-mode: vertical-lr;
-  direction: rtl;
+  transform: rotate(-90deg);
+  margin: 0;
 }
 
 .zoom-slider::-webkit-slider-thumb {

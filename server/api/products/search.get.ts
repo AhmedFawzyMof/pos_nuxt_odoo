@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     odoo.execute_kw("product.product", "search_read", [
       [domain],
       {
-        fields: ["id", "name", "barcode", "standard_price", "taxes_id"],
+        fields: ["id", "name", "barcode", "standard_price", "lst_price", "taxes_id"],
         limit: 20,
       },
     ]),
@@ -79,6 +79,7 @@ export default defineEventHandler(async (event) => {
         name: p.name,
         barcode: p.barcode || "",
         standard_price: p.standard_price || 0,
+        list_price: p.lst_price || 0,
         taxes_id: taxIds,
         quantity: locationId ? qty : undefined,
       };
