@@ -12,6 +12,12 @@ export interface ProductResult {
   taxes_id?: number[];
 }
 
+export interface LocationAllocation {
+  location_id: number;
+  location_name?: string;
+  quantity: number;
+}
+
 export interface POLineInput {
   id?: number;
   product_id: number | null;
@@ -19,6 +25,7 @@ export interface POLineInput {
   quantity: number;
   price_unit: number;
   list_price?: number;
+  location_allocations?: LocationAllocation[];
   tax_ids: number[];
 }
 

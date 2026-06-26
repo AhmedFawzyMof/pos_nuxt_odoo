@@ -77,6 +77,11 @@ function polineToInput(line: POLine): POLineInput {
     price_unit: line.price_unit,
     list_price: line.list_price,
     tax_ids: line.tax_ids.map((t: any) => t.id),
+    location_allocations: (line.location_allocations || []).map((a) => ({
+      location_id: a.location_id,
+      location_name: a.location_name,
+      quantity: a.quantity,
+    })),
   };
 }
 
@@ -143,6 +148,7 @@ const save = async () => {
         list_price: l.list_price || 0,
         name: l.product_name,
         tax_ids: l.tax_ids,
+        location_allocations: l.location_allocations || [],
       })),
     };
 

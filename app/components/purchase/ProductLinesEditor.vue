@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import { Package, Trash2, LoaderCircle, Plus } from "@lucide/vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { Package, Trash2, LoaderCircle, Plus, Warehouse, MapPin, X } from "@lucide/vue";
 import type { ProductResult, POLineInput } from "~/types/purchase";
 
 const lines = defineModel<POLineInput[]>("lines", { required: true });
@@ -16,6 +16,62 @@ const newProductSellingPrice = ref(0);
 const newProductBarcode = ref("");
 const isCreating = ref(false);
 const createError = ref("");
+
+const expandedAllocation = ref<number | null>(null);
+const allocationSearch = ref("");
+const locations = ref<{ id: number; name: string }[]>([]);
+const isLocationsLoading = ref(false);
+
+const filteredLocations = computed(() => {
+  const q = allocationSearch.value.trim().toLowerCase();
+  if (!q) return locations.value;
+  return locations.value.filter((l) => l.name.toLowerCase().includes(q));
+});
+
+const allocTotal = (line: POLineInput) => {
+  if (!line.location_allocations) return 0;
+  return line.location_allocations.reduce((s, a) => s + (a.quantity || 0), 0);
+};
+
+const allocValid = (line: POLineInput) => allocTotal(line) <= line.quantity;
+
+const toggleAllocation = (idx: number) => {
+  expandedAllocation.value = expandedAllocation.value === idx ? null : idx;
+  allocationSearch.value = "";
+};
+
+const addAllocation = (line: POLineInput, loc: { id: number; name: string }) => {
+  if (!line.location_allocations) {
+    line.location_allocations = [];
+  }
+  if (line.location_allocations.some((a) => a.location_id === loc.id)) return;
+  line.location_allocations.push({
+    location_id: loc.id,
+    location_name: loc.name,
+    quantity: 0,
+  });
+};
+
+const removeAllocation = (line: POLineInput, idx: number) => {
+  if (!line.location_allocations) return;
+  line.location_allocations.splice(idx, 1);
+};
+
+const fetchLocations = async () => {
+  isLocationsLoading.value = true;
+  try {
+    const res = await $fetch<{ success: boolean; data: { id: number; name: string }[] }>(
+      "/api/warehouse/locations",
+    );
+    locations.value = res.data || [];
+  } catch {
+    locations.value = [];
+  } finally {
+    isLocationsLoading.value = false;
+  }
+};
+
+onMounted(fetchLocations);
 
 let debounce: NodeJS.Timeout;
 
@@ -93,6 +149,7 @@ const createAndAdd = async () => {
         quantity: 1,
         price_unit: newProductPrice.value || 0,
         list_price: newProductSellingPrice.value || 0,
+        location_allocations: [],
         tax_ids: [],
       });
       search.value = "";
@@ -115,6 +172,7 @@ const addLine = (p: ProductResult) => {
     quantity: 1,
     price_unit: p.standard_price || 0,
     list_price: p.list_price || 0,
+    location_allocations: [],
     tax_ids: p.taxes_id || [],
   });
   search.value = "";
@@ -265,62 +323,137 @@ const grandTotal = computed(() =>
             <th class="p-3 text-label-md font-bold">الكمية</th>
             <th class="p-3 text-label-md font-bold">سعر الشراء</th>
             <th class="p-3 text-label-md font-bold">سعر البيع</th>
+            <th class="p-3 text-label-md font-bold">التوزيع</th>
             <th class="p-3 text-label-md font-bold">الإجمالي</th>
             <th class="p-3 w-10"></th>
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant/45">
-          <tr
-            v-for="(line, idx) in lines"
-            :key="idx"
-            class="hover:bg-primary/5"
-          >
-            <td class="p-3 font-bold text-body-md">
-              {{ line.product_name }}
-            </td>
-            <td class="p-3">
-              <input
-                v-model.number="line.quantity"
-                type="number"
-                min="0"
-                step="1"
-                class="w-20 h-9 px-2 border border-outline-variant rounded-lg text-center text-body-md outline-none focus:ring-2 focus:ring-primary"
-              />
-            </td>
-            <td class="p-3">
-              <input
-                v-model.number="line.price_unit"
-                type="number"
-                min="0"
-                step="0.01"
-                class="w-24 h-9 px-2 border border-outline-variant rounded-lg text-center text-body-md outline-none focus:ring-2 focus:ring-primary"
-              />
-            </td>
-            <td class="p-3">
-              <input
-                v-model.number="line.list_price"
-                type="number"
-                min="0"
-                step="0.01"
-                class="w-24 h-9 px-2 border border-outline-variant rounded-lg text-center text-body-md outline-none focus:ring-2 focus:ring-primary"
-              />
-            </td>
-            <td class="p-3 font-bold">
-              {{ lineTotal(line).toLocaleString("ar-EG") }} ج.م
-            </td>
-            <td class="p-3">
-              <button
-                @click="removeLine(idx)"
-                class="w-8 h-8 rounded-lg hover:bg-error/10 flex items-center justify-center text-error cursor-pointer"
-              >
-                <Trash2 class="w-4 h-4" />
-              </button>
-            </td>
-          </tr>
+          <template v-for="(line, idx) in lines" :key="idx">
+            <tr class="hover:bg-primary/5">
+              <td class="p-3 font-bold text-body-md">
+                {{ line.product_name }}
+              </td>
+              <td class="p-3">
+                <input
+                  v-model.number="line.quantity"
+                  type="number"
+                  min="0"
+                  step="1"
+                  class="w-20 h-9 px-2 border border-outline-variant rounded-lg text-center text-body-md outline-none focus:ring-2 focus:ring-primary"
+                />
+              </td>
+              <td class="p-3">
+                <input
+                  v-model.number="line.price_unit"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="w-24 h-9 px-2 border border-outline-variant rounded-lg text-center text-body-md outline-none focus:ring-2 focus:ring-primary"
+                />
+              </td>
+              <td class="p-3">
+                <input
+                  v-model.number="line.list_price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="w-24 h-9 px-2 border border-outline-variant rounded-lg text-center text-body-md outline-none focus:ring-2 focus:ring-primary"
+                />
+              </td>
+              <td class="p-3">
+                <button
+                  @click="toggleAllocation(idx)"
+                  class="h-8 px-2 rounded-lg border border-outline-variant hover:bg-primary/10 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  :class="expandedAllocation === idx ? 'bg-primary/10 border-primary text-primary' : ''"
+                >
+                  <Warehouse class="w-3.5 h-3.5" />
+                  <span>{{ (line.location_allocations?.length || 0) > 0 ? line.location_allocations!.length : 'توزيع' }}</span>
+                </button>
+              </td>
+              <td class="p-3 font-bold">
+                {{ lineTotal(line).toLocaleString("ar-EG") }} ج.م
+              </td>
+              <td class="p-3">
+                <button
+                  @click="removeLine(idx)"
+                  class="w-8 h-8 rounded-lg hover:bg-error/10 flex items-center justify-center text-error cursor-pointer"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </td>
+            </tr>
+            <!-- Expandable Location Allocation Panel -->
+            <tr v-if="expandedAllocation === idx">
+              <td colspan="7" class="p-0">
+                <div class="bg-slate-50 border-t border-outline-variant/30 px-4 py-3">
+                  <div class="flex items-center gap-2 mb-2">
+                    <MapPin class="w-4 h-4 text-on-white-variant" />
+                    <span class="text-label-md font-bold text-on-white-variant">توزيع المخزون على المواقع</span>
+                    <span
+                      class="text-xs ms-auto"
+                      :class="allocValid(line) ? 'text-emerald-600' : 'text-error font-bold'"
+                    >
+                      المجموع: {{ allocTotal(line) }} / {{ line.quantity }}
+                    </span>
+                  </div>
+                  <div class="relative mb-2">
+                    <input
+                      v-model="allocationSearch"
+                      class="w-full h-9 px-3 pr-8 border border-outline-variant rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary bg-white"
+                      placeholder="ابحث عن موقع تخزين..."
+                    />
+                    <Package class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-white-variant" />
+                    <div
+                      v-if="allocationSearch && filteredLocations.length > 0"
+                      class="absolute z-20 mt-1 w-full bg-white border border-outline-variant rounded-xl shadow-lg max-h-36 overflow-y-auto"
+                    >
+                      <button
+                        v-for="loc in filteredLocations"
+                        :key="loc.id"
+                        @click="addAllocation(line, loc); allocationSearch = ''"
+                        class="w-full text-right px-3 py-2 hover:bg-primary/5 cursor-pointer text-sm border-b border-outline-variant/30 last:border-0 flex items-center gap-2"
+                      >
+                        <Warehouse class="w-3.5 h-3.5 text-on-white-variant shrink-0" />
+                        {{ loc.name }}
+                      </button>
+                    </div>
+                  </div>
+                  <div v-if="!line.location_allocations || line.location_allocations.length === 0" class="text-xs text-on-white-variant">
+                    لم يتم تحديد مواقع بعد. ابحث عن موقع وأضفه أعلاه.
+                  </div>
+                  <div v-else class="space-y-1.5">
+                    <div
+                      v-for="(alloc, aidx) in line.location_allocations"
+                      :key="aidx"
+                      class="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-outline-variant/30"
+                    >
+                      <Warehouse class="w-4 h-4 text-primary shrink-0" />
+                      <span class="text-sm flex-1">{{ alloc.location_name || 'مخزن #' + alloc.location_id }}</span>
+                      <input
+                        v-model.number="alloc.quantity"
+                        type="number"
+                        min="0"
+                        :max="line.quantity"
+                        step="1"
+                        class="w-20 h-8 px-2 border border-outline-variant rounded-lg text-center text-sm outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <button
+                        @click="removeAllocation(line, aidx)"
+                        class="w-7 h-7 rounded-lg hover:bg-error/10 flex items-center justify-center text-error cursor-pointer shrink-0"
+                      >
+                        <X class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </template>
         </tbody>
         <tfoot class="bg-white-low">
           <tr>
-            <td colspan="3" class="p-3 text-label-md text-on-white-variant">
+            <td colspan="4" class="p-3 text-label-md text-on-white-variant">
               {{ lines.length }} صنف
             </td>
             <td class="p-3 text-label-md font-bold text-on-white-variant">

@@ -25,6 +25,7 @@ export interface POLine {
   list_price: number;
   date_planned: string;
   tax_ids: { id: number; name: string }[];
+  location_allocations: { id: number; location_id: number; location_name: string; quantity: number }[];
 }
 
 export interface PickingMoveLine {

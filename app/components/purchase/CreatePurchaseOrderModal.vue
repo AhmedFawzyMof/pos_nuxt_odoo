@@ -109,6 +109,7 @@ const submit = async () => {
         list_price: l.list_price || 0,
         name: l.product_name,
         tax_ids: l.tax_ids,
+        location_allocations: l.location_allocations || [],
       })),
       notes: notes.value || undefined,
     };
