@@ -5,6 +5,7 @@ import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import { Button } from "@/components/ui/button";
 import PosCartItem from "./PosCartItem.vue";
 import { usePosCartStore } from "~~/stores/pos-cart";
+import { useNumberFormat } from "~/composables/useNumberFormat";
 
 const props = withDefaults(defineProps<{
   bordered?: boolean;
@@ -22,6 +23,8 @@ const emit = defineEmits<{
 }>();
 
 const cart = usePosCartStore();
+
+const { formatNumber } = useNumberFormat();
 
 const isEmpty = computed(() => cart.items.length === 0);
 </script>
@@ -89,19 +92,19 @@ const isEmpty = computed(() => cart.items.length === 0);
         <div class="flex justify-between text-muted-foreground">
           <span>الإجمالي قبل الضريبة</span>
           <span class="tabular-nums font-medium">
-            {{ cart.subtotal.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
+            {{ formatNumber(cart.subtotal) }} ج.م
           </span>
         </div>
         <div v-if="cart.totalTax > 0" class="flex justify-between text-warning text-sm">
           <span>الضريبة (14%)</span>
           <span class="tabular-nums font-medium">
-            {{ cart.totalTax.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
+            {{ formatNumber(cart.totalTax) }} ج.م
           </span>
         </div>
         <div class="flex justify-between text-base font-bold pt-1 border-t border-outline-variant/20">
           <span>الإجمالي</span>
           <span class="tabular-nums text-primary">
-            {{ cart.grandTotal.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
+            {{ formatNumber(cart.grandTotal) }} ج.م
           </span>
         </div>
       </div>

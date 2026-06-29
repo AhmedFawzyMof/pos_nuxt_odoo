@@ -11,6 +11,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import type { POSProduct, POSProductVariant } from "~/types/pos";
+import { useNumberFormat } from "~/composables/useNumberFormat";
 
 const props = defineProps<{
   product: POSProduct | null;
@@ -73,15 +74,14 @@ const selectedVariant = computed<POSProductVariant | null>(() => {
   return match || null;
 });
 
+const { formatNumber } = useNumberFormat();
+
 const displayPrice = computed(() => {
   const p = props.product;
-  if (!p) return "0.00";
+  if (!p) return formatNumber(0);
   const base = Number(p.list_price) || 0;
   const extra = selectedVariant.value?.price_extra || 0;
-  return (base + extra).toLocaleString("ar-EG", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return formatNumber(base + extra);
 });
 
 const displayBarcode = computed(() => {
@@ -203,7 +203,7 @@ function handleAddToCart() {
             <div class="bg-muted/30 rounded-lg p-3">
               <span class="text-muted-foreground text-xs">سعر الشراء</span>
               <p class="font-bold">
-                {{ (Number(product.standard_price) || 0).toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }}
+                {{ formatNumber(Number(product.standard_price) || 0) }}
               </p>
             </div>
             <div class="bg-muted/30 rounded-lg p-3">

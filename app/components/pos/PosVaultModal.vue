@@ -10,6 +10,9 @@ import {
   AlertTriangle,
 } from "@lucide/vue";
 import type { CashMovementResponse } from "~/types/pos";
+import { useNumberFormat } from "~/composables/useNumberFormat";
+
+const { formatNumber } = useNumberFormat();
 
 const props = defineProps<{
   open: boolean;
@@ -147,7 +150,7 @@ async function handleSubmit() {
             <div class="text-emerald-800">
               <span class="text-xs">الرصيد الحالي للخزنة:</span>
               <span class="text-lg font-bold mr-2 tabular-nums">
-                {{ newBalance.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }}
+                {{ formatNumber(newBalance) }}
               </span>
               <span class="text-xs">ج.م</span>
             </div>

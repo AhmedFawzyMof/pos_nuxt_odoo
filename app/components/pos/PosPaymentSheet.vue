@@ -9,8 +9,11 @@ import {
 import { usePosCartStore } from "~~/stores/pos-cart";
 import type { PaymentMethod, OrderResponse } from "~/types/pos";
 import { useReceiptPrint } from "~/composables/useReceiptPrint";
+import { useNumberFormat } from "~/composables/useNumberFormat";
 
 const { fetchReceiptConfig, printReceipt } = useReceiptPrint();
+
+const { formatNumber } = useNumberFormat();
 
 const props = defineProps<{
   open: boolean;
@@ -215,11 +218,7 @@ function handlePrintReceipt() {
               <h3 class="text-lg font-bold text-slate-900">إتمام الطلب</h3>
               <p class="text-xs text-slate-500">
                 {{ cart.itemCount }} منتج - الإجمالي
-                {{
-                  cart.grandTotal.toLocaleString("ar-EG", {
-                    minimumFractionDigits: 2,
-                  })
-                }}
+                {{ formatNumber(cart.grandTotal) }}
                 ج.م
               </p>
             </div>

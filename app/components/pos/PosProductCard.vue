@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import type { POSProduct } from "~/types/pos";
 import { Plus } from "@lucide/vue";
 import { Button } from "@/components/ui/button";
+import { useNumberFormat } from "~/composables/useNumberFormat";
 
 const props = defineProps<{
   product: POSProduct;
@@ -15,11 +16,10 @@ const emit = defineEmits<{
   addToCart: [];
 }>();
 
+const { formatNumber } = useNumberFormat();
+
 const displayPrice = computed(() => {
-  return (Number(props.product.list_price) || 0).toLocaleString("ar-EG", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return formatNumber(Number(props.product.list_price) || 0);
 });
 
 const hasVariants = computed(

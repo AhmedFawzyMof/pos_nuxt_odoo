@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { Minus, Plus, Trash2 } from "@lucide/vue";
 import type { CartItem } from "~/types/pos";
+import { useNumberFormat } from "~/composables/useNumberFormat";
 
 const props = defineProps<{
   item: CartItem;
@@ -12,6 +13,8 @@ const emit = defineEmits<{
   updateQuantity: [quantity: number];
   remove: [];
 }>();
+
+const { formatNumber } = useNumberFormat();
 
 const localQty = ref(props.item.quantity);
 watch(() => props.item.quantity, (newQty) => {
@@ -78,11 +81,11 @@ function onInput(e: Event) {
         {{ item.variant.attribute_values?.map(v => v.value_name).join(' / ') || item.variant.display_name }}
       </p>
       <p class="text-xs text-muted-foreground">
-        {{ item.price.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
+        {{ formatNumber(item.price) }} ج.م
       </p>
       <p v-if="isTaxable" class="text-[10px] text-warning font-medium flex items-center gap-1">
         <span class="inline-block w-1.5 h-1.5 rounded-full bg-warning"></span>
-        {{ taxLabel }}: {{ taxAmount.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }} ج.م
+        {{ taxLabel }}: {{ formatNumber(taxAmount) }} ج.م
       </p>
       <div class="flex items-center gap-2 mt-1.5">
         <button
@@ -112,7 +115,7 @@ function onInput(e: Event) {
     </div>
     <div class="flex flex-col items-end gap-1 shrink-0">
       <span class="text-sm font-bold tabular-nums">
-        {{ lineTotal.toLocaleString("ar-EG", { minimumFractionDigits: 2 }) }}
+        {{ formatNumber(lineTotal) }}
       </span>
       <button
         @click="emit('remove')"

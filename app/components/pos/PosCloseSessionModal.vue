@@ -14,7 +14,10 @@ import {
 } from "@lucide/vue";
 import type { SessionSummary } from "~/types/pos";
 import { usePermissions } from '~/composables/usePermissions'
+import { useNumberFormat } from "~/composables/useNumberFormat";
 const { can } = usePermissions()
+
+const { formatNumber } = useNumberFormat();
 
 const props = defineProps<{
   open: boolean;
@@ -242,9 +245,7 @@ function totalCashMovements(): number {
                   <Wallet class="w-6 h-6 text-emerald-600 mx-auto mb-1" />
                   <div class="text-2xl font-bold text-emerald-700 tabular-nums">
                     {{
-                      summary.total_sales.toLocaleString("ar-EG", {
-                        minimumFractionDigits: 2,
-                      })
+                      formatNumber(summary.total_sales)
                     }}
                   </div>
                   <div class="text-xs text-emerald-600">إجمالي المبيعات</div>
@@ -255,9 +256,7 @@ function totalCashMovements(): number {
                 <div class="flex justify-between text-slate-600">
                   <span class="tabular-nums"
                     >{{
-                      summary.opening_cash.toLocaleString("ar-EG", {
-                        minimumFractionDigits: 2,
-                      })
+                      formatNumber(summary.opening_cash)
                     }}
                     ج.م</span
                   >
@@ -266,9 +265,7 @@ function totalCashMovements(): number {
                 <div class="flex justify-between text-slate-600">
                   <span class="tabular-nums"
                     >{{
-                      summary.cash_balance.toLocaleString("ar-EG", {
-                        minimumFractionDigits: 2,
-                      })
+                      formatNumber(summary.cash_balance)
                     }}
                     ج.م</span
                   >
@@ -284,9 +281,7 @@ function totalCashMovements(): number {
                 >
                   <span class="tabular-nums"
                     >{{
-                      totalCashMovements().toLocaleString("ar-EG", {
-                        minimumFractionDigits: 2,
-                      })
+                      formatNumber(totalCashMovements())
                     }}
                     ج.م</span
                   >
@@ -325,9 +320,7 @@ function totalCashMovements(): number {
                     >
                       {{ movement.type === "cash_in" ? "+" : "-"
                       }}{{
-                        Math.abs(movement.amount).toLocaleString("ar-EG", {
-                          minimumFractionDigits: 2,
-                        })
+                        formatNumber(Math.abs(movement.amount))
                       }}
                     </span>
                   </div>

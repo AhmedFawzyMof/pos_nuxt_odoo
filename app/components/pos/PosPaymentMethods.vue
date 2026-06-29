@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { Banknote, CreditCard, Smartphone, Wallet, Trash2 } from "@lucide/vue";
 import type { PaymentMethod } from "~/types/pos";
+import { useNumberFormat } from "~/composables/useNumberFormat";
 
 const props = defineProps<{
   paymentMethods: PaymentMethod[];
@@ -11,6 +12,8 @@ const props = defineProps<{
 const localPaymentAllocations = defineModel<
   { methodId: number; amount: number; received?: number }[]
 >("allocations", { default: [] });
+
+const { formatNumber } = useNumberFormat();
 
 const paymentMethodIcons: Record<string, any> = {
   Cash: Banknote,
@@ -154,7 +157,7 @@ function findMethod(methodId: number) {
         :class="remaining > 0 ? 'text-red-600' : 'text-emerald-600'"
       >
         {{
-          remaining.toLocaleString("ar-EG", { minimumFractionDigits: 2 })
+          formatNumber(remaining)
         }} ج.م
       </span>
       <span class="text-slate-600">المتبقي</span>
