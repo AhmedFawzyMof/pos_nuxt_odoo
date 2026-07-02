@@ -56,7 +56,10 @@ async function fetchSessionFromApi(configIdVal: string) {
       },
     );
     if (res.success && res.session?.session_id) {
-      console.log("[POS] fetchSessionFromApi success, session_id:", res.session.session_id);
+      console.log(
+        "[POS] fetchSessionFromApi success, session_id:",
+        res.session.session_id,
+      );
       sessionId.value = res.session.session_id;
     } else {
       console.warn("[POS] fetchSessionFromApi no active session found");
@@ -131,7 +134,16 @@ const { selectedCartIndex } = usePosHotkeys({
 const hasMore = computed(() => currentPage.value < totalPages.value);
 
 async function loadMasterData(page = 1) {
-  console.log("[POS] loadMasterData page:", page, "config_id:", configId.value, "category:", activeCategoryId.value, "search:", searchQuery.value);
+  console.log(
+    "[POS] loadMasterData page:",
+    page,
+    "config_id:",
+    configId.value,
+    "category:",
+    activeCategoryId.value,
+    "search:",
+    searchQuery.value,
+  );
   loading.value = true;
   error.value = "";
   try {
@@ -146,25 +158,30 @@ async function loadMasterData(page = 1) {
 
     const res = await $fetch<any>("/api/pos/master-data", { query });
 
-      if (res.success) {
-        console.log("[POS] loadMasterData success, products:", res.products.data.length, "totalPages:", res.products.totalPages);
-        if (page === 1) {
-          allProducts.value = res.products.data;
-        } else {
-          allProducts.value.push(...res.products.data);
-        }
-        totalPages.value = res.products.totalPages;
-        currentPage.value = page;
-
-        if (page === 1 && res.categories) {
-          categories.value = res.categories;
-        }
-        if (res.paymentMethods) paymentMethods.value = res.paymentMethods;
-        if (res.locations) locations.value = res.locations;
-        if (res.allowOutOfStockSale !== undefined) {
-          allowOutOfStockSale.value = res.allowOutOfStockSale;
-        }
+    if (res.success) {
+      console.log(
+        "[POS] loadMasterData success, products:",
+        res.products.data.length,
+        "totalPages:",
+        res.products.totalPages,
+      );
+      if (page === 1) {
+        allProducts.value = res.products.data;
       } else {
+        allProducts.value.push(...res.products.data);
+      }
+      totalPages.value = res.products.totalPages;
+      currentPage.value = page;
+
+      if (page === 1 && res.categories) {
+        categories.value = res.categories;
+      }
+      if (res.paymentMethods) paymentMethods.value = res.paymentMethods;
+      if (res.locations) locations.value = res.locations;
+      if (res.allowOutOfStockSale !== undefined) {
+        allowOutOfStockSale.value = res.allowOutOfStockSale;
+      }
+    } else {
       console.warn("[POS] loadMasterData response not successful", res);
     }
   } catch (err: any) {
@@ -286,7 +303,10 @@ function handleProductClick(product: POSProduct) {
   showProductDetail.value = true;
 }
 
-function handleAddToCart(product: POSProduct, variant?: POSProduct["variants"][0]) {
+function handleAddToCart(
+  product: POSProduct,
+  variant?: POSProduct["variants"][0],
+) {
   if (variant) {
     cart.addItem(product, variant, variant.to_weight ? 0.01 : 1);
   } else {
@@ -295,8 +315,11 @@ function handleAddToCart(product: POSProduct, variant?: POSProduct["variants"][0
   }
 }
 
-function handleAddToCartFromDetail(payload: { product: POSProduct; variant?: POSProduct["variants"][0] }) {
-  handleAddToCart(payload.product, payload.variant);
+function handleAddToCartFromDetail(
+  product: POSProduct,
+  variant?: POSProduct["variants"][0],
+) {
+  handleAddToCart(product, variant);
   showProductDetail.value = false;
 }
 
@@ -310,13 +333,14 @@ function handleOrderCompleted() {
 }
 
 function handleSessionClosed() {
-  console.log("[POS] handleSessionClosed - session closed, redirecting to config:", configId.value);
+  console.log(
+    "[POS] handleSessionClosed - session closed, redirecting to config:",
+    configId.value,
+  );
   sessionId.value = null;
   showCloseSessionModal.value = false;
   cart.clearCart();
-  router.push(
-    configId.value ? `/pos?config_id=${configId.value}` : "/pos",
-  );
+  router.push(configId.value ? `/pos?config_id=${configId.value}` : "/pos");
 }
 
 function tryAutoAddFirstResult(customWeightKg?: number | null) {
@@ -662,7 +686,9 @@ watch(
       :open="showProductDetail"
       @update:open="showProductDetail = $event"
       @add-to-cart="handleAddToCartFromDetail"
-      @add-variant-to-cart="(variant) => handleAddToCartFromDetail({ product: selectedProduct!, variant })"
+      @add-variant-to-cart="
+        (variant) => handleAddToCartFromDetail(selectedProduct!, variant)
+      "
     />
 
     <PosPaymentSheet

@@ -123,7 +123,6 @@ const productImage = computed(() => {
         </span>
         <Button
           @click.stop="hasVariants ? emit('click') : emit('addToCart')"
-          :disabled="stockOut && !allowOutOfStockSale"
         >
           <Plus />
         </Button>

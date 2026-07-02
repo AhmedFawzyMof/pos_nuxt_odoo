@@ -108,7 +108,7 @@ function handleProductClick(product: POSProduct) {
 
 function handleAddToCart(product: POSProduct) {
   const qty = product.to_weight ? 0.01 : 1;
-  cart.addItem(product, qty);
+  cart.addItem(product, undefined, qty);
 }
 
 function handleAddToCartFromDetail(product: POSProduct) {

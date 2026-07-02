@@ -26,11 +26,11 @@ export default defineEventHandler(async (event) => {
       {
         page,
         limit,
-        search_term: search || undefined,
-        status: status || undefined,
-        session_id: sessionSearch || undefined,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
+        search_term: search || false,
+        status: status || false,
+        session_id: sessionSearch || false,
+        date_from: dateFrom || false,
+        date_to: dateTo || false,
       },
     ]),
   );
