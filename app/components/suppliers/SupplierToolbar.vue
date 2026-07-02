@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RefreshCw } from "@lucide/vue";
+import { Truck, RefreshCw } from "@lucide/vue";
 import { usePermissions } from '~/composables/usePermissions'
 const { can } = usePermissions()
 
@@ -14,30 +14,30 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-headline-lg font-bold text-on-white">الموردين</h1>
-      <p class="text-on-white-variant text-label-md">
-        إدارة الموردين وفواتير الشراء
-      </p>
-    </div>
-    <div class="flex gap-2">
+  <div
+    class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white p-5 rounded-xl border border-outline-variant shadow-sm"
+  >
+    <h3 class="text-headline-md font-bold text-primary">
+      إدارة الموردين وفواتير الشراء
+    </h3>
+    <div class="flex items-center gap-2">
       <button
         @click="emit('refresh')"
-        class="px-4 py-2 border border-outline-variant rounded-lg text-on-white font-bold hover:bg-white-low transition-all cursor-pointer"
+        class="p-2.5 rounded-full border border-outline-variant hover:bg-white transition-all active:scale-95 text-on-white-variant cursor-pointer flex items-center justify-center"
+        title="تحديث البيانات"
       >
         <RefreshCw
           :class="{ 'animate-spin': status === 'pending' }"
-          class="w-5 h-5 inline-block ml-1"
+          class="w-5 h-5"
         />
-        تحديث
       </button>
       <button
         v-if="can('supplier.create')"
         @click="emit('add')"
-        class="px-4 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 transition-all cursor-pointer"
+        class="bg-primary hover:bg-primary/95 text-white px-6 py-2.5 rounded-full flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer font-bold"
       >
-        + مورد جديد
+        <Truck class="w-5 h-5" />
+        إضافة مورد جديد
       </button>
     </div>
   </div>

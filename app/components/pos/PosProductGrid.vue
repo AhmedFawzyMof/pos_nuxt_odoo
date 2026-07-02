@@ -11,6 +11,7 @@ const props = defineProps<{
   hasMore: boolean;
   error?: string;
   selectedLocationId?: number | null;
+  allowOutOfStockSale?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -56,7 +57,7 @@ watch(
   <div ref="gridRef" class="space-y-4">
     <div
       v-if="loading && products.length === 0"
-      class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+      class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
     >
       <div
         v-for="i in 12"
@@ -87,13 +88,14 @@ watch(
 
     <template v-else>
       <div
-        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+        class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
       >
         <PosProductCard
           v-for="product in products"
           :key="product.id"
           :product="product"
           :selected-location-id="selectedLocationId"
+          :allow-out-of-stock-sale="allowOutOfStockSale"
           @click="emit('productClick', product)"
           @add-to-cart="emit('addToCart', product)"
         />

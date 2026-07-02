@@ -183,7 +183,7 @@ watch(
       </div>
     </div>
 
-    <aside class="hidden lg:flex w-80 shrink-0 flex-col">
+    <aside class="hidden lg:flex lg:w-2/3 shrink-0 flex-col">
       <PosCartPanel />
     </aside>
 
@@ -200,7 +200,7 @@ watch(
       <div class="flex items-center gap-3">
         <span class="font-bold text-primary">
           {{
-            cart.grandTotal.toLocaleString("ar-EG", {
+            cart.grandTotal.toLocaleString("en-US", {
               minimumFractionDigits: 2,
             })
           }}

@@ -73,7 +73,7 @@ const chartOptions = computed(() => {
   return {
     responsive: true,
     maintainAspectRatio: false,
-    locale: "ar-EG" as const,
+    locale: "en-US" as const,
     plugins: {
       legend: {
         display: true,
@@ -99,7 +99,7 @@ const chartOptions = computed(() => {
           label: (ctx: any) => {
             const value =
               typeof ctx.raw === "number"
-                ? ctx.raw.toLocaleString("ar-EG")
+                ? ctx.raw.toLocaleString("en-US")
                 : ctx.raw;
             return ` ${ctx.dataset.label}: ${value}`;
           },
@@ -122,7 +122,7 @@ const chartOptions = computed(() => {
             ticks: {
               font: { family: "var(--font-sans, sans-serif)", size: 11 },
               callback: (v: any) =>
-                typeof v === "number" ? v.toLocaleString("ar-EG") : v,
+                typeof v === "number" ? v.toLocaleString("en-US") : v,
             },
           },
         },

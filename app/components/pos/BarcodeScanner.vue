@@ -24,11 +24,9 @@ const SCANNER_ID = "qrcode-stream-scanner";
 
 const paused = ref(false);
 const error = ref("");
-const zoomSupported = ref(false);
 const currentZoom = ref(1);
-const zoomMin = ref(1);
-const zoomMax = ref(1);
-let videoTrack: MediaStreamTrack | null = null;
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 3;
 
 const barcodeFormats: BarcodeFormat[] = [
   "ean_13",
@@ -51,20 +49,8 @@ function onDetect(detectedCodes: DetectedBarcode[]) {
   }, props.pauseDuration);
 }
 
-function onCameraOn(caps: Partial<MediaTrackCapabilities>) {
-  const video = document.querySelector<HTMLVideoElement>(
-    `#${SCANNER_ID} video`,
-  );
-  if (video?.srcObject) {
-    videoTrack = (video.srcObject as MediaStream).getVideoTracks()[0] ?? null;
-  }
-  const zoom = (caps as any).zoom as { min: number; max: number } | undefined;
-  if (zoom && videoTrack) {
-    zoomSupported.value = true;
-    zoomMin.value = zoom.min;
-    zoomMax.value = zoom.max;
-    currentZoom.value = zoom.min;
-  }
+function onCameraOn() {
+  currentZoom.value = 1;
 }
 
 function onError(err: Error) {
@@ -87,16 +73,8 @@ function getErrorMessage(err: { name?: string; message?: string }): string {
   return `تعذر تشغيل الكاميرا: ${err.message || err}`;
 }
 
-async function applyZoom(value: number) {
-  if (!videoTrack) return;
-  try {
-    await videoTrack.applyConstraints({
-      advanced: [{ zoom: value }] as unknown as MediaTrackConstraintSet[],
-    });
-    currentZoom.value = value;
-  } catch {
-    // zoom not supported for this track
-  }
+function setZoom(value: number) {
+  currentZoom.value = value;
 }
 
 function playBeep() {
@@ -136,6 +114,7 @@ watch(
         :paused="paused"
         :formats="barcodeFormats"
         class="w-full h-[300px] block"
+        :style="{ transform: `scale(${currentZoom})`, transformOrigin: 'center center' }"
         @detect="onDetect"
         @camera-on="onCameraOn"
         @error="onError"
@@ -159,7 +138,6 @@ watch(
           </div>
         </div>
         <div
-          v-if="zoomSupported"
           class="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10"
         >
           <span
@@ -170,12 +148,12 @@ watch(
           <div class="relative w-[14px] h-[96px] flex items-center justify-center">
             <input
               type="range"
-              :min="zoomMin"
-              :max="zoomMax"
+              :min="ZOOM_MIN"
+              :max="ZOOM_MAX"
               step="0.1"
               :value="currentZoom"
               @input="
-                applyZoom(Number(($event.target as HTMLInputElement).value))
+                setZoom(Number(($event.target as HTMLInputElement).value))
               "
               class="zoom-slider absolute"
             />

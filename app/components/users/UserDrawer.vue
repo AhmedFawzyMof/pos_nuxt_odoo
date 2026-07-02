@@ -25,6 +25,7 @@ const saving = ref(false)
 const error = ref("")
 
 const selectedPageLevels = ref<Record<string, string>>({})
+const preservedGroupIds = ref<number[]>([])
 
 const categorizedData = computed(() => {
   if (!props.groups.length) return { enrichedPages: [] as EnrichedPage[] }
@@ -80,6 +81,9 @@ const selectedGroupIds = computed(() => {
         ids.push(ag.id)
       }
     }
+  }
+  for (const gid of preservedGroupIds.value) {
+    ids.push(gid)
   }
   return [...new Set(ids)]
 })
@@ -143,6 +147,14 @@ watch([() => props.open, () => props.user], ([open, user]) => {
       selectedPageLevels.value[page.key] = bestLevel
     }
   }
+
+  const managedNames = new Set(Object.values(RoleToOdooGroupName))
+  preservedGroupIds.value = userOwnedGroups
+    .filter((g: any) => {
+      const fn = g.fullName || `${g.categoryName} / ${g.name}`
+      return !managedNames.has(fn) && !managedNames.has(g.name)
+    })
+    .map((g: any) => g.id)
 })
 
 function normalizeLogin(raw: string): string {

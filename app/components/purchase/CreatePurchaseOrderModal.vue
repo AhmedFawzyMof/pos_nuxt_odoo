@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle,
   FileText,
+  Warehouse,
 } from "@lucide/vue";
 import type { Supplier, POLineInput } from "~/types/purchase";
 
@@ -33,6 +34,23 @@ const drawerOpen = ref(false);
 const drawerMode = ref<"add" | "edit">("add");
 const isSavingSupplier = ref(false);
 const actionError = ref("");
+
+const selectedLocationId = ref<number | null>(null);
+const locations = ref<{ id: number; name: string }[]>([]);
+
+const fetchLocations = async () => {
+  try {
+    const res = await $fetch<{ success: boolean; data: { id: number; name: string }[] }>(
+      "/api/warehouse/locations",
+    );
+    locations.value = (res.data || []).filter((l: any) => l.type === "internal");
+    if (locations.value.length > 0 && !selectedLocationId.value) {
+      selectedLocationId.value = locations.value[0].id;
+    }
+  } catch {
+    locations.value = [];
+  }
+};
 
 const validationError = computed(() => {
   if (!selectedSupplier.value) return "يرجى اختيار المورد";
@@ -79,10 +97,6 @@ const saveSupplier = async (payload: Record<string, any>) => {
       message: string;
     }>("/api/suppliers/save", { method: "POST", body: payload });
     if (response.success) {
-      selectedSupplier.value = {
-        id: response.id,
-        name: payload.name
-      };
       drawerOpen.value = false;
     }
   } catch (err: any) {
@@ -109,7 +123,9 @@ const submit = async () => {
         list_price: l.list_price || 0,
         name: l.product_name,
         tax_ids: l.tax_ids,
-        location_allocations: l.location_allocations || [],
+        location_allocations: selectedLocationId.value
+          ? [{ location_id: selectedLocationId.value, quantity: l.quantity }]
+          : [],
       })),
       notes: notes.value || undefined,
     };
@@ -137,7 +153,10 @@ const submit = async () => {
 watch(
   () => props.open,
   (isOpen) => {
-    if (isOpen) resetForm();
+    if (isOpen) {
+      resetForm();
+      fetchLocations();
+    }
   },
 );
 
@@ -151,6 +170,7 @@ const resetForm = () => {
   dateOrder.value = new Date().toISOString().slice(0, 10);
   notes.value = "";
   lines.value = [];
+  selectedLocationId.value = null;
   saveSuccess.value = false;
   saveError.value = "";
 };
@@ -247,6 +267,23 @@ const resetForm = () => {
               type="date"
               class="w-full h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white"
             />
+          </div>
+
+          <!-- Storage Location -->
+          <div class="space-y-1.5">
+            <label class="text-label-md font-bold text-on-white-variant"
+              >موقع التخزين</label>
+            <select
+              v-model="selectedLocationId"
+              class="w-full h-11 px-3 border border-outline-variant rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+            >
+              <option value="" disabled>اختر موقع التخزين</option>
+              <option
+                v-for="loc in locations"
+                :key="loc.id"
+                :value="loc.id"
+              >{{ loc.name }}</option>
+            </select>
           </div>
 
           <!-- From Bill: Search Bills -->

@@ -13,6 +13,7 @@ import type {
 } from "~/types/purchaseOrder";
 import CreatePurchaseOrderModal from "~/components/purchase/CreatePurchaseOrderModal.vue";
 import EditPurchaseOrderModal from "~/components/purchase/EditPurchaseOrderModal.vue";
+import ReceivePurchaseOrderModal from "~/components/purchase/ReceivePurchaseOrderModal.vue";
 import { usePermissions } from "~/composables/usePermissions";
 
 const route = useRoute();
@@ -26,7 +27,9 @@ if (import.meta.client) {
 
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
+const showReceiveModal = ref(false);
 const editingPO = ref<PurchaseOrder | null>(null);
+const receivingPO = ref<PurchaseOrder | null>(null);
 
 const currentPage = ref(1);
 const searchQuery = ref("");
@@ -88,13 +91,22 @@ const confirmPO = async (poId: number) => {
 };
 
 const receivePO = async (poId: number) => {
+  const po = poList.value.find((p) => p.id === poId);
+  if (!po) return;
+  receivingPO.value = po;
+  showReceiveModal.value = true;
+};
+
+const handleReceive = async (data: { po_id: number; lines: any[] }) => {
   try {
     const res = await $fetch<{ success: boolean; message?: string }>(
       "/api/purchase-orders/receive",
-      { method: "POST", body: { po_id: poId } },
+      { method: "POST", body: data },
     );
     if (res.success) {
       showToastMessage("تم استلام المنتجات بنجاح", "success");
+      showReceiveModal.value = false;
+      receivingPO.value = null;
       await refresh();
     } else {
       showToastMessage(res.message || "فشل استلام المنتجات", "error");
@@ -316,10 +328,10 @@ const stateClass = (state: string) => {
                   </span>
                 </td>
                 <td class="p-4 text-on-white-variant">
-                  {{ (po.amount_untaxed || 0).toLocaleString("ar-EG") }} ج.م
+                  {{ (po.amount_untaxed || 0).toLocaleString("en-US") }} ج.م
                 </td>
                 <td class="p-4 font-bold text-primary">
-                  {{ (po.amount_total || 0).toLocaleString("ar-EG") }} ج.م
+                  {{ (po.amount_total || 0).toLocaleString("en-US") }} ج.م
                 </td>
                 <td class="p-4">
                   <div class="flex gap-2">
@@ -393,6 +405,14 @@ const stateClass = (state: string) => {
     :purchase-order="editingPO"
     @update:open="showEditModal = $event"
     @saved="handleEditSaved"
+  />
+
+  <ReceivePurchaseOrderModal
+    :key="receivingPO?.id || 0"
+    :open="showReceiveModal"
+    :purchase-order="receivingPO"
+    @update:open="showReceiveModal = $event"
+    @confirm="handleReceive"
   />
 
   <!-- Feedback Toast -->

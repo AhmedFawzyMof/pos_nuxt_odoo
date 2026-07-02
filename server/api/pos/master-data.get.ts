@@ -1,8 +1,6 @@
 import { defineEventHandler, getQuery, createError } from "h3";
 import { getAdminOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
-import { requirePermission } from '~~/server/utils/permissions'
-
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const configId = query.config_id
@@ -30,7 +28,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getAdminOdooClient();
-  await requirePermission(event, 'pos_user')
 
   const [rpcErr, rpcResult] = await tryCatch(
     odoo.execute_kw("pos.config", "get_pos_master_data_rpc", [
@@ -137,6 +134,7 @@ export default defineEventHandler(async (event) => {
       ),
       attribute_values: p.attribute_values || [],
       price_extra: p.price_extra || 0,
+      image_1920: p.image_1920 || null,
     };
 
     const tmplId = p.product_tmpl_id;
@@ -186,5 +184,6 @@ export default defineEventHandler(async (event) => {
       is_cash_count: pm.is_cash_count,
     })),
     defaultPricelistId: odooData.default_pricelist_id || null,
+    allowOutOfStockSale: odooData.allow_out_of_stock_sale || false,
   };
 });

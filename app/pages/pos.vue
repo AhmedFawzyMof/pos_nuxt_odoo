@@ -23,6 +23,8 @@ const POS_NAME_KEY = "pos_config_name";
 
 const router = useRouter();
 
+let fetchRequestId = 0;
+
 const registers = ref<POSRegister[]>([]);
 const activeConfigId = ref<string | null>(null);
 const activeConfigName = ref<string>("");
@@ -42,19 +44,24 @@ const currentActiveRegister = computed(() => {
 });
 
 async function fetchAllRegistersFromOdoo() {
+  const requestId = ++fetchRequestId;
   globalLoading.value = true;
   error.value = "";
   try {
     const res = await $fetch<{ success: boolean; data: POSRegister[] }>(
       "/api/pos/registers",
     );
-    if (res.success) {
+    if (res.success && requestId === fetchRequestId) {
       registers.value = res.data;
     }
   } catch (err: any) {
-    error.value = "فشل تحميل أجهزة الكاشير من النظام";
+    if (requestId === fetchRequestId) {
+      error.value = "فشل تحميل أجهزة الكاشير من النظام";
+    }
   } finally {
-    globalLoading.value = false;
+    if (requestId === fetchRequestId) {
+      globalLoading.value = false;
+    }
   }
 }
 
@@ -100,15 +107,12 @@ async function handleCreateRegister(name: string) {
     });
 
     if (data.success) {
-      const newReg: POSRegister = {
-        id: data.config_id,
-        name: data.name,
-        session_id: null,
-        session_state: "closed",
-      };
-      registers.value.push(newReg);
-      selectTerminal(newReg);
       showRegistrationForm.value = false;
+      await fetchAllRegistersFromOdoo();
+      const newReg = registers.value.find(r => r.id === data.config_id);
+      if (newReg) {
+        selectTerminal(newReg);
+      }
     }
   } catch (err: any) {
     error.value = err.message || err.statusMessage || "تعذر إعداد جهاز جديد حالياً";

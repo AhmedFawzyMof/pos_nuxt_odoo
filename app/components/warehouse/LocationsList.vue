@@ -241,8 +241,8 @@ function onKeydown(e: KeyboardEvent, loc: LocationItem) {
             <span>سعة التخزين المستهلكة</span>
             <span>
               <template v-if="loc.maxCapacity">
-                {{ loc.usedQty?.toLocaleString("ar-EG") || loc.qty }} /
-                {{ loc.maxCapacity.toLocaleString("ar-EG") }}
+                {{ loc.usedQty?.toLocaleString("en-US") || loc.qty }} /
+                {{ loc.maxCapacity.toLocaleString("en-US") }}
                 قطعة ({{ loc.capacity }})
               </template>
               <template v-else>

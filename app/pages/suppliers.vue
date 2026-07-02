@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { CloudOff, LoaderCircle } from "@lucide/vue";
+import { CloudOff, LoaderCircle, Search } from "@lucide/vue";
 import type { Supplier, SupplierApiResponse } from "~/types/supplier";
 import { usePermissions } from "~/composables/usePermissions";
 
@@ -133,10 +133,13 @@ const prevPage = () => {
         </button>
       </div>
 
-      <div class="flex gap-4 items-center">
+      <div class="relative w-full">
+        <Search
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-on-white-variant w-5 h-5"
+        />
         <input
           v-model="searchQuery"
-          class="flex-1 h-11 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white"
+          class="w-full h-12 pr-12 pl-4 border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary outline-none bg-white"
           placeholder="بحث بالاسم أو رقم الهاتف أو البريد..."
           type="text"
         />

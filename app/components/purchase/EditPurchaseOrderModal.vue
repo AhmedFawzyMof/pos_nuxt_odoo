@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle,
   FileEdit,
+  Warehouse,
 } from "@lucide/vue";
 import type { Supplier, POLineInput } from "~/types/purchase";
 import type {
@@ -37,6 +38,22 @@ const isSaving = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref("");
 const poName = ref("");
+const selectedLocationId = ref<number | null>(null);
+const locations = ref<{ id: number; name: string }[]>([]);
+
+const fetchLocations = async () => {
+  try {
+    const res = await $fetch<{ success: boolean; data: { id: number; name: string }[] }>(
+      "/api/warehouse/locations",
+    );
+    locations.value = (res.data || []).filter((l: any) => l.type === "internal");
+    if (locations.value.length > 0 && !selectedLocationId.value) {
+      selectedLocationId.value = locations.value[0].id;
+    }
+  } catch {
+    locations.value = [];
+  }
+};
 
 const validationError = computed(() => {
   if (!selectedSupplier.value) return "يرجى اختيار المورد";
@@ -102,13 +119,19 @@ const loadPO = async () => {
   notes.value = "";
   saveError.value = "";
   lines.value = [];
+  selectedLocationId.value = null;
 
   const detail = await fetchDetail(po.id);
   if (currentLoadId !== loadId.value) return;
   if (detail) {
     notes.value = detail.notes || "";
     lines.value = detail.lines.map(polineToInput);
+    const firstAlloc = lines.value[0]?.location_allocations?.[0];
+    if (firstAlloc) {
+      selectedLocationId.value = firstAlloc.location_id;
+    }
   }
+  fetchLocations();
 };
 
 watch(
@@ -148,7 +171,9 @@ const save = async () => {
         list_price: l.list_price || 0,
         name: l.product_name,
         tax_ids: l.tax_ids,
-        location_allocations: l.location_allocations || [],
+        location_allocations: selectedLocationId.value
+          ? [{ location_id: selectedLocationId.value, quantity: l.quantity }]
+          : [],
       })),
     };
 
@@ -307,6 +332,23 @@ const closeModal = () => {
                   <option value="done">مكتمل</option>
                 </select>
               </div>
+            </div>
+
+            <!-- Storage Location -->
+            <div class="space-y-1.5">
+              <label class="text-label-md font-bold text-on-white-variant"
+                >موقع التخزين</label>
+              <select
+                v-model="selectedLocationId"
+                class="w-full h-11 px-3 border border-outline-variant rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+              >
+                <option value="" disabled>اختر موقع التخزين</option>
+                <option
+                  v-for="loc in locations"
+                  :key="loc.id"
+                  :value="loc.id"
+                >{{ loc.name }}</option>
+              </select>
             </div>
 
             <PurchaseProductLinesEditor v-model:lines="lines" />

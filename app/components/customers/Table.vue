@@ -154,7 +154,7 @@ const endItem = computed(() =>
               <p class="font-bold text-on-white">
                 {{
                   c.lastTxAmount > 0
-                    ? `${c.lastTxAmount.toLocaleString("ar-EG")} ج.م`
+                    ? `${c.lastTxAmount.toLocaleString("en-US")} ج.م`
                     : "—"
                 }}
               </p>

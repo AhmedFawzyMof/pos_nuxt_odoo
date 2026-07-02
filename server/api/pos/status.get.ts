@@ -1,8 +1,6 @@
 import { defineEventHandler, getQuery, createError } from "h3";
 import { getAdminOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
-import { requirePermission } from '~~/server/utils/permissions'
-
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const configId = String(query.config_id ?? "").trim();
@@ -15,7 +13,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getAdminOdooClient();
-  await requirePermission(event, 'pos_user')
 
   const [rpcErr, rpcResult] = await tryCatch(
     odoo.execute_kw("pos.session", "control_pos_session_rpc", [

@@ -198,7 +198,7 @@ const saveCustomer = () => {
             >
               <div>
                 <p class="text-headline-md font-bold text-primary">
-                  {{ customer.points.toLocaleString("ar-EG") }} نقطة
+                  {{ customer.points.toLocaleString("en-US") }} نقطة
                 </p>
                 <p class="text-xs text-on-white-variant">
                   الرصيد القابل للاستبدال

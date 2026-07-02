@@ -12,7 +12,7 @@ const formatValue = (val: any, type?: string): string => {
   if (typeof val === "object") return JSON.stringify(val);
   if (type === "number") {
     const num = typeof val === "string" ? parseFloat(val) : val;
-    return isNaN(num) ? String(val) : num.toLocaleString("ar-EG");
+    return isNaN(num) ? String(val) : num.toLocaleString("en-US");
   }
   return String(val);
 };

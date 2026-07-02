@@ -14,10 +14,12 @@ import {
   Package,
   DollarSign,
   Tag,
+  MapPin,
+  Layers,
 } from "@lucide/vue";
 import ProductsTable from "~/components/products/ProductsTable.vue";
 import ProductDrawer from "~/components/products/ProductDrawer.vue";
-import type { Product } from "~/types/product";
+import type { Product, POSCategory } from "~/types/product";
 import { usePermissions } from "~/composables/usePermissions";
 
 const route = useRoute();
@@ -38,6 +40,12 @@ type SortOrder = "asc" | "desc";
 const sortField = ref<SortField>("qty_available");
 const sortOrder = ref<SortOrder>("desc");
 
+const selectedLocationId = ref<number | null>(null);
+const activeCategoryId = ref<number | null>(null);
+
+const categories = ref<POSCategory[]>([]);
+const locations = ref<{ id: number; name: string }[]>([]);
+
 const {
   data: apiResponse,
   status,
@@ -51,18 +59,38 @@ const {
   currentPage: number;
   itemsPerPage: number;
   data: Product[];
+  categories?: POSCategory[];
+  locations?: { id: number; name: string }[];
 }>("/api/products/all", {
   lazy: true,
-  query: { page: currentPage, archiveFilter },
-  watch: [currentPage, archiveFilter],
+  query: { page: currentPage, archiveFilter, search: searchQuery, locationId: selectedLocationId, categoryId: activeCategoryId },
+  watch: [currentPage, archiveFilter, searchQuery, selectedLocationId, activeCategoryId],
   transform: (response) => {
     if (!response.data) response.data = [];
+    if (response.categories) categories.value = response.categories;
+    if (response.locations) locations.value = response.locations;
     return response;
   },
 });
 
 watch(archiveFilter, () => {
   currentPage.value = 1;
+});
+
+watch(selectedLocationId, () => {
+  currentPage.value = 1;
+});
+
+watch(activeCategoryId, () => {
+  currentPage.value = 1;
+});
+
+let searchDebounce: ReturnType<typeof setTimeout>;
+watch(searchQuery, () => {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    currentPage.value = 1;
+  }, 300);
 });
 
 const products = computed<Product[]>(() => apiResponse.value?.data || []);
@@ -92,19 +120,8 @@ const toggleSort = (field: SortField) => {
   }
 };
 
-const filteredProducts = computed(() => {
-  let result = products.value;
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(
-      (p) =>
-        p.name.toLowerCase().includes(query) ||
-        (p.display_name && p.display_name.toLowerCase().includes(query)) ||
-        (p.barcode && p.barcode.includes(query)) ||
-        p.pos_categories?.some((c) => c.name.toLowerCase().includes(query)),
-    );
-  }
-  return [...result].sort((a, b) => {
+const sortedProducts = computed(() => {
+  return [...products.value].sort((a, b) => {
     const aVal = a[sortField.value] ?? 0;
     const bVal = b[sortField.value] ?? 0;
     return sortOrder.value === "asc"
@@ -384,6 +401,46 @@ const handleDeleteFromDrawer = async () => {
       </div>
     </div>
 
+    <!-- Location + Category filters row -->
+    <div class="flex flex-wrap items-center gap-3 bg-white p-3 rounded-xl border border-outline-variant shadow-sm">
+      <div class="flex items-center gap-2">
+        <MapPin class="w-4 h-4 text-on-white-variant shrink-0" />
+        <select
+          v-model="selectedLocationId"
+          class="h-9 px-3 rounded-full border border-outline-variant bg-white text-label-md text-on-white outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+        >
+          <option :value="null">جميع المواقع</option>
+          <option
+            v-for="loc in locations"
+            :key="loc.id"
+            :value="loc.id"
+          >
+            {{ loc.name }}
+          </option>
+        </select>
+      </div>
+      <div class="w-px h-6 bg-outline-variant/50 self-center" />
+      <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-hidden">
+        <Layers class="w-4 h-4 text-on-white-variant shrink-0" />
+        <button
+          @click="activeCategoryId = null"
+          class="shrink-0 px-3 py-1 rounded-full text-label-sm transition-all cursor-pointer"
+          :class="activeCategoryId === null ? 'bg-primary text-white font-bold shadow-sm' : 'text-on-white-variant hover:bg-white-low border border-outline-variant'"
+        >
+          الكل
+        </button>
+        <button
+          v-for="cat in categories"
+          :key="cat.id"
+          @click="activeCategoryId = cat.id"
+          class="shrink-0 px-3 py-1 rounded-full text-label-sm transition-all cursor-pointer"
+          :class="activeCategoryId === cat.id ? 'bg-primary text-white font-bold shadow-sm' : 'text-on-white-variant hover:bg-white-low border border-outline-variant'"
+        >
+          {{ cat.name }}
+        </button>
+      </div>
+    </div>
+
     <!-- Loading spinner -->
     <div
       v-if="pending && products.length === 0"
@@ -424,12 +481,13 @@ const handleDeleteFromDrawer = async () => {
       </Transition>
 
       <ProductsTable
-        :products="filteredProducts"
+        :products="sortedProducts"
         :status="status"
         :all-products-count="totalItems"
         :current-page="currentPage"
         :total-pages="totalPages"
         :archive-filter="archiveFilter"
+        :selected-location-id="selectedLocationId"
         @edit="handleEdit"
         @delete="handleDelete"
         @restore="handleRestore"
@@ -449,3 +507,13 @@ const handleDeleteFromDrawer = async () => {
     </template>
   </div>
 </template>
+
+<style scoped>
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+</style>

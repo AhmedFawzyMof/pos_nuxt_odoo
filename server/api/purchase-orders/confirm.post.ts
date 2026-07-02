@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
   const [rpcErr, result] = await tryCatch(
     odoo.execute_kw("purchase.order.api", "confirm_purchase_order", [
       [body.po_id],
+      {},
     ]),
   );
   if (rpcErr) {

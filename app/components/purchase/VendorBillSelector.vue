@@ -156,7 +156,7 @@ const paymentStateClass = (state: string) => {
           </div>
           <div class="flex items-center justify-between mt-1">
             <span class="text-label-md"
-              >{{ b.amount_total.toLocaleString("ar-EG") }} ج.م</span
+              >{{ b.amount_total.toLocaleString("en-US") }} ج.م</span
             >
             <span
               class="text-xs font-bold px-2 py-0.5 rounded-full"

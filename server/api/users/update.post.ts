@@ -4,6 +4,19 @@ import { requirePermission } from '~~/server/utils/permissions'
 import { tryCatch } from '~~/server/utils/tryCatch'
 import { getDb } from '~~/server/db'
 
+const MANAGED_ODOO_GROUP_NAMES = [
+  'Point of Sale / User',
+  'Point of Sale / Administrator',
+  'Purchase / User',
+  'Purchase / Administrator',
+  'Accounting / Invoicing',
+  'Accounting / Administrator',
+  'Inventory / User',
+  'Inventory / Administrator',
+  'Administration / Access Rights',
+  'Internal User',
+]
+
 export default defineEventHandler(async (event) => {
   const odoo = await getAdminOdooClient()
   const session = await getUserSession(event)
@@ -22,8 +35,39 @@ export default defineEventHandler(async (event) => {
   if (body.password) vals.password = body.password
   if (body.active !== undefined) vals.active = body.active
 
+  let finalGroupIds: number[] | undefined
+
   if (body.groups_id) {
-    vals.groups_id = [[6, 0, body.groups_id.map(Number)]]
+    const desiredGroupIds = body.groups_id.map(Number)
+
+    const [currentErr, currentUsers] = await tryCatch(
+      odoo.read('res.users', [Number(body.id)], ['groups_id'])
+    )
+
+    if (!currentErr && currentUsers && currentUsers.length > 0) {
+      const currentGroupIds = (currentUsers[0].groups_id || []).map((g: any) =>
+        Number(Array.isArray(g) ? g[0] : g)
+      )
+
+      const [managedErr, managedGroups] = await tryCatch(
+        odoo.execute_kw('res.groups', 'search_read', [
+          [['full_name', 'in', MANAGED_ODOO_GROUP_NAMES]],
+          { fields: ['id'] },
+        ])
+      )
+
+      if (!managedErr && managedGroups) {
+        const managedGroupIds = new Set(managedGroups.map((g: any) => g.id))
+        const preservedGroupIds = currentGroupIds.filter(id => !managedGroupIds.has(id))
+        finalGroupIds = [...new Set([...preservedGroupIds, ...desiredGroupIds])]
+      } else {
+        finalGroupIds = desiredGroupIds
+      }
+    } else {
+      finalGroupIds = desiredGroupIds
+    }
+
+    vals.groups_id = [[6, 0, finalGroupIds]]
   }
 
   const [updateErr] = await tryCatch(odoo.execute_kw('res.users', 'write', [[[body.id], vals]]))
@@ -58,13 +102,12 @@ export default defineEventHandler(async (event) => {
     }
 
     // Update Odoo groups cache
-    if (body.groups_id) {
+    if (finalGroupIds) {
       db.prepare('DELETE FROM user_odoo_groups WHERE user_id = ?').run(localUser.id)
-      const groupIds = body.groups_id.map(Number)
-      if (groupIds.length > 0) {
+      if (finalGroupIds.length > 0) {
         const [groupErr, groupRecords] = await tryCatch(
           odoo.execute_kw('res.groups', 'search_read', [
-            [['id', 'in', groupIds]],
+            [['id', 'in', finalGroupIds]],
             { fields: ['id', 'name', 'full_name', 'category_id'] },
           ])
         )

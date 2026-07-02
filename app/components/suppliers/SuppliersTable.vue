@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SearchX } from "@lucide/vue";
+import { SearchX, ChevronLeft, ChevronRight } from "@lucide/vue";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import type { Supplier } from "~/types/supplier";
 import { usePermissions } from '~/composables/usePermissions'
@@ -21,7 +21,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="bg-white border border-outline-variant rounded-xl overflow-hidden"
+    class="bg-white rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col"
   >
     <div
       v-if="status === 'pending' && suppliers.length === 0"
@@ -31,24 +31,24 @@ const emit = defineEmits<{
         <table class="w-full text-right border-collapse">
           <thead class="bg-white-low text-on-white-variant">
             <tr>
-              <th class="p-4 text-label-md font-bold">الاسم</th>
-              <th class="p-4 text-label-md font-bold">رقم الهاتف</th>
-              <th class="p-4 text-label-md font-bold">الرقم الضريبي</th>
-              <th class="p-4 text-label-md font-bold">شروط الدفع</th>
-              <th class="p-4 text-label-md font-bold">إجمالي المشتريات</th>
-              <th class="p-4 text-label-md font-bold">المستحق</th>
-              <th class="p-4 text-label-md font-bold">الإجراءات</th>
+              <th class="px-6 py-4 text-label-md font-bold">الاسم</th>
+              <th class="px-6 py-4 text-label-md font-bold">رقم الهاتف</th>
+              <th class="px-6 py-4 text-label-md font-bold">الرقم الضريبي</th>
+              <th class="px-6 py-4 text-label-md font-bold">شروط الدفع</th>
+              <th class="px-6 py-4 text-label-md font-bold">إجمالي المشتريات</th>
+              <th class="px-6 py-4 text-label-md font-bold">المستحق</th>
+              <th class="px-6 py-4 text-label-md font-bold">الإجراءات</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-outline-variant/45">
             <tr v-for="i in 5" :key="'skeleton-' + i">
-              <td class="p-4"><Skeleton class="h-4 w-32" /></td>
-              <td class="p-4"><Skeleton class="h-4 w-24" /></td>
-              <td class="p-4"><Skeleton class="h-4 w-20" /></td>
-              <td class="p-4"><Skeleton class="h-4 w-28" /></td>
-              <td class="p-4"><Skeleton class="h-4 w-20" /></td>
-              <td class="p-4"><Skeleton class="h-4 w-16" /></td>
-              <td class="p-4"><Skeleton class="h-8 w-14 rounded-lg" /></td>
+              <td class="px-6 py-5"><Skeleton class="h-4 w-32" /></td>
+              <td class="px-6 py-5"><Skeleton class="h-4 w-24" /></td>
+              <td class="px-6 py-5"><Skeleton class="h-4 w-20" /></td>
+              <td class="px-6 py-5"><Skeleton class="h-4 w-28" /></td>
+              <td class="px-6 py-5"><Skeleton class="h-4 w-20" /></td>
+              <td class="px-6 py-5"><Skeleton class="h-4 w-16" /></td>
+              <td class="px-6 py-5"><Skeleton class="h-8 w-14 rounded-lg" /></td>
             </tr>
           </tbody>
         </table>
@@ -64,28 +64,28 @@ const emit = defineEmits<{
       <p class="text-sm mt-1">حاول تغيير معايير البحث أو التصفية</p>
     </div>
 
-    <div v-else class="overflow-x-auto">
+    <div v-else class="overflow-x-auto custom-scrollbar">
       <table class="w-full text-right border-collapse">
         <thead class="bg-white-low text-on-white-variant">
           <tr>
-            <th class="p-4 text-label-md font-bold">الاسم</th>
-            <th class="p-4 text-label-md font-bold">رقم الهاتف</th>
-            <th class="p-4 text-label-md font-bold">الرقم الضريبي</th>
-            <th class="p-4 text-label-md font-bold">شروط الدفع</th>
-            <th class="p-4 text-label-md font-bold">إجمالي المشتريات</th>
-            <th class="p-4 text-label-md font-bold">المستحق</th>
-            <th class="p-4 text-label-md font-bold">الإجراءات</th>
+            <th class="px-6 py-4 text-label-md font-bold">الاسم</th>
+            <th class="px-6 py-4 text-label-md font-bold">رقم الهاتف</th>
+            <th class="px-6 py-4 text-label-md font-bold">الرقم الضريبي</th>
+            <th class="px-6 py-4 text-label-md font-bold">شروط الدفع</th>
+            <th class="px-6 py-4 text-label-md font-bold">إجمالي المشتريات</th>
+            <th class="px-6 py-4 text-label-md font-bold">المستحق</th>
+            <th class="px-6 py-4 text-label-md font-bold">الإجراءات</th>
           </tr>
         </thead>
         <tbody
-          class="divide-y divide-outline-variant/45 text-body-md text-on-white"
+          class="divide-y divide-outline-variant text-body-md text-on-white"
         >
           <tr
             v-for="supplier in suppliers"
             :key="supplier.id"
             class="hover:bg-primary/5 transition-colors"
           >
-            <td class="p-4 font-bold">
+            <td class="px-6 py-5 font-bold">
               <NuxtLink
                 :to="`/supplier-details?id=${supplier.id}`"
                 class="text-primary hover:underline"
@@ -93,32 +93,32 @@ const emit = defineEmits<{
                 {{ supplier.name }}
               </NuxtLink>
             </td>
-            <td class="p-4 text-on-white-variant">
+            <td class="px-6 py-5 text-on-white-variant">
               {{ supplier.phone || "-" }}
             </td>
-            <td class="p-4 text-on-white-variant">
+            <td class="px-6 py-5 text-on-white-variant">
               {{ supplier.vat || "-" }}
             </td>
-            <td class="p-4">
+            <td class="px-6 py-5">
               {{
                 supplier.property_supplier_payment_term_id
                   ? supplier.property_supplier_payment_term_id[1]
                   : "-"
               }}
             </td>
-            <td class="p-4 font-bold text-primary">
-              {{ supplier.total_purchased.toLocaleString("ar-EG") }} ج.م
+            <td class="px-6 py-5 font-bold text-primary">
+              {{ supplier.total_purchased.toLocaleString("en-US") }} ج.م
             </td>
-            <td class="p-4">
+            <td class="px-6 py-5">
               <span
                 v-if="supplier.outstanding > 0"
                 class="text-amber-600 font-bold"
               >
-                {{ supplier.outstanding.toLocaleString("ar-EG") }} ج.م
+                {{ supplier.outstanding.toLocaleString("en-US") }} ج.م
               </span>
               <span v-else class="text-on-white-variant">0</span>
             </td>
-            <td class="p-4">
+            <td class="px-6 py-5">
               <button
                 v-if="can('supplier.edit')"
                 @click="emit('edit', supplier)"
@@ -134,25 +134,40 @@ const emit = defineEmits<{
 
     <div
       v-if="totalPages > 1"
-      class="p-4 bg-white-low border-t border-outline-variant flex justify-center gap-4"
+      class="p-4 bg-white-low border-t border-outline-variant flex items-center justify-between"
     >
-      <button
-        @click="emit('prev-page')"
-        :disabled="currentPage <= 1"
-        class="px-4 py-2 border border-outline-variant rounded-lg disabled:opacity-40 cursor-pointer"
-      >
-        السابق
-      </button>
-      <span class="flex items-center text-on-white-variant">
-        الصفحة {{ currentPage }} من {{ totalPages }}
-      </span>
-      <button
-        @click="emit('next-page')"
-        :disabled="currentPage >= totalPages"
-        class="px-4 py-2 border border-outline-variant rounded-lg disabled:opacity-40 cursor-pointer"
-      >
-        التالي
-      </button>
+      <p class="text-label-md text-on-white-variant">
+        عرض {{ suppliers.length }} من أصل {{ suppliers.length }} مورد
+      </p>
+      <div class="flex gap-2">
+        <button
+          @click="emit('prev-page')"
+          :disabled="currentPage <= 1"
+          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white transition-all text-on-white-variant disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <ChevronRight class="w-5 h-5" />
+        </button>
+        <button
+          v-for="p in totalPages"
+          :key="p"
+          @click="emit(p === currentPage ? undefined : '')"
+          class="w-10 h-10 flex items-center justify-center rounded-lg font-bold cursor-pointer"
+          :class="
+            currentPage === p
+              ? 'bg-primary text-white shadow-md'
+              : 'hover:bg-white text-on-white border border-outline-variant'
+          "
+        >
+          {{ p }}
+        </button>
+        <button
+          @click="emit('next-page')"
+          :disabled="currentPage >= totalPages"
+          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white transition-all text-on-white-variant disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <ChevronLeft class="w-5 h-5" />
+        </button>
+      </div>
     </div>
   </div>
 </template>

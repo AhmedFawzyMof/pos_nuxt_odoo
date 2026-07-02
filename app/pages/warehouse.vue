@@ -65,7 +65,7 @@ function showToastMessage(message: string, type: "success" | "error") {
   setTimeout(() => (toastMessage.value = ""), 3000);
 }
 
-onMounted(async () => {
+async function translateLocations() {
   if (!import.meta.client) return;
   try {
     const result = await $fetch("/api/warehouse/translate-locations", {
@@ -77,7 +77,9 @@ onMounted(async () => {
   } catch {
     // silent fail - translation is non-critical
   }
-});
+}
+
+onMounted(translateLocations);
 </script>
 
 <template>
@@ -161,7 +163,7 @@ onMounted(async () => {
         :existing-locations="locations"
         :open="openCreateLoctaion"
         v-on:update:open="(val) => (openCreateLoctaion = val)"
-        v-on:created="refresh"
+        v-on:created="async () => { await translateLocations(); refresh(); }"
         @close="openCreateLoctaion = false"
       />
 
@@ -169,7 +171,7 @@ onMounted(async () => {
         :existing-locations="locations"
         :open="openTransfer"
         v-on:update:open="(val) => (openTransfer = val)"
-        @transfer-completed="refresh"
+        @transfer-completed="async () => { await translateLocations(); refresh(); }"
       />
     </div>
 

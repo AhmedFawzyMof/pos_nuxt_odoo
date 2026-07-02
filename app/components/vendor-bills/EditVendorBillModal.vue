@@ -396,7 +396,7 @@ const paymentStateText = (s: string) =>
                   الإجمالي
                 </label>
                 <p class="text-price-display font-bold text-primary">
-                  {{ detail.amount_total.toLocaleString("ar-EG") }} ج.م
+                  {{ detail.amount_total.toLocaleString("en-US") }} ج.م
                 </p>
               </div>
               <div
@@ -408,7 +408,7 @@ const paymentStateText = (s: string) =>
                   المدفوع
                 </label>
                 <p class="text-price-display font-bold text-emerald-600">
-                  {{ amountPaid.toLocaleString("ar-EG") }} ج.م
+                  {{ amountPaid.toLocaleString("en-US") }} ج.م
                 </p>
               </div>
               <div
@@ -437,7 +437,7 @@ const paymentStateText = (s: string) =>
                       : 'text-emerald-600'
                   "
                 >
-                  {{ detail.amount_residual.toLocaleString("ar-EG") }} ج.م
+                  {{ detail.amount_residual.toLocaleString("en-US") }} ج.م
                 </p>
               </div>
               <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
@@ -447,7 +447,7 @@ const paymentStateText = (s: string) =>
                   الضريبة
                 </label>
                 <p class="text-price-display font-bold text-slate-600">
-                  {{ detail.amount_tax.toLocaleString("ar-EG") }} ج.م
+                  {{ detail.amount_tax.toLocaleString("en-US") }} ج.م
                 </p>
               </div>
             </div>
@@ -464,7 +464,7 @@ const paymentStateText = (s: string) =>
                 {{
                   isPaying
                     ? "جاري تسجيل الدفعة..."
-                    : `دفع خارجي - ${detail.amount_residual.toLocaleString("ar-EG")} ج.م`
+                    : `دفع خارجي - ${detail.amount_residual.toLocaleString("en-US")} ج.م`
                 }}
               </button>
               <p class="text-label-md text-on-white-variant mt-1 text-center">
@@ -509,7 +509,7 @@ const paymentStateText = (s: string) =>
                       {{ payment.date }}
                     </td>
                     <td class="p-3 font-bold">
-                      {{ payment.amount.toLocaleString("ar-EG") }} ج.م
+                      {{ payment.amount.toLocaleString("en-US") }} ج.م
                     </td>
                     <td class="p-3">
                       {{ payment.journal_id ? payment.journal_id[1] : "-" }}
@@ -567,13 +567,13 @@ const paymentStateText = (s: string) =>
                       {{ line.quantity }}
                     </td>
                     <td class="p-3">
-                      {{ line.price_unit.toLocaleString("ar-EG") }} ج.م
+                      {{ line.price_unit.toLocaleString("en-US") }} ج.م
                     </td>
                     <td class="p-3 text-on-white-variant">
                       {{ line.tax_ids.map((t) => t.name).join(", ") || "-" }}
                     </td>
                     <td class="p-3 font-bold">
-                      {{ line.price_total.toLocaleString("ar-EG") }} ج.م
+                      {{ line.price_total.toLocaleString("en-US") }} ج.م
                     </td>
                   </tr>
                 </tbody>

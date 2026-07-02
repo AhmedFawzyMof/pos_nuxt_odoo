@@ -15,15 +15,28 @@ const locationTranslations: Record<string, string> = {
   "Partner Locations/Customers": "مواقع الشركاء / العملاء",
   "Virtual Locations": "المواقع الافتراضية",
   "Inter-company transit": "النقل بين الشركات",
+  "Inventory Loss": "فقدان المخزون",
+  "Valuation Adjustment": "تسوية التقييم",
 };
+
+const PREFIX_TRANSLATIONS: [string, string][] = [
+  ["WH/Stock/", "المستودع/المخزون/"],
+];
+
+function translateName(name: string): string | null {
+  if (locationTranslations[name]) return locationTranslations[name];
+  for (const [prefix, arabicPrefix] of PREFIX_TRANSLATIONS) {
+    if (name.startsWith(prefix)) {
+      const suffix = name.slice(prefix.length);
+      if (suffix) return `${arabicPrefix}${suffix}`;
+      return arabicPrefix;
+    }
+  }
+  return null;
+}
 
 export default defineEventHandler(async (event) => {
   const db = getDb();
-
-  const existingCount = db.prepare("SELECT COUNT(*) as count FROM location_translations").get() as any;
-  if (existingCount.count > 0) {
-    return { translated: 0, message: "المواقع مترجمة بالفعل" };
-  }
 
   const odoo = await getAdminOdooClient();
 
@@ -44,12 +57,22 @@ export default defineEventHandler(async (event) => {
   const locations = rawLocations as any[];
   let translatedCount = 0;
 
+  const alreadyTranslated = new Set(
+    (
+      db
+        .prepare("SELECT location_id FROM location_translations")
+        .all() as { location_id: number }[]
+    ).map((r) => r.location_id),
+  );
+
   const insertTranslation = db.prepare(
-    "INSERT INTO location_translations (location_id, odoo_name, arabic_name) VALUES (?, ?, ?)",
+    "INSERT OR REPLACE INTO location_translations (location_id, odoo_name, arabic_name) VALUES (?, ?, ?)",
   );
 
   for (const loc of locations) {
-    const arabicName = locationTranslations[loc.name];
+    if (alreadyTranslated.has(loc.id)) continue;
+
+    const arabicName = translateName(loc.name);
     if (!arabicName) continue;
 
     const vals: Record<string, any> = { name: arabicName };

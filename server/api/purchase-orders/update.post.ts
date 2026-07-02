@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const [rpcErr, result] = await tryCatch(
-    odoo.execute_kw("purchase.order.api", "update_purchase_order", [[body]]),
+    odoo.execute_kw("purchase.order.api", "update_purchase_order", [[body], {}]),
   );
   if (rpcErr) {
     throw createError({

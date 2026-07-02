@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useRoute, navigateTo } from "#app";
-import { CloudOff, RefreshCw } from "@lucide/vue";
+import { CloudOff, RefreshCw, Phone, Mail, MapPin, Truck } from "@lucide/vue";
 import { usePermissions } from "~/composables/usePermissions";
 
 const { canViewPage } = usePermissions();
@@ -29,6 +29,13 @@ const {
 const supplier = computed(() => (apiResponse.value as any)?.data || null);
 
 const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
+
+const tabLabelMap: Record<string, string> = {
+  overview: "نظرة عامة",
+  orders: "قائمة مشترايات",
+  bills: "فواتير الموردين",
+  payments: "المدفوعات",
+};
 </script>
 
 <template>
@@ -56,78 +63,80 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
     <template v-else-if="supplier">
       <!-- Header -->
       <div
-        class="bg-white border border-outline-variant rounded-xl p-6 flex items-center gap-6"
+        class="bg-white border border-outline-variant rounded-2xl shadow-sm p-6 flex items-center gap-6"
       >
         <div
-          class="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center"
+          class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0"
         >
-          <span class="text-headline-lg font-bold text-primary">{{
+          <span class="text-display-lg font-bold text-primary">{{
             supplier.name.slice(0, 2)
           }}</span>
         </div>
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <h1 class="text-display-lg font-bold text-on-white">
             {{ supplier.name }}
           </h1>
-          <p class="text-on-white-variant">
+          <p class="text-on-white-variant flex items-center gap-1 mt-1">
+            <MapPin class="w-4 h-4 shrink-0" />
             {{ supplier.street }}, {{ supplier.city }}
           </p>
-          <p class="text-label-md text-on-white-variant">
-            {{ supplier.phone
-            }}{{ supplier.email ? ` | ${supplier.email}` : "" }}
-          </p>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <span
+              v-if="supplier.phone"
+              class="inline-flex items-center gap-1.5 bg-primary/10 text-primary text-label-sm font-bold px-3 py-1 rounded-full"
+            >
+              <Phone class="w-3.5 h-3.5" />
+              {{ supplier.phone }}
+            </span>
+            <span
+              v-if="supplier.email"
+              class="inline-flex items-center gap-1.5 bg-white-highest text-on-white-variant text-label-sm font-bold px-3 py-1 rounded-full"
+            >
+              <Mail class="w-3.5 h-3.5" />
+              {{ supplier.email }}
+            </span>
+          </div>
         </div>
-        <div class="text-left">
+        <div class="text-left shrink-0">
           <p class="text-label-md text-on-white-variant">الرقم الضريبي</p>
-          <p class="font-bold text-on-white">{{ supplier.vat || "-" }}</p>
+          <p class="font-bold text-on-white text-headline-sm mt-1">
+            {{ supplier.vat || "-" }}
+          </p>
         </div>
       </div>
 
       <!-- Tabs -->
       <div class="flex border-b border-outline-variant gap-6">
         <button
-          @click="activeTab = 'overview'"
-          class="pb-4 px-2 text-label-md font-bold transition-all cursor-pointer"
+          v-for="tab in ['overview', 'orders', 'bills', 'payments']"
+          :key="tab"
+          @click="activeTab = tab"
+          class="pb-4 px-2 text-label-md font-bold transition-all cursor-pointer relative"
           :class="
-            activeTab === 'overview'
+            activeTab === tab
               ? 'border-b-2 border-primary text-primary'
               : 'text-on-white-variant hover:text-primary'
           "
         >
-          نظرة عامة
-        </button>
-        <button
-          @click="activeTab = 'orders'"
-          class="pb-4 px-2 text-label-md font-bold transition-all cursor-pointer"
-          :class="
-            activeTab === 'orders'
-              ? 'border-b-2 border-primary text-primary'
-              : 'text-on-white-variant hover:text-primary'
-          "
-        >
-          قائمة مشترايات
-        </button>
-        <button
-          @click="activeTab = 'bills'"
-          class="pb-4 px-2 text-label-md font-bold transition-all cursor-pointer"
-          :class="
-            activeTab === 'bills'
-              ? 'border-b-2 border-primary text-primary'
-              : 'text-on-white-variant hover:text-primary'
-          "
-        >
-          فواتير الموردين
-        </button>
-        <button
-          @click="activeTab = 'payments'"
-          class="pb-4 px-2 text-label-md font-bold transition-all cursor-pointer"
-          :class="
-            activeTab === 'payments'
-              ? 'border-b-2 border-primary text-primary'
-              : 'text-on-white-variant hover:text-primary'
-          "
-        >
-          المدفوعات
+          {{ tabLabelMap[tab] }}
+          <span
+            v-if="tab === 'orders' && supplier.purchase_orders?.length"
+            class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 mr-1.5 bg-primary/10 text-primary text-xs rounded-full"
+          >
+            {{ supplier.purchase_orders.length }}
+          </span>
+          <span
+            v-else-if="tab === 'bills' && supplier.vendor_bills?.length"
+            class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 mr-1.5 bg-primary/10 text-primary text-xs rounded-full"
+          >
+            {{ supplier.vendor_bills.length }}
+          </span>
+          <span
+            v-else-if="tab === 'payments' && supplier.payments?.length"
+            class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 mr-1.5 bg-primary/10 text-primary text-xs rounded-full"
+          >
+            {{ supplier.payments.length }}
+          </span>
         </button>
       </div>
 
@@ -137,9 +146,10 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
         class="grid grid-cols-1 lg:grid-cols-3 gap-6"
       >
         <div
-          class="lg:col-span-2 bg-white border border-outline-variant rounded-xl p-6"
+          class="lg:col-span-2 bg-white border border-outline-variant rounded-2xl shadow-sm p-6"
         >
-          <h3 class="text-headline-sm font-bold text-on-white mb-4">
+          <h3 class="text-headline-sm font-bold text-on-white mb-4 flex items-center gap-2">
+            <Truck class="w-5 h-5 text-primary" />
             معلومات المورد
           </h3>
           <div class="grid grid-cols-2 gap-4">
@@ -181,18 +191,28 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
             </div>
           </div>
         </div>
-        <div class="bg-white border border-outline-variant rounded-xl p-6">
+        <div
+          class="bg-white border border-outline-variant rounded-2xl shadow-sm p-6"
+        >
           <h3 class="text-headline-sm font-bold text-on-white mb-4">ملخص</h3>
           <div class="space-y-4">
-            <div>
-              <p class="text-xs text-on-white-variant">عدد قائمة مشترايات</p>
-              <p class="font-bold text-on-white">
+            <div
+              class="bg-primary/5 rounded-xl px-4 py-3 flex items-center justify-between"
+            >
+              <p class="text-label-md text-on-white-variant">عدد قائمة مشترايات</p>
+              <p
+                class="font-bold text-on-white text-headline-sm"
+              >
                 {{ supplier.purchase_orders?.length || 0 }}
               </p>
             </div>
-            <div>
-              <p class="text-xs text-on-white-variant">عدد الفواتير</p>
-              <p class="font-bold text-on-white">
+            <div
+              class="bg-primary/5 rounded-xl px-4 py-3 flex items-center justify-between"
+            >
+              <p class="text-label-md text-on-white-variant">عدد الفواتير</p>
+              <p
+                class="font-bold text-on-white text-headline-sm"
+              >
                 {{ supplier.vendor_bills?.length || 0 }}
               </p>
             </div>
@@ -203,7 +223,7 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
       <!-- Purchase Orders Tab -->
       <div
         v-if="activeTab === 'orders'"
-        class="bg-white border border-outline-variant rounded-xl overflow-hidden"
+        class="bg-white border border-outline-variant rounded-2xl shadow-sm overflow-hidden"
       >
         <div
           v-if="!supplier.purchase_orders?.length"
@@ -231,7 +251,7 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
                 <td class="p-4 text-on-white-variant">{{ po.date_order }}</td>
                 <td class="p-4">{{ po.state }}</td>
                 <td class="p-4 font-bold text-primary">
-                  {{ po.amount_total.toLocaleString("ar-EG") }} ج.م
+                  {{ po.amount_total.toLocaleString("en-US") }} ج.م
                 </td>
               </tr>
             </tbody>
@@ -242,7 +262,7 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
       <!-- Bills Tab -->
       <div
         v-if="activeTab === 'bills'"
-        class="bg-white border border-outline-variant rounded-xl overflow-hidden"
+        class="bg-white border border-outline-variant rounded-2xl shadow-sm overflow-hidden"
       >
         <div
           v-if="!supplier.vendor_bills?.length"
@@ -277,10 +297,10 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
                 <td class="p-4">{{ b.state }}</td>
                 <td class="p-4">{{ b.payment_state }}</td>
                 <td class="p-4 font-bold text-primary">
-                  {{ b.amount_total.toLocaleString("ar-EG") }} ج.م
+                  {{ b.amount_total.toLocaleString("en-US") }} ج.م
                 </td>
                 <td class="p-4">
-                  {{ b.amount_residual.toLocaleString("ar-EG") }} ج.م
+                  {{ b.amount_residual.toLocaleString("en-US") }} ج.م
                 </td>
               </tr>
             </tbody>
@@ -291,7 +311,7 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
       <!-- Payments Tab -->
       <div
         v-if="activeTab === 'payments'"
-        class="bg-white border border-outline-variant rounded-xl overflow-hidden"
+        class="bg-white border border-outline-variant rounded-2xl shadow-sm overflow-hidden"
       >
         <div
           v-if="!supplier.payments?.length"
@@ -317,7 +337,7 @@ const activeTab = ref<"overview" | "orders" | "bills" | "payments">("overview");
                 <td class="p-4 font-bold">{{ p.name }}</td>
                 <td class="p-4 text-on-white-variant">{{ p.date }}</td>
                 <td class="p-4 font-bold text-primary">
-                  {{ p.amount.toLocaleString("ar-EG") }} ج.م
+                  {{ p.amount.toLocaleString("en-US") }} ج.م
                 </td>
               </tr>
             </tbody>

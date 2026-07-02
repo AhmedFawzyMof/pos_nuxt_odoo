@@ -160,7 +160,7 @@ const payBill = async (billId: number) => {
           </div>
           <p class="text-on-white-variant text-label-md">القيمة المتأخرة</p>
           <h3 class="text-price-display font-bold text-error">
-            {{ (summary.total_overdue_amount || 0).toLocaleString("ar-EG") }} ج.م
+            {{ (summary.total_overdue_amount || 0).toLocaleString("en-US") }} ج.م
           </h3>
         </div>
         <div class="bg-white border border-outline-variant rounded-xl p-6">
@@ -246,8 +246,8 @@ const payBill = async (billId: number) => {
                     {{ agingText(item.aging_bucket) }}
                   </span>
                 </td>
-                <td class="p-4 font-bold">{{ item.amount_total.toLocaleString("ar-EG") }} ج.م</td>
-                <td class="p-4 font-bold text-error">{{ item.amount_residual.toLocaleString("ar-EG") }} ج.م</td>
+                <td class="p-4 font-bold">{{ item.amount_total.toLocaleString("en-US") }} ج.م</td>
+                <td class="p-4 font-bold text-error">{{ item.amount_residual.toLocaleString("en-US") }} ج.م</td>
               </tr>
             </tbody>
           </table>

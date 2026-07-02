@@ -222,7 +222,7 @@ watch(
           <div>
             <p class="text-label-md opacity-80 mb-1">رصيد نقاط الولاء الحالي</p>
             <h2 class="text-display-lg font-bold">
-              {{ customer.points.toLocaleString("ar-EG") }}
+              {{ customer.points.toLocaleString("en-US") }}
               <span class="text-body-md opacity-70">نقطة</span>
             </h2>
           </div>
@@ -247,7 +247,7 @@ watch(
             إجمالي المبيعات المحققة
           </p>
           <h4 class="text-headline-md font-bold text-primary">
-            {{ stats.totalSpent.toLocaleString("ar-EG") }} ج.م
+            {{ stats.totalSpent.toLocaleString("en-US") }} ج.م
           </h4>
         </div>
         <div
@@ -334,7 +334,7 @@ watch(
                   المبلغ
                 </p>
                 <p class="text-body-md font-bold text-primary">
-                  {{ lastTransaction.amount.toLocaleString("ar-EG") }} ج.م
+                  {{ lastTransaction.amount.toLocaleString("en-US") }} ج.م
                 </p>
               </div>
               <div>
@@ -360,7 +360,7 @@ watch(
             >
               <span class="font-bold">{{ ord.name }}</span>
               <span class="text-amber-700 font-bold"
-                >{{ ord.amount.toLocaleString("ar-EG") }} ج.م</span
+                >{{ ord.amount.toLocaleString("en-US") }} ج.م</span
               >
             </div>
           </div>
@@ -385,7 +385,7 @@ watch(
                 الرصيد النقطي
               </p>
               <p class="text-body-md font-bold text-primary">
-                {{ customer.points.toLocaleString("ar-EG") }} نقطة
+                {{ customer.points.toLocaleString("en-US") }} نقطة
               </p>
             </div>
             <div v-if="customer.taxId">
@@ -459,7 +459,7 @@ watch(
                   </span>
                 </td>
                 <td class="p-4 font-bold text-primary">
-                  {{ ord.amount.toLocaleString("ar-EG") }} ج.م
+                  {{ ord.amount.toLocaleString("en-US") }} ج.م
                 </td>
               </tr>
             </tbody>

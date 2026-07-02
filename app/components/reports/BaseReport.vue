@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import {
   TrendingUp,
   Banknote,
@@ -25,47 +25,48 @@ const props = defineProps<{
   dateFrom: string;
   dateTo: string;
   refreshKey?: number;
+  locationId?: number | null;
 }>();
 
 const emit = defineEmits<{
   loading: [v: boolean];
 }>();
 
-const queryParams = computed(() => {
-  const now = new Date();
-  const defaultDateFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-  const defaultDateTo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  return {
-    type: props.reportType,
-    date_from: props.dateFrom || defaultDateFrom,
-    date_to: props.dateTo || defaultDateTo,
-  };
-});
+const reportData = ref<any>(null);
+const pending = ref(false);
+const error = ref<any>(null);
 
-const { data, pending, error, refresh } = useFetch("/api/reports", {
-  query: queryParams,
-  lazy: true,
-});
+async function fetchData() {
+  pending.value = true;
+  error.value = null;
+  try {
+    const now = new Date();
+    const params: Record<string, any> = {
+      type: props.reportType,
+      date_from: props.dateFrom || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`,
+      date_to: props.dateTo || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
+    };
+    if (props.locationId) {
+      params.location_id = props.locationId;
+    }
+    const data = await $fetch("/api/reports", { query: params });
+    reportData.value = data;
+  } catch (e: any) {
+    error.value = e;
+  } finally {
+    pending.value = false;
+  }
+}
 
 watch(pending, (v) => emit("loading", v));
 
-watch(data, (v) => {
-  console.log(`[BaseReport] ${props.reportType} response:`, v);
-}, { deep: true });
+watch(
+  [() => props.reportType, () => props.dateFrom, () => props.dateTo, () => props.locationId],
+  fetchData,
+  { immediate: true },
+);
 
-watch(error, (v) => {
-  if (v) console.error(`[BaseReport] ${props.reportType} fetch error:`, v);
-});
-
-watch(queryParams, () => {
-  refresh();
-}, { deep: true });
-
-watch(() => props.refreshKey, () => {
-  refresh();
-});
-
-const reportData = computed(() => data.value as any);
+watch(() => props.refreshKey, fetchData);
 
 const iconMap: Record<string, any> = {
   trending_up: TrendingUp,
@@ -93,6 +94,7 @@ const handleExport = () => {
   tableRef.value?.exportToExcel();
 };
 
+const refresh = fetchData;
 defineExpose({ refresh, handleExport });
 </script>
 

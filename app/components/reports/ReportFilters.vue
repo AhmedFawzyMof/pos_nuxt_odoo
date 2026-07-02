@@ -1,18 +1,49 @@
 <script setup lang="ts">
-import { Filter, RefreshCw, Download } from "@lucide/vue";
+import { ref, computed, onMounted } from "vue";
+import { Filter, RefreshCw, Download, Warehouse } from "@lucide/vue";
 
 const props = defineProps<{
   dateFrom: string;
   dateTo: string;
   loading?: boolean;
+  locationId?: number | null;
+  activeReport?: string;
 }>();
+
+const stockReportTypes = [
+  "stock", "damaged_stock", "popular_products", "items",
+  "product_purchases", "product_sales", "purchases", "sales",
+];
+
 
 const emit = defineEmits<{
   "update:dateFrom": [value: string];
   "update:dateTo": [value: string];
+  "update:locationId": [value: number | null];
   refresh: [];
   export: [];
 }>();
+
+function onLocationChange(event: Event) {
+  const target = event.target as HTMLSelectElement;
+  const val = target.value ? Number(target.value) : null;
+  emit('update:locationId', val);
+}
+
+const locations = ref<{ id: number; name: string; type: string }[]>([]);
+
+const internalLocations = computed(() =>
+  locations.value.filter((loc) => loc.type === "internal"),
+);
+
+onMounted(async () => {
+  try {
+    const res = await $fetch<any>("/api/warehouse/locations");
+    if (res.success) locations.value = res.data;
+  } catch {
+    // Silently fail
+  }
+});
 </script>
 
 <template>
@@ -35,6 +66,19 @@ const emit = defineEmits<{
         type="date"
         class="h-10 px-3 border border-outline-variant rounded-lg text-sm"
       />
+    </div>
+    <div v-if="activeReport && stockReportTypes.includes(activeReport)" class="flex items-center gap-2">
+      <Warehouse class="w-4 h-4 text-on-white-variant shrink-0" />
+      <select
+        :value="locationId ?? ''"
+        @change="onLocationChange"
+        class="h-10 px-3 border border-outline-variant rounded-lg text-sm bg-white outline-none cursor-pointer min-w-[160px]"
+      >
+        <option value="">كل المواقع</option>
+        <option v-for="loc in internalLocations" :key="loc.id" :value="loc.id">
+          {{ loc.name }}
+        </option>
+      </select>
     </div>
     <div class="flex gap-2 mr-auto">
       <button

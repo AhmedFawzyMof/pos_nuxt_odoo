@@ -193,7 +193,7 @@ async function submitExpense() {
           </div>
           <p class="text-on-white-variant text-label-md">إجمالي المصروفات</p>
           <h3 class="text-price-display font-bold text-primary">
-            {{ totalAmount.toLocaleString("ar-EG") }} ج.م
+            {{ totalAmount.toLocaleString("en-US") }} ج.م
           </h3>
         </div>
         <div class="bg-white border border-outline-variant rounded-xl p-6">
@@ -213,7 +213,7 @@ async function submitExpense() {
           </div>
           <p class="text-on-white-variant text-label-md">متوسط المصروف</p>
           <h3 class="text-price-display font-bold text-amber-600">
-            {{ totalItems > 0 ? (totalAmount / totalItems).toLocaleString("ar-EG") : 0 }} ج.م
+            {{ totalItems > 0 ? (totalAmount / totalItems).toLocaleString("en-US") : 0 }} ج.م
           </h3>
         </div>
       </div>
@@ -275,7 +275,7 @@ async function submitExpense() {
                   </span>
                 </td>
                 <td class="p-4 text-on-white-variant">{{ exp.date }}</td>
-                <td class="p-4 font-bold text-primary">{{ exp.amount.toLocaleString("ar-EG") }} ج.م</td>
+                <td class="p-4 font-bold text-primary">{{ exp.amount.toLocaleString("en-US") }} ج.م</td>
                 <td class="p-4">
                   <span class="px-2.5 py-0.5 rounded-full text-xs font-bold" :class="stateClass(exp.state)">
                     {{ stateText(exp.state) }}

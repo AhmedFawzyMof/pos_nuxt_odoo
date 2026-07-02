@@ -294,7 +294,7 @@ const submitPayment = async () => {
             فواتير الموردين (إجمالي)
           </p>
           <h3 class="text-price-display font-bold text-primary">
-            {{ totalVendorBills.toLocaleString("ar-EG") }} ج.م
+            {{ totalVendorBills.toLocaleString("en-US") }} ج.م
           </h3>
         </div>
 
@@ -308,7 +308,7 @@ const submitPayment = async () => {
           </div>
           <p class="text-on-white-variant text-label-md">المستحق للموردين</p>
           <h3 class="text-price-display font-bold text-amber-600">
-            {{ totalPayable.toLocaleString("ar-EG") }} ج.م
+            {{ totalPayable.toLocaleString("en-US") }} ج.م
           </h3>
         </div>
 
@@ -417,7 +417,7 @@ const submitPayment = async () => {
                   {{ bill.invoice_date_due || "-" }}
                 </td>
                 <td class="p-4 font-bold">
-                  {{ bill.amount_total.toLocaleString("ar-EG") }} ج.م
+                  {{ bill.amount_total.toLocaleString("en-US") }} ج.م
                 </td>
                 <td
                   class="p-4 font-bold"
@@ -425,7 +425,7 @@ const submitPayment = async () => {
                     bill.amount_residual > 0 ? 'text-error' : 'text-emerald-600'
                   "
                 >
-                  {{ bill.amount_residual.toLocaleString("ar-EG") }} ج.م
+                  {{ bill.amount_residual.toLocaleString("en-US") }} ج.م
                 </td>
                 <td class="p-4">
                   <span
@@ -543,10 +543,10 @@ const submitPayment = async () => {
                   {{ b.invoice_date_due || "-" }}
                 </td>
                 <td class="p-3">
-                  {{ b.amount_total.toLocaleString("ar-EG") }} ج.م
+                  {{ b.amount_total.toLocaleString("en-US") }} ج.م
                 </td>
                 <td class="p-3 font-bold text-error">
-                  {{ b.amount_residual.toLocaleString("ar-EG") }} ج.م
+                  {{ b.amount_residual.toLocaleString("en-US") }} ج.م
                 </td>
                 <td class="p-3">
                   <span

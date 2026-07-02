@@ -9,6 +9,7 @@ import { useNumberFormat } from "~/composables/useNumberFormat";
 const props = defineProps<{
   product: POSProduct;
   selectedLocationId?: number | null;
+  allowOutOfStockSale?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -122,7 +123,7 @@ const productImage = computed(() => {
         </span>
         <Button
           @click.stop="hasVariants ? emit('click') : emit('addToCart')"
-          :disabled="stockOut"
+          :disabled="stockOut && !allowOutOfStockSale"
         >
           <Plus />
         </Button>

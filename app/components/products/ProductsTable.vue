@@ -10,6 +10,7 @@ const props = defineProps<{
   currentPage?: number;
   totalPages?: number;
   archiveFilter?: "all" | "active" | "archived";
+  selectedLocationId?: number | null;
 }>();
 const emit = defineEmits<{
   (e: "edit", product: Product, index: number): void;
@@ -157,7 +158,7 @@ const emit = defineEmits<{
             </td>
             <td class="px-6 py-4 text-primary font-bold text-label-md">
               {{
-                (prod.list_price || 0).toLocaleString("ae-EG", {
+                (prod.list_price || 0).toLocaleString("en-US", {
                   minimumFractionDigits: 2,
                 })
               }}
@@ -191,25 +192,33 @@ const emit = defineEmits<{
             </td>
             <td class="px-6 py-4 text-on-white-variant text-label-md">
               {{
-                (prod.standard_price || 0).toLocaleString("ae-EG", {
+                (prod.standard_price || 0).toLocaleString("en-US", {
                   minimumFractionDigits: 2,
                 })
               }}
               ج.m
             </td>
             <td class="px-6 py-4">
-              <span
-                class="px-3 py-1 rounded-full text-label-md font-bold whitespace-nowrap"
-                :class="
-                  (prod.qty_available || 0) <= 5
-                    ? 'bg-error/10 text-error'
-                    : 'bg-primary/10 text-primary'
-                "
-              >
-                {{ prod.qty_available || 0 }}
-                {{ prod.to_weight ? "كجم" : "قطعة" }}
-                {{ (prod.qty_available || 0) <= 5 ? "(منخفض)" : "" }}
-              </span>
+              <div class="flex flex-col gap-0.5">
+                <span
+                  class="px-3 py-1 rounded-full text-label-md font-bold whitespace-nowrap inline-block w-fit"
+                  :class="
+                    (prod.qty_available || 0) <= 5
+                      ? 'bg-error/10 text-error'
+                      : 'bg-primary/10 text-primary'
+                  "
+                >
+                  {{ prod.qty_available || 0 }}
+                  {{ prod.to_weight ? "كجم" : "قطعة" }}
+                  {{ (prod.qty_available || 0) <= 5 ? "(منخفض)" : "" }}
+                </span>
+                <span
+                  v-if="selectedLocationId"
+                  class="text-[10px] text-on-white-variant/60"
+                >
+                  في {{ prod.stock_locations?.[0]?.location_name || "الموقع المحدد" }}
+                </span>
+              </div>
             </td>
             <td class="px-6 py-4 text-label-md text-on-white-variant">
               <div v-if="prod.stock_locations?.length" class="space-y-1">
@@ -226,6 +235,7 @@ const emit = defineEmits<{
                   >
                 </div>
               </div>
+              <span v-else-if="selectedLocationId">--</span>
               <span v-else>-</span>
             </td>
             <td class="px-6 py-4 text-center" @click.stop>

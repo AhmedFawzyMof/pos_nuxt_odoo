@@ -9,6 +9,9 @@ export default defineEventHandler(async (event) => {
   const offset = (page - 1) * limit;
 
   const archiveFilter = (query.archiveFilter as string) || "all";
+  const searchText = (query.search as string) || "";
+  const locationId = query.locationId ? parseInt(query.locationId as string, 10) : null;
+  const categoryId = query.categoryId ? parseInt(query.categoryId as string, 10) : null;
 
   const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_user')
@@ -19,6 +22,16 @@ export default defineEventHandler(async (event) => {
   } else if (archiveFilter === "archived") {
     baseDomain.push(["active", "=", false]);
   }
+  if (categoryId) {
+    baseDomain.push(["pos_categ_ids", "=", categoryId]);
+  }
+  if (searchText) {
+    baseDomain.push("|", "|");
+    baseDomain.push(["name", "ilike", searchText]);
+    baseDomain.push(["barcode", "ilike", searchText]);
+    baseDomain.push(["default_code", "ilike", searchText]);
+  }
+
   const odooContext = { active_test: false };
 
   const templateFields = [
@@ -115,6 +128,11 @@ export default defineEventHandler(async (event) => {
   > = {};
 
   if (allVariantIds.length > 0) {
+    const quantDomain: any[] = [["product_id", "in", allVariantIds]];
+    if (locationId) {
+      quantDomain.push(["location_id", "=", locationId]);
+    }
+
     const [variants, quants] = await Promise.all([
       odoo.searchRead(
         "product.product",
@@ -123,7 +141,7 @@ export default defineEventHandler(async (event) => {
       ),
       odoo.searchRead(
         "stock.quant",
-        [["product_id", "in", allVariantIds]],
+        quantDomain,
         ["product_id", "location_id", "quantity"],
       ),
     ]);
@@ -147,6 +165,24 @@ export default defineEventHandler(async (event) => {
           qty: (q as any).quantity || 0,
         });
       }
+    }
+  }
+
+  let locationQuantMap: Record<number, number> = {};
+  if (locationId && allVariantIds.length > 0) {
+    const locationQuants = await odoo.searchRead(
+      "stock.quant",
+      [
+        ["product_id", "in", allVariantIds],
+        ["location_id", "=", locationId],
+      ],
+      ["product_id", "quantity"],
+    );
+    for (const q of locationQuants) {
+      const pid = Array.isArray((q as any).product_id)
+        ? (q as any).product_id[0]
+        : (q as any).product_id;
+      locationQuantMap[pid] = (locationQuantMap[pid] || 0) + ((q as any).quantity || 0);
     }
   }
 
@@ -208,10 +244,19 @@ export default defineEventHandler(async (event) => {
 
     const firstVariant = variantIds.length > 0 ? variantDetails[variantIds[0]] : null;
 
+    let qtyAvailable = tmpl.qty_available || 0;
+    if (locationId) {
+      const totalAtLocation = variantIds.reduce((sum, vid) => {
+        return sum + (locationQuantMap[vid] || 0);
+      }, 0);
+      qtyAvailable = totalAtLocation;
+    }
+
     return {
       ...tmpl,
       list_price: tmpl.list_price || 0,
       barcode: tmpl.barcode || (firstVariant ? firstVariant.barcode : ""),
+      qty_available: qtyAvailable,
       standard_price: product_variant_ids.length > 0
         ? Math.min(...product_variant_ids.map((v: any) => v.standard_price ?? 0))
         : (tmpl.standard_price || 0),
@@ -226,7 +271,9 @@ export default defineEventHandler(async (event) => {
         firstLoc
           ? { id: firstLoc.location_id, name: firstLoc.location_name }
           : null,
-      stock_locations: mergedStockLocs,
+      stock_locations: locationId
+        ? mergedStockLocs.filter((l) => l.location_id === locationId)
+        : mergedStockLocs,
     };
   });
 
@@ -237,5 +284,13 @@ export default defineEventHandler(async (event) => {
     currentPage: page,
     itemsPerPage: limit,
     data: completeProducts,
+    categories: (categoriesData as any[]).map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+    })),
+    locations: (locationsData as any[]).map((loc) => ({
+      id: loc.id,
+      name: loc.name,
+    })),
   };
 });

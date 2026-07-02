@@ -86,7 +86,7 @@ const transactions = computed(() => {
       typeColor: "bg-primary",
       desc: `${o.name} - ${o.partner_id?.[1] || "عميل نقدي"}`,
       time: o.date_order?.slice(0, 10) || "",
-      amount: `+${Number(o.amount_total).toLocaleString("ar-EG")} ج.م`,
+      amount: `+${Number(o.amount_total).toLocaleString("en-US")} ج.م`,
       amountColor: "text-primary",
       status:
         o.state === "paid" || o.state === "done"
@@ -109,7 +109,7 @@ const transactions = computed(() => {
       typeColor: "bg-amber-500",
       desc: `${b.name} - ${b.partner_id?.[1] || ""}`,
       time: b.invoice_date || "",
-      amount: `-${Number(b.amount_total).toLocaleString("ar-EG")} ج.م`,
+      amount: `-${Number(b.amount_total).toLocaleString("en-US")} ج.م`,
       amountColor: "text-error",
       status: isPaid
         ? "مدفوع"
@@ -260,7 +260,7 @@ const loadingAll = computed(() => kpiStatus.value === "pending");
             فواتير الموردين (إجمالي)
           </p>
           <h3 class="text-price-display font-bold text-amber-600">
-            {{ totalVendorBills.toLocaleString("ar-EG") }} ج.م
+            {{ totalVendorBills.toLocaleString("en-US") }} ج.م
           </h3>
         </div>
 
@@ -274,7 +274,7 @@ const loadingAll = computed(() => kpiStatus.value === "pending");
           </div>
           <p class="text-on-white-variant text-label-md">المستحق للموردين</p>
           <h3 class="text-price-display font-bold text-error">
-            {{ totalPayable.toLocaleString("ar-EG") }} ج.م
+            {{ totalPayable.toLocaleString("en-US") }} ج.م
           </h3>
         </div>
       </div>
@@ -467,10 +467,10 @@ const loadingAll = computed(() => kpiStatus.value === "pending");
                   {{ b.invoice_date_due || "-" }}
                 </td>
                 <td class="p-3">
-                  {{ b.amount_total.toLocaleString("ar-EG") }} ج.م
+                  {{ b.amount_total.toLocaleString("en-US") }} ج.م
                 </td>
                 <td class="p-3 font-bold text-error">
-                  {{ b.amount_residual.toLocaleString("ar-EG") }} ج.م
+                  {{ b.amount_residual.toLocaleString("en-US") }} ج.م
                 </td>
                 <td class="p-3">
                   <span

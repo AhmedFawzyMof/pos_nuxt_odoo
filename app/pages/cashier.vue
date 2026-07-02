@@ -114,6 +114,9 @@ const locations = ref<any[]>([]);
 const loading = ref(false);
 const error = ref("");
 const totalPages = ref(1);
+const searchSuggestions = ref<POSProduct[]>([]);
+const searchLoading = ref(false);
+const allowOutOfStockSale = ref(false);
 
 const { selectedCartIndex } = usePosHotkeys({
   paymentMethods,
@@ -143,22 +146,25 @@ async function loadMasterData(page = 1) {
 
     const res = await $fetch<any>("/api/pos/master-data", { query });
 
-    if (res.success) {
-      console.log("[POS] loadMasterData success, products:", res.products.data.length, "totalPages:", res.products.totalPages);
-      if (page === 1) {
-        allProducts.value = res.products.data;
-      } else {
-        allProducts.value.push(...res.products.data);
-      }
-      totalPages.value = res.products.totalPages;
-      currentPage.value = page;
+      if (res.success) {
+        console.log("[POS] loadMasterData success, products:", res.products.data.length, "totalPages:", res.products.totalPages);
+        if (page === 1) {
+          allProducts.value = res.products.data;
+        } else {
+          allProducts.value.push(...res.products.data);
+        }
+        totalPages.value = res.products.totalPages;
+        currentPage.value = page;
 
-      if (page === 1 && res.categories) {
-        categories.value = res.categories;
-      }
-      if (res.paymentMethods) paymentMethods.value = res.paymentMethods;
-      if (res.locations) locations.value = res.locations;
-    } else {
+        if (page === 1 && res.categories) {
+          categories.value = res.categories;
+        }
+        if (res.paymentMethods) paymentMethods.value = res.paymentMethods;
+        if (res.locations) locations.value = res.locations;
+        if (res.allowOutOfStockSale !== undefined) {
+          allowOutOfStockSale.value = res.allowOutOfStockSale;
+        }
+      } else {
       console.warn("[POS] loadMasterData response not successful", res);
     }
   } catch (err: any) {
@@ -183,22 +189,56 @@ function handleCategorySelect(categoryId: number | null) {
 }
 
 let searchDebounce: NodeJS.Timeout;
+let searchRequestId = 0;
+
+async function fetchSearchSuggestions(val: string) {
+  const requestId = ++searchRequestId;
+  if (!val.trim()) {
+    searchSuggestions.value = [];
+    return;
+  }
+  try {
+    const query: Record<string, any> = {
+      config_id: configId.value,
+      page: 1,
+      limit: 10,
+      search: val,
+    };
+    if (selectedLocationId.value) query.location_id = selectedLocationId.value;
+    if (activeCategoryId.value) query.category_id = activeCategoryId.value;
+
+    const res = await $fetch<any>("/api/pos/master-data", { query });
+    if (res.success && requestId === searchRequestId) {
+      searchSuggestions.value = res.products.data || [];
+    }
+  } catch {
+    if (requestId === searchRequestId) {
+      searchSuggestions.value = [];
+    }
+  } finally {
+    if (requestId === searchRequestId) {
+      searchLoading.value = false;
+    }
+  }
+}
 
 function handleSearch(val: string) {
   clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(async () => {
-    const { searchQuery: parsedQuery, weightKg } = tryWeightBarcodeSearch(val);
-    searchQuery.value = parsedQuery;
-    currentPage.value = 1;
-    allProducts.value = [];
-    await loadMasterData(1);
-    tryAutoAddFirstResult(weightKg);
-    if (searchQuery.value && allProducts.value.length === 0) {
-      await nextTick();
-      (document.activeElement as HTMLInputElement)?.select();
-      showFeedbackToast("المنتج غير موجود", "error");
-    }
+  if (!val.trim()) {
+    searchSuggestions.value = [];
+    searchLoading.value = false;
+    return;
+  }
+  searchLoading.value = true;
+  searchDebounce = setTimeout(() => {
+    const { searchQuery: parsedQuery } = tryWeightBarcodeSearch(val);
+    fetchSearchSuggestions(parsedQuery);
   }, 300);
+}
+
+function handleSelectSuggestion(product: POSProduct) {
+  searchSuggestions.value = [];
+  handleAddToCart(product);
 }
 
 async function handleScannerError(message: string) {
@@ -208,6 +248,7 @@ async function handleScannerError(message: string) {
 async function handleScan(barcode: string) {
   scannerActive.value = false;
   clearTimeout(searchDebounce);
+  searchSuggestions.value = [];
 
   // Try weight barcode parsing first
   const parsed = parseWeightBarcode(barcode);
@@ -283,7 +324,7 @@ function tryAutoAddFirstResult(customWeightKg?: number | null) {
     const product = allProducts.value[0];
     if (product) {
       const qty = customWeightKg ?? (product.to_weight ? 0.01 : 1);
-      cart.addItem(product, qty);
+      cart.addItem(product, undefined, qty);
     }
   }
 }
@@ -324,7 +365,7 @@ watch(
   >
     <PosHotkeyHelp />
     <!-- Desktop left panel: search + categories + products (hidden on mobile) -->
-    <div class="hidden lg:flex flex-1 flex-col min-w-0 overflow-hidden">
+    <div class="hidden lg:flex flex-1 flex-col min-w-0">
       <div
         class="px-4 py-3 border-b border-outline-variant/20 bg-card/50 sticky top-0 z-10"
       >
@@ -332,9 +373,12 @@ watch(
           <PosSearchBar
             v-model="searchQuery"
             v-model:scanner-active="scannerActive"
+            :suggestions="searchSuggestions"
+            :loading="searchLoading"
             class="flex-1"
             @scan="handleScan"
             @update:model-value="handleSearch"
+            @add-to-cart="handleSelectSuggestion"
             @error="handleScannerError"
           />
         </div>
@@ -407,6 +451,7 @@ watch(
           :loading="loading"
           :has-more="hasMore"
           :selected-location-id="selectedLocationId"
+          :allow-out-of-stock-sale="allowOutOfStockSale"
           @load-more="handleLoadMore"
           @product-click="handleProductClick"
           @add-to-cart="handleAddToCart"
@@ -414,9 +459,9 @@ watch(
       </div>
     </div>
 
-    <!-- Cart: always visible, full width on mobile, 50% on desktop -->
+    <!-- Cart: always visible, full width on mobile, 2/3 on desktop -->
     <aside
-      class="flex flex-col w-full lg:w-1/2 shrink-0 lg:border-l border-outline-variant/20 overflow-hidden"
+      class="flex flex-col w-full lg:w-2/3 shrink-0 lg:border-l border-outline-variant/20"
     >
       <!-- Mobile: search + warehouse + categories at top of cart -->
       <div class="lg:hidden">
@@ -425,9 +470,12 @@ watch(
             <PosSearchBar
               v-model="searchQuery"
               v-model:scanner-active="scannerActive"
+              :suggestions="searchSuggestions"
+              :loading="searchLoading"
               class="flex-1"
               @scan="handleScan"
               @update:model-value="handleSearch"
+              @add-to-cart="handleSelectSuggestion"
               @error="handleScannerError"
             />
           </div>
@@ -522,9 +570,12 @@ watch(
             <PosSearchBar
               v-model="searchQuery"
               v-model:scanner-active="scannerActive"
+              :suggestions="searchSuggestions"
+              :loading="searchLoading"
               class="flex-1"
               @scan="handleScan"
               @update:model-value="handleSearch"
+              @add-to-cart="handleSelectSuggestion"
               @error="handleScannerError"
             />
           </div>
@@ -597,6 +648,7 @@ watch(
             :loading="loading"
             :has-more="hasMore"
             :selected-location-id="selectedLocationId"
+            :allow-out-of-stock-sale="allowOutOfStockSale"
             @load-more="handleLoadMore"
             @product-click="handleProductClick"
             @add-to-cart="handleAddToCart"

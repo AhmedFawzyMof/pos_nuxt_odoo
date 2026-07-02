@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import {
   Banknote,
   Receipt,
@@ -13,19 +13,26 @@ import {
   ChevronRight,
   CheckCheck,
   Eye,
+  Printer,
   LoaderCircle,
   CloudOff,
   AlertCircle,
 } from "@lucide/vue";
 import type { POSOrder, OrderListResponse } from "~/types/pos";
 import { usePermissions } from "~/composables/usePermissions";
+import { useReceiptPrint } from "~/composables/useReceiptPrint";
 
 const route = useRoute();
 const { canViewPage, can } = usePermissions();
+const { fetchReceiptConfig, printReceipt } = useReceiptPrint();
+
+onMounted(() => {
+  fetchReceiptConfig();
+});
 
 if (import.meta.client) {
   if (!canViewPage(route.path)) {
-    navigateTo('/')
+    navigateTo("/");
   }
 }
 
@@ -154,7 +161,49 @@ async function voidOrder(orderId: number, orderName: string) {
       showToastMessage(res.message || "فشل إلغاء الطلب", "error");
     }
   } catch (err: any) {
-    showToastMessage(err.message || err.statusMessage || "خطأ في الاتصال بالخادم", "error");
+    showToastMessage(
+      err.message || err.statusMessage || "خطأ في الاتصال بالخادم",
+      "error",
+    );
+  }
+}
+
+async function printOrder(order: POSOrder) {
+  try {
+    const data = await $fetch<any>("/api/orders/detail", {
+      query: { id: order.id },
+    });
+    if (!data.success) return;
+    const lines = data.lines || [];
+    const payments = data.payments || [];
+    const totalFromLines = lines.reduce(
+      (sum: number, l: any) => sum + l.price_subtotal,
+      0,
+    );
+    printReceipt({
+      orderName: order.name,
+      lastOrderItems: lines.map((l: any) => ({
+        product: { name: l.product_id?.[1] || `#${l.product_id?.[0] || ""}` },
+        quantity: l.qty,
+        price: l.price_unit,
+        discount: l.discount,
+      })),
+      lastOrderPayments: payments.map((p: any) => ({
+        methodName:
+          p.payment_method_id?.[1] || `#${p.payment_method_id?.[0] || ""}`,
+        amount: p.amount,
+      })),
+      lastOrderSubtotal: totalFromLines,
+      lastOrderDiscount: lines.reduce(
+        (sum: number, l: any) =>
+          sum + (l.price_unit * l.qty * l.discount) / 100,
+        0,
+      ),
+      lastOrderServiceFee: 0,
+      lastOrderGrandTotal: order.amount_total,
+    });
+  } catch {
+    // Silently fail
   }
 }
 
@@ -243,7 +292,7 @@ const statusIcons: Record<string, any> = {
             <div class="space-y-1">
               <p class="text-label-md text-on-white-variant">إجمالي المبيعات</p>
               <h2 class="text-display-sm font-bold text-primary">
-                {{ totalSales.toLocaleString("ar-EG") }} ج.م
+                {{ totalSales.toLocaleString("en-US") }} ج.م
               </h2>
               <p class="text-xs text-on-white-variant">
                 إجمالي المبيعات المعروضة
@@ -386,7 +435,7 @@ const statusIcons: Record<string, any> = {
                     </div>
                   </td>
                   <td class="px-6 py-5 font-bold text-primary">
-                    {{ Number(order.amount_total).toLocaleString("ar-EG") }}
+                    {{ Number(order.amount_total).toLocaleString("en-US") }}
                     ج.م
                   </td>
                   <td class="px-6 py-5">
@@ -417,6 +466,14 @@ const statusIcons: Record<string, any> = {
                         title="عرض التفاصيل"
                       >
                         <Eye class="w-[18px] h-[18px]" />
+                      </button>
+                      <button
+                        v-if="order.state !== 'cancelled'"
+                        @click.stop="printOrder(order)"
+                        class="p-2 rounded-lg hover:bg-white text-secondary transition-colors cursor-pointer"
+                        title="طباعة الفاتورة"
+                      >
+                        <Printer class="w-[18px] h-[18px] text-primary" />
                       </button>
                       <button
                         v-if="

@@ -1,7 +1,7 @@
 import { defineEventHandler, readBody, createError } from "h3";
 import { getAdminOdooClient } from "~~/server/utils/odooClient";
 import { tryCatch } from "~~/server/utils/tryCatch";
-import { requirePermission } from '~~/server/utils/permissions'
+import { requireAnyPermission } from '~~/server/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const odoo = await getAdminOdooClient();
-  await requirePermission(event, 'pos_manager')
+  await requireAnyPermission(event, ['pos_manager', 'settings_access_rights'])
 
   const [rpcErr, result] = await tryCatch(
     odoo.execute_kw("custom.order.api", "api_update_order_status", [

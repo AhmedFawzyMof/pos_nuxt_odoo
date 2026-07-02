@@ -39,6 +39,7 @@ const defaultDateTo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStar
 const activeReport = ref("profit_loss");
 const dateFrom = ref(defaultDateFrom);
 const dateTo = ref(defaultDateTo);
+const locationId = ref<number | null>(null);
 const loading = ref(false);
 const refreshKey = ref(0);
 
@@ -112,6 +113,8 @@ const onRefresh = () => {
     <ReportFilters
       v-model:date-from="dateFrom"
       v-model:date-to="dateTo"
+      v-model:location-id="locationId"
+      :active-report="activeReport"
       :loading="loading"
       @refresh="onRefresh"
       @export="onExport"
@@ -127,6 +130,7 @@ const onRefresh = () => {
           :key="activeReport"
           :date-from="dateFrom"
           :date-to="dateTo"
+          :location-id="locationId"
           :refresh-key="refreshKey"
           @loading="onLoading"
         />
