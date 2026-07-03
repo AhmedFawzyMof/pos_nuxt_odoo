@@ -30,6 +30,7 @@ const showEditModal = ref(false);
 const showReceiveModal = ref(false);
 const editingPO = ref<PurchaseOrder | null>(null);
 const receivingPO = ref<PurchaseOrder | null>(null);
+const receivingPOIds = ref(new Set<number>());
 
 const currentPage = ref(1);
 const searchQuery = ref("");
@@ -93,6 +94,7 @@ const confirmPO = async (poId: number) => {
 const receivePO = async (poId: number) => {
   const po = poList.value.find((p) => p.id === poId);
   if (!po) return;
+  receivingPOIds.value = new Set([...receivingPOIds.value, poId]);
   receivingPO.value = po;
   showReceiveModal.value = true;
 };
@@ -110,6 +112,8 @@ const handleReceive = async (data: { po_id: number; lines: any[] }) => {
       await refresh();
     } else {
       showToastMessage(res.message || "فشل استلام المنتجات", "error");
+      showReceiveModal.value = false;
+      receivingPO.value = null;
     }
   } catch (e: any) {
     showToastMessage(
@@ -119,6 +123,10 @@ const handleReceive = async (data: { po_id: number; lines: any[] }) => {
         "خطأ في الاتصال بالخادم",
       "error",
     );
+    showReceiveModal.value = false;
+    receivingPO.value = null;
+  } finally {
+    receivingPOIds.value = new Set([...receivingPOIds.value].filter((id) => id !== data.po_id));
   }
 };
 
@@ -349,8 +357,13 @@ const stateClass = (state: string) => {
                         can('purchase.receive')
                       "
                       @click.stop="receivePO(po.id)"
-                      class="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer"
+                      :disabled="receivingPOIds.has(po.id)"
+                      class="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
+                      <LoaderCircle
+                        v-if="receivingPOIds.has(po.id)"
+                        class="w-3 h-3 inline animate-spin ml-1"
+                      />
                       استلام
                     </button>
                     <button
@@ -408,10 +421,9 @@ const stateClass = (state: string) => {
   />
 
   <ReceivePurchaseOrderModal
-    :key="receivingPO?.id || 0"
     :open="showReceiveModal"
     :purchase-order="receivingPO"
-    @update:open="showReceiveModal = $event"
+    @update:open="(val) => { showReceiveModal = val; if (!val) { receivingPO = null; receivingPOIds.value = new Set(); } }"
     @confirm="handleReceive"
   />
 

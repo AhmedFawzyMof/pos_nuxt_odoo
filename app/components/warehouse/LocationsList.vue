@@ -45,6 +45,51 @@ const editingField = ref<"name" | "address" | null>(null);
 const editValue = ref("");
 const saving = ref(false);
 
+const confirmingDeleteId = ref<number | null>(null);
+const deleting = ref(false);
+
+const changingTypeId = ref<number | null>(null);
+const newType = ref<string>("");
+
+const USAGE_LABELS: Record<string, string> = {
+  internal: "مخزن",
+  view: "مجلد هيكلي",
+  inventory: "مخلفات",
+};
+
+async function deleteLocation(loc: LocationItem) {
+  if (deleting.value) return;
+  deleting.value = true;
+  try {
+    await $fetch(`/api/warehouse/${loc.id}`, { method: "DELETE" });
+    confirmingDeleteId.value = null;
+    emit("updated");
+  } catch (e: any) {
+    console.error("Delete failed", e);
+  } finally {
+    deleting.value = false;
+  }
+}
+
+const changingUsage = ref(false);
+
+async function changeType(loc: LocationItem) {
+  if (changingUsage.value) return;
+  changingUsage.value = true;
+  try {
+    await $fetch(`/api/warehouse/${loc.id}`, {
+      method: "PUT",
+      body: { usage: newType.value },
+    });
+    changingTypeId.value = null;
+    emit("updated");
+  } catch (e: any) {
+    console.error("Change type failed", e);
+  } finally {
+    changingUsage.value = false;
+  }
+}
+
 function startEdit(loc: LocationItem, field: "name" | "address") {
   editingId.value = loc.id;
   editingField.value = field;
@@ -168,6 +213,29 @@ function onKeydown(e: KeyboardEvent, loc: LocationItem) {
                       class="w-3.5 h-3.5 text-on-white-variant opacity-0 group-hover:opacity-100 cursor-pointer shrink-0"
                     />
                   </span>
+                  <span
+                    v-if="changingTypeId === loc.id"
+                    class="inline-flex items-center"
+                  >
+                    <select
+                      v-model="newType"
+                      @change="changeType(loc)"
+                      @blur="changingTypeId = null"
+                      autofocus
+                      class="h-7 text-xs rounded border border-outline-variant bg-white px-1 outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                    >
+                      <option value="internal">مخزن</option>
+                      <option value="view">مجلد هيكلي</option>
+                      <option value="inventory">مخلفات</option>
+                    </select>
+                  </span>
+                  <span
+                    v-else
+                    @click="newType = 'internal'; changingTypeId = loc.id"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-700 shrink-0 cursor-pointer hover:ring-2 hover:ring-sky-300"
+                  >
+                    مخزن
+                  </span>
                 </h4>
                 <p
                   class="text-on-white-variant text-label-md flex items-center gap-1"
@@ -225,6 +293,41 @@ function onKeydown(e: KeyboardEvent, loc: LocationItem) {
                   >قطعة</span
                 >
               </p>
+              <div
+                v-if="loc.usedQty === 0 && can('warehouse.createLocation')"
+                class="mt-2"
+              >
+                <button
+                  v-if="confirmingDeleteId !== loc.id"
+                  @click.stop="confirmingDeleteId = loc.id"
+                  class="inline-flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                  حذف
+                </button>
+                <div
+                  v-else
+                  class="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+                >
+                  <span class="text-xs font-bold text-red-700"
+                    >تأكيد الحذف؟</span
+                  >
+                  <button
+                    @click.stop="deleteLocation(loc)"
+                    :disabled="deleting"
+                    class="px-2 py-1 text-xs font-bold bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 cursor-pointer"
+                  >
+                    حذف
+                  </button>
+                  <button
+                    @click.stop="confirmingDeleteId = null"
+                    :disabled="deleting"
+                    class="px-2 py-1 text-xs font-bold bg-white border border-outline-variant rounded-md hover:bg-white-low disabled:opacity-50 cursor-pointer"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <div
@@ -303,7 +406,25 @@ function onKeydown(e: KeyboardEvent, loc: LocationItem) {
                   />
                 </span>
                 <span
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700 shrink-0"
+                  v-if="changingTypeId === loc.id"
+                  class="inline-flex items-center gap-1"
+                >
+                  <select
+                    v-model="newType"
+                    @change="changeType(loc)"
+                    @blur="changingTypeId = null"
+                    autofocus
+                    class="h-7 text-xs rounded border border-outline-variant bg-white px-1 outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                  >
+                    <option value="internal">مخزن</option>
+                    <option value="view">مجلد هيكلي</option>
+                    <option value="inventory">مخلفات</option>
+                  </select>
+                </span>
+                <span
+                  v-else
+                  @click="newType = 'view'; changingTypeId = loc.id"
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700 shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-300"
                 >
                   مجلد هيكلي
                 </span>
@@ -403,7 +524,25 @@ function onKeydown(e: KeyboardEvent, loc: LocationItem) {
                   />
                 </span>
                 <span
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-600 shrink-0"
+                  v-if="changingTypeId === loc.id"
+                  class="inline-flex items-center gap-1"
+                >
+                  <select
+                    v-model="newType"
+                    @change="changeType(loc)"
+                    @blur="changingTypeId = null"
+                    autofocus
+                    class="h-7 text-xs rounded border border-outline-variant bg-white px-1 outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                  >
+                    <option value="internal">مخزن</option>
+                    <option value="view">مجلد هيكلي</option>
+                    <option value="inventory">مخلفات</option>
+                  </select>
+                </span>
+                <span
+                  v-else
+                  @click="newType = 'inventory'; changingTypeId = loc.id"
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-600 shrink-0 cursor-pointer hover:ring-2 hover:ring-red-300"
                 >
                   مخلفات التصنيع / التصفي
                 </span>

@@ -49,6 +49,7 @@ const fetchLocations = async () => {
 };
 
 const validationError = computed(() => {
+  if (locations.value.length === 0) return "لا توجد مواقع تخزين متاحة";
   if (!selectedLocationId.value) return "يرجى اختيار موقع التخزين";
   if (lines.value.length === 0) return "لا توجد منتجات للاستلام";
   for (const l of lines.value) {
@@ -107,21 +108,13 @@ const loadPO = async () => {
       selectedLocationId.value = firstAlloc.location_id;
     }
   }
-  fetchLocations();
+  await fetchLocations();
 };
 
 watch(
-  () => props.open,
-  (isOpen) => {
+  [() => props.open, () => props.purchaseOrder],
+  ([isOpen]) => {
     if (isOpen) loadPO();
-  },
-  { immediate: true },
-);
-
-watch(
-  () => props.purchaseOrder,
-  (po) => {
-    if (po && props.open) loadPO();
   },
   { immediate: true },
 );

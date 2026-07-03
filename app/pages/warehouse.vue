@@ -79,7 +79,10 @@ async function translateLocations() {
   }
 }
 
-onMounted(translateLocations);
+onMounted(async () => {
+  await translateLocations();
+  refresh();
+});
 </script>
 
 <template>
