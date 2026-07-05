@@ -195,7 +195,7 @@ const save = async () => {
         date_order: dateOrder.value,
         state: state.value,
         receipt_status: receiptStatus.value,
-        amount_total: total,
+        amount_untaxed: total,
       };
       saveSuccess.value = true;
       setTimeout(() => {

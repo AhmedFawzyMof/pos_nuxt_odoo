@@ -266,8 +266,8 @@ async function handleScan(barcode: string) {
   scannerActive.value = false;
   clearTimeout(searchDebounce);
   searchSuggestions.value = [];
+  searchLoading.value = false;
 
-  // Try weight barcode parsing first
   const parsed = parseWeightBarcode(barcode);
   const searchBarcode = parsed ? parsed.productCode : barcode;
   const weightKg = parsed ? parsed.weightKg : null;
@@ -277,11 +277,10 @@ async function handleScan(barcode: string) {
   allProducts.value = [];
   await loadMasterData(1);
   tryAutoAddFirstResult(weightKg);
-  if (searchQuery.value && allProducts.value.length === 0) {
-    await nextTick();
-    (document.activeElement as HTMLInputElement)?.select();
+  if (allProducts.value.length === 0) {
     showFeedbackToast("المنتج غير موجود", "error");
   }
+  searchQuery.value = "";
 }
 
 function handleLocationChange(event: Event) {

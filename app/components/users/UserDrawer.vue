@@ -93,9 +93,12 @@ const selectedRoleNames = computed(() => {
   for (const page of enrichedPages.value) {
     const levelId = selectedPageLevels.value[page.key]
     if (!levelId) continue
-    const level = page.levels.find(l => l.id === levelId)
-    if (level) {
-      roles.push(Groups[level.groupRef])
+    const levelIds = collectLevelIds(page, levelId)
+    for (const lid of levelIds) {
+      const level = page.levels.find(l => l.id === lid)
+      if (level) {
+        roles.push(Groups[level.groupRef])
+      }
     }
   }
   return roles

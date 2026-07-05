@@ -163,7 +163,7 @@ const openEdit = (po: PurchaseOrder) => {
   showEditModal.value = true;
 };
 
-const handleEditSaved = (updated: Partial<PurchaseOrder> & { id: number }) => {
+const handleEditSaved = async (updated: Partial<PurchaseOrder> & { id: number }) => {
   if (!apiResponse.value?.data) return;
   const idx = apiResponse.value.data.findIndex((p) => p.id === updated.id);
   if (idx !== -1) {
@@ -172,9 +172,8 @@ const handleEditSaved = (updated: Partial<PurchaseOrder> & { id: number }) => {
       ...updated,
     };
     apiResponse.value.data[idx] = apiData;
-    console.log("✅ UPDATED", updated);
-    console.log("✅ apiData", apiData);
   }
+  await refresh();
   showToastMessage("تم حفظ التعديلات بنجاح", "success");
 };
 
@@ -299,7 +298,6 @@ const stateClass = (state: string) => {
                 <th class="p-4 text-label-md font-bold">التاريخ</th>
                 <th class="p-4 text-label-md font-bold">الحالة</th>
                 <th class="p-4 text-label-md font-bold">حالة الاستلام</th>
-                <th class="p-4 text-label-md font-bold">المجموع الفرعي</th>
                 <th class="p-4 text-label-md font-bold">الإجمالي</th>
                 <th class="p-4 text-label-md font-bold">الإجراءات</th>
               </tr>
@@ -335,11 +333,8 @@ const stateClass = (state: string) => {
                     {{ receiptStatusText(po.receipt_status) }}
                   </span>
                 </td>
-                <td class="p-4 text-on-white-variant">
-                  {{ (po.amount_untaxed || 0).toLocaleString("en-US") }} ج.م
-                </td>
                 <td class="p-4 font-bold text-primary">
-                  {{ (po.amount_total || 0).toLocaleString("en-US") }} ج.م
+                  {{ (po.amount_untaxed || 0).toLocaleString("en-US") }} ج.م
                 </td>
                 <td class="p-4">
                   <div class="flex gap-2">

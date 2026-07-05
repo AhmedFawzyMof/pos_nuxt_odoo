@@ -71,7 +71,6 @@ function handleScan(barcode: string) {
   localValue.value = barcode;
   showDropdown.value = false;
   dismissed.value = true;
-  emit("update:modelValue", barcode);
   emit("scan", barcode);
 }
 
