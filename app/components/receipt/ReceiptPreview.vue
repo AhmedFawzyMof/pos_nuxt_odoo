@@ -142,11 +142,13 @@ const renderBorderStyle = computed(() => {
       <!-- Payments -->
       <template v-if="cfg.payments?.enabled">
         <table class="w-full border-collapse" :style="{ fontSize: baseFontSize + 'px' }">
-          <tr><th class="text-right py-1 font-bold" :style="{ color: cfg.colors?.primary }" colspan="2">طرق الدفع</th></tr>
-          <tr v-for="(p, idx) in demo.payments" :key="idx">
-            <td class="text-right py-0.5">{{ p.method }}</td>
-            <td class="text-left py-0.5">{{ p.amount.toFixed(2) }} {{ cfg.totals?.currency }}</td>
-          </tr>
+          <tbody>
+            <tr><th class="text-right py-1 font-bold" :style="{ color: cfg.colors?.primary }" colspan="2">طرق الدفع</th></tr>
+            <tr v-for="(p, idx) in demo.payments" :key="idx">
+              <td class="text-right py-0.5">{{ p.method }}</td>
+              <td class="text-left py-0.5">{{ p.amount.toFixed(2) }} {{ cfg.totals?.currency }}</td>
+            </tr>
+          </tbody>
         </table>
         <div :style="renderDivider" class="my-2"></div>
       </template>
