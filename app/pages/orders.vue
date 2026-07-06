@@ -170,6 +170,7 @@ async function voidOrder(orderId: number, orderName: string) {
 
 async function printOrder(order: POSOrder) {
   try {
+    await fetchReceiptConfig();
     const data = await $fetch<any>("/api/orders/detail", {
       query: { id: order.id },
     });
@@ -180,7 +181,7 @@ async function printOrder(order: POSOrder) {
       (sum: number, l: any) => sum + l.price_subtotal,
       0,
     );
-    printReceipt({
+    await printReceipt({
       orderName: order.name,
       lastOrderItems: lines.map((l: any) => ({
         product: { name: l.product_id?.[1] || `#${l.product_id?.[0] || ""}` },

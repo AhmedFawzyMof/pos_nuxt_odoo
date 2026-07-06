@@ -5,6 +5,7 @@ export const DEFAULT_RECEIPT_CONFIG = {
   titleEn: "SALES INVOICE",
   fontFamily: "Courier New, monospace",
   fontSize: 12,
+  fontWeight: "normal",
   width: 280,
   header: {
     enabled: true,
@@ -89,7 +90,7 @@ export function useReceiptPrint() {
     }
   }
 
-  function printReceipt(params: {
+  async function printReceipt(params: {
     orderName: string;
     lastOrderItems: {
       product: { name: string };
@@ -106,16 +107,32 @@ export function useReceiptPrint() {
     const cfg = receiptConfig.value?.receipt || DEFAULT_RECEIPT_CONFIG;
     const company = receiptConfig.value?.company || {};
     const paperWidth = cfg.width || 280;
-    const popupWidth = Math.min(paperWidth + 120, 700);
-    const receiptWindow = window.open(
-      "",
-      "_blank",
-      `width=${popupWidth},height=600`,
-    );
-    if (!receiptWindow) return;
 
+    let fontFaceCss = "";
     const fontFamily = cfg.fontFamily || "Courier New, monospace";
+    if (fontFamily.includes("Cairo")) {
+      try {
+        fontFaceCss = await $fetch<string>(
+          "https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap",
+          { responseType: "text" },
+        );
+      } catch {
+        // font loading failed silently, fallback font will be used
+      }
+    }
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.top = "-9999px";
+    iframe.style.left = "-9999px";
+    iframe.style.width = "1px";
+    iframe.style.height = "1px";
+    iframe.style.opacity = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+
     const fontSize = cfg.fontSize || 12;
+    const fontWeight = cfg.fontWeight || "normal";
     const currency = cfg.totals?.currency || "ج.م";
     const primaryColor = cfg.colors?.primary || "#000000";
     const secondaryColor = cfg.colors?.secondary || "#333333";
@@ -144,24 +161,24 @@ export function useReceiptPrint() {
       ? `
     <div style="text-align:center;margin-bottom:12px;color:${primaryColor}">
       ${cfg.header?.companyLogo && company.logo ? `<img src="data:image/png;base64,${company.logo}" style="height:48px;margin-bottom:4px;object-fit:contain" />` : ""}
-      ${cfg.header?.companyName && company.name ? `<div style="font-size:16px;font-weight:bold">${company.name}</div>` : ""}
-      ${cfg.header?.companyAddress && company.address?.city ? `<div style="font-size:12px;line-height:1.625;color:${secondaryColor}">${[company.address.street, company.address.street2, company.address.city].filter(Boolean).join(", ")}</div>` : ""}
-      ${cfg.header?.companyPhone && company.phone ? `<div style="font-size:12px;color:${secondaryColor}">${company.phone}</div>` : ""}
-      ${cfg.header?.companyEmail && company.email ? `<div style="font-size:12px;color:${secondaryColor}">${company.email}</div>` : ""}
-      ${cfg.header?.companyWebsite && company.website ? `<div style="font-size:12px;color:${secondaryColor}">${company.website}</div>` : ""}
-      ${cfg.header?.companyVat && company.vat ? `<div style="font-size:12px;color:${secondaryColor}">الرقم الضريبي: ${company.vat}</div>` : ""}
+      ${cfg.header?.companyName && company.name ? `<div style="font-size:${fontSize + 4}px;font-weight:bold">${company.name}</div>` : ""}
+      ${cfg.header?.companyAddress && company.address?.city ? `<div style="font-size:${fontSize}px;line-height:1.625;color:${secondaryColor}">${[company.address.street, company.address.street2, company.address.city].filter(Boolean).join(", ")}</div>` : ""}
+      ${cfg.header?.companyPhone && company.phone ? `<div style="font-size:${fontSize}px;color:${secondaryColor}">${company.phone}</div>` : ""}
+      ${cfg.header?.companyEmail && company.email ? `<div style="font-size:${fontSize}px;color:${secondaryColor}">${company.email}</div>` : ""}
+      ${cfg.header?.companyWebsite && company.website ? `<div style="font-size:${fontSize}px;color:${secondaryColor}">${company.website}</div>` : ""}
+      ${cfg.header?.companyVat && company.vat ? `<div style="font-size:${fontSize}px;color:${secondaryColor}">الرقم الضريبي: ${company.vat}</div>` : ""}
     </div>
     ${divider}
   `
       : "";
 
     const titleHtml = `
-    <div style="text-align:center;font-size:14px;font-weight:bold;margin-bottom:8px;color:${primaryColor}">${titleAr}</div>
+    <div style="text-align:center;font-size:${fontSize + 2}px;font-weight:bold;margin-bottom:8px;color:${primaryColor}">${titleAr}</div>
     ${
       cfg.footer?.showOrderNumber ||
       cfg.footer?.showDate ||
       cfg.footer?.showTime
-        ? `<div style="text-align:center;font-size:12px;margin-bottom:8px;color:${secondaryColor}">
+        ? `<div style="text-align:center;font-size:${fontSize}px;margin-bottom:8px;color:${secondaryColor}">
       ${cfg.footer?.showOrderNumber ? `<div>${params.orderName}</div>` : ""}
       ${cfg.footer?.showDate || cfg.footer?.showTime ? `<div>${cfg.footer?.showDate ? dateStr : ""} ${cfg.footer?.showTime ? timeStr : ""}</div>` : ""}
     </div>`
@@ -172,7 +189,7 @@ export function useReceiptPrint() {
 
     const itemsHtml = cfg.items?.enabled
       ? `
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <table style="width:100%;border-collapse:collapse;font-size:${fontSize}px">
       <thead>
         <tr>
           <th style="text-align:right;padding:4px 2px;border-bottom:1px solid ${primaryColor};color:${primaryColor};font-weight:bold">المنتج</th>
@@ -202,7 +219,7 @@ export function useReceiptPrint() {
 
     const paymentsHtml = cfg.payments?.enabled
       ? `
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <table style="width:100%;border-collapse:collapse;font-size:${fontSize}px">
       <tr><th style="text-align:right;padding:4px 0;color:${primaryColor};font-weight:bold" colspan="2">طرق الدفع</th></tr>
       ${params.lastOrderPayments
         .map(
@@ -246,7 +263,7 @@ export function useReceiptPrint() {
     const totalsHtml =
       totalRows.length > 0
         ? `
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <table style="width:100%;border-collapse:collapse;font-size:${fontSize}px">
       ${totalRows.join("")}
     </table>
     ${divider}
@@ -255,7 +272,7 @@ export function useReceiptPrint() {
 
     const footerHtml = cfg.footer?.enabled
       ? `
-    <div style="text-align:center;font-size:12px;line-height:1.625;color:${secondaryColor}">
+    <div style="text-align:center;font-size:${fontSize}px;line-height:1.625;color:${secondaryColor}">
       ${cfg.footer?.showThankYou ? `<div>${cfg.footer?.thankYouText || "شكراً لتسوقكم معنا"}</div>` : ""}
       ${cfg.footer?.showTerms && cfg.footer?.termsText ? `<div style="margin-top:4px">${cfg.footer.termsText}</div>` : ""}
     </div>
@@ -266,37 +283,41 @@ export function useReceiptPrint() {
       ? `border:1px ${borderStyle} ${primaryColor};padding:8px;`
       : "padding:8px;";
 
-    receiptWindow.document.write(`
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+
+    doc.write(`
     <!DOCTYPE html>
     <html dir="rtl">
     <head>
       <meta charset="utf-8" />
       <title>فاتورة - ${params.orderName}</title>
       <style>
-        @page { margin: 0; }
+        ${fontFaceCss}
+        @page { size: ${paperWidth}px auto; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: ${fontFamily};
           font-size: ${fontSize}px;
+          font-weight: ${fontWeight};
           color: ${textColor};
           background: ${bgColor};
           width: ${paperWidth}px;
           margin: 0 auto;
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
         }
-        .no-print { display: block; }
         @media print {
-          .no-print { display: none !important; }
-          body { width: 100%; }
+          body {
+            width: ${paperWidth}px;
+            margin: 0 auto;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
         }
       </style>
     </head>
     <body>
-      <div class="no-print" style="text-align:center;padding:20px 0;">
-        <button onclick="window.print()" style="padding:12px 40px;font-size:14px;font-weight:bold;background:#059669;color:white;border:none;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
-          طباعة الفاتورة
-        </button>
-        <p style="margin-top:10px;font-size:12px;color:#888;">أو استخدم Ctrl+P للطباعة</p>
-      </div>
       <div style="${borderCss}">
         ${headerHtml}
         ${titleHtml}
@@ -308,7 +329,27 @@ export function useReceiptPrint() {
     </body>
     </html>
   `);
-    receiptWindow.document.close();
+    doc.close();
+
+    const win = iframe.contentWindow;
+    if (!win) return;
+
+    const doPrint = () => {
+      win.document.fonts.ready.then(() => {
+        win.focus();
+        win.print();
+      });
+    };
+
+    if (doc.readyState === "complete") {
+      doPrint();
+    } else {
+      iframe.onload = doPrint;
+    }
+
+    win.onafterprint = () => {
+      document.body.removeChild(iframe);
+    };
   }
 
   return { receiptConfig, receiptConfigLoading, fetchReceiptConfig, printReceipt };

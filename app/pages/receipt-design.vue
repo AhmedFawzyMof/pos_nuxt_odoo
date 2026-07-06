@@ -61,6 +61,7 @@ const localConfig = ref<any>({
     titleEn: "SALES INVOICE",
     fontFamily: "Courier New, monospace",
     fontSize: 12,
+    fontWeight: "normal",
     width: 280,
     header: { enabled: true, companyName: true, companyLogo: true, companyAddress: true, companyPhone: true, companyEmail: true, companyWebsite: true, companyVat: true, showQrCode: false, qrCodeText: "" },
     items: { enabled: true, showDescription: true, showPrice: true, showQuantity: true, showTotal: true, showDiscount: true, showTax: false },

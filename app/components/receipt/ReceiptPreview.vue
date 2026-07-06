@@ -9,12 +9,14 @@ const props = defineProps<{
 const demo = computed(() => props.demoData);
 const cfg = computed(() => props.config?.receipt || {});
 const company = computed(() => props.config?.company || {});
+const baseFontSize = computed(() => cfg.value.fontSize || 12);
 
 const renderedStyle = computed(() => {
   const c = cfg.value;
   return {
     fontFamily: c.fontFamily || "Courier New, monospace",
     fontSize: `${c.fontSize || 12}px`,
+    fontWeight: c.fontWeight || "normal",
     width: `${c.width || 280}px`,
     color: c.colors?.text || "#000000",
     background: c.colors?.background || "#ffffff",
@@ -58,22 +60,22 @@ const renderBorderStyle = computed(() => {
             class="h-12 mx-auto mb-1 object-contain"
             alt="logo"
           />
-          <div v-if="cfg.header?.companyName && company.name" class="text-base font-bold">
+          <div v-if="cfg.header?.companyName && company.name" class="font-bold" :style="{ fontSize: Math.round(baseFontSize * 1.3) + 'px' }">
             {{ company.name }}
           </div>
-          <div v-if="cfg.header?.companyAddress && company.address?.city" class="text-xs leading-relaxed" :style="{ color: cfg.colors?.secondary }">
+          <div v-if="cfg.header?.companyAddress && company.address?.city" class="leading-relaxed" :style="{ fontSize: baseFontSize + 'px', color: cfg.colors?.secondary }">
             {{ company.address?.street }}{{ company.address?.street2 ? ', ' + company.address?.street2 : '' }}{{ company.address?.city ? ', ' + company.address?.city : '' }}
           </div>
-          <div v-if="cfg.header?.companyPhone && company.phone" class="text-xs" :style="{ color: cfg.colors?.secondary }">
+          <div v-if="cfg.header?.companyPhone && company.phone" :style="{ fontSize: baseFontSize + 'px', color: cfg.colors?.secondary }">
             {{ company.phone }}
           </div>
-          <div v-if="cfg.header?.companyEmail && company.email" class="text-xs" :style="{ color: cfg.colors?.secondary }">
+          <div v-if="cfg.header?.companyEmail && company.email" :style="{ fontSize: baseFontSize + 'px', color: cfg.colors?.secondary }">
             {{ company.email }}
           </div>
-          <div v-if="cfg.header?.companyWebsite && company.website" class="text-xs" :style="{ color: cfg.colors?.secondary }">
+          <div v-if="cfg.header?.companyWebsite && company.website" :style="{ fontSize: baseFontSize + 'px', color: cfg.colors?.secondary }">
             {{ company.website }}
           </div>
-          <div v-if="cfg.header?.companyVat && company.vat" class="text-xs" :style="{ color: cfg.colors?.secondary }">
+          <div v-if="cfg.header?.companyVat && company.vat" :style="{ fontSize: baseFontSize + 'px', color: cfg.colors?.secondary }">
             الرقم الضريبي: {{ company.vat }}
           </div>
         </div>
@@ -81,10 +83,10 @@ const renderBorderStyle = computed(() => {
       </template>
 
       <!-- Title -->
-      <div class="text-center text-sm font-bold mb-2" :style="{ color: cfg.colors?.primary }">
+      <div class="text-center font-bold mb-2" :style="{ fontSize: Math.round(baseFontSize * 1.15) + 'px', color: cfg.colors?.primary }">
         {{ cfg.titleAr || "فاتورة بيع" }}
       </div>
-      <div v-if="cfg.footer?.showOrderNumber || cfg.footer?.showDate || cfg.footer?.showTime" class="text-center text-xs mb-2" :style="{ color: cfg.colors?.secondary }">
+      <div v-if="cfg.footer?.showOrderNumber || cfg.footer?.showDate || cfg.footer?.showTime" class="text-center mb-2" :style="{ fontSize: baseFontSize + 'px', color: cfg.colors?.secondary }">
         <div v-if="cfg.footer?.showOrderNumber">{{ demo.orderName }}</div>
         <div>{{ demo.date }} {{ demo.time }}</div>
       </div>
@@ -93,7 +95,7 @@ const renderBorderStyle = computed(() => {
 
       <!-- Items -->
       <template v-if="cfg.items?.enabled">
-        <table class="w-full border-collapse text-xs">
+        <table class="w-full border-collapse" :style="{ fontSize: baseFontSize + 'px' }">
           <thead>
             <tr>
               <th class="text-right py-1 px-0.5 font-bold" :style="{ borderBottom: `1px solid ${cfg.colors?.primary || '#000'}`, color: cfg.colors?.primary }">المنتج</th>
@@ -116,7 +118,7 @@ const renderBorderStyle = computed(() => {
 
       <!-- Totals -->
       <template v-if="cfg.totals?.enabled">
-        <table class="w-full border-collapse text-xs">
+        <table class="w-full border-collapse" :style="{ fontSize: baseFontSize + 'px' }">
           <tr v-if="cfg.totals?.showSubtotal">
             <td class="text-right py-0.5">المجموع</td>
             <td class="text-left py-0.5">{{ demo.subtotal.toFixed(2) }} {{ cfg.totals?.currency }}</td>
@@ -139,7 +141,7 @@ const renderBorderStyle = computed(() => {
 
       <!-- Payments -->
       <template v-if="cfg.payments?.enabled">
-        <table class="w-full border-collapse text-xs">
+        <table class="w-full border-collapse" :style="{ fontSize: baseFontSize + 'px' }">
           <tr><th class="text-right py-1 font-bold" :style="{ color: cfg.colors?.primary }" colspan="2">طرق الدفع</th></tr>
           <tr v-for="(p, idx) in demo.payments" :key="idx">
             <td class="text-right py-0.5">{{ p.method }}</td>
@@ -151,7 +153,7 @@ const renderBorderStyle = computed(() => {
 
       <!-- Footer -->
       <template v-if="cfg.footer?.enabled">
-        <div class="text-center text-xs leading-relaxed" :style="{ color: cfg.colors?.secondary }">
+        <div class="text-center leading-relaxed" :style="{ fontSize: baseFontSize + 'px', color: cfg.colors?.secondary }">
           <div v-if="cfg.footer?.showThankYou">{{ cfg.footer?.thankYouText }}</div>
           <div v-if="cfg.footer?.showTerms && cfg.footer?.termsText" class="mt-1">{{ cfg.footer?.termsText }}</div>
         </div>

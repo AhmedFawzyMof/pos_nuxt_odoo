@@ -11,7 +11,7 @@ import type { PaymentMethod, OrderResponse } from "~/types/pos";
 import { useReceiptPrint } from "~/composables/useReceiptPrint";
 import { useNumberFormat } from "~/composables/useNumberFormat";
 
-const { fetchReceiptConfig, printReceipt } = useReceiptPrint();
+const { receiptConfig, fetchReceiptConfig, printReceipt } = useReceiptPrint();
 
 const { formatNumber } = useNumberFormat();
 
@@ -178,8 +178,8 @@ function closeCompleted() {
   emit("update:open", false);
 }
 
-function handlePrintReceipt() {
-  printReceipt({
+async function handlePrintReceipt() {
+  await printReceipt({
     orderName: orderName.value,
     lastOrderItems: lastOrderItems.value,
     lastOrderPayments: lastOrderPayments.value,
@@ -245,8 +245,13 @@ function handlePrintReceipt() {
           <PosPaymentSuccess
             v-if="successMessage"
             :order-name="orderName"
-            :success-message="successMessage"
-            @print="handlePrintReceipt"
+            :items="lastOrderItems"
+            :payments="lastOrderPayments"
+            :subtotal="lastOrderSubtotal"
+            :discount-amount="lastOrderDiscount"
+            :service-fee-amount="lastOrderServiceFee"
+            :grand-total="lastOrderGrandTotal"
+            :receipt-config="receiptConfig"
           />
 
           <!-- Order Summary -->

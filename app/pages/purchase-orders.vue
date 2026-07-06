@@ -6,10 +6,12 @@ import {
   Plus,
   CheckCheck,
   AlertCircle,
+  Printer,
 } from "@lucide/vue";
 import type {
   PurchaseOrder,
   PurchaseOrderApiResponse,
+  POLine,
 } from "~/types/purchaseOrder";
 import CreatePurchaseOrderModal from "~/components/purchase/CreatePurchaseOrderModal.vue";
 import EditPurchaseOrderModal from "~/components/purchase/EditPurchaseOrderModal.vue";
@@ -208,6 +210,287 @@ const stateClass = (state: string) => {
   if (state === "cancel") return "bg-red-100 text-red-800";
   return "bg-slate-100 text-slate-600";
 };
+
+function formatDate(d: string): string {
+  if (!d) return "";
+  const date = new Date(d);
+  return date.toLocaleDateString("ar-EG", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function buildPOReceiptHtml(params: {
+  name: string;
+  dateOrder: string;
+  partnerName: string;
+  partnerRef: string;
+  state: string;
+  notes: string;
+  lines: POLine[];
+  amountUntaxed: number;
+  amountTotal: number;
+  currency: string;
+}): string {
+  const {
+    name,
+    dateOrder,
+    partnerName,
+    partnerRef,
+    state,
+    notes,
+    lines,
+    amountUntaxed,
+    amountTotal,
+    currency,
+  } = params;
+
+  const stateLabels: Record<string, string> = {
+    draft: "مسودة",
+    sent: "مرسل",
+    purchase: "مؤكد",
+    done: "مكتمل",
+    cancel: "ملغي",
+  };
+
+  const linesHtml = lines
+    .map(
+      (line, i) => `
+        <tr>
+          <td style="text-align:center;padding:6px 4px;border-bottom:1px solid #e2e8f0;">${i + 1}</td>
+          <td style="text-align:right;padding:6px 4px;border-bottom:1px solid #e2e8f0;">${line.product_id?.[1] || line.name}</td>
+          <td style="text-align:center;padding:6px 4px;border-bottom:1px solid #e2e8f0;">${line.product_qty}</td>
+          <td style="text-align:center;padding:6px 4px;border-bottom:1px solid #e2e8f0;">${line.qty_received}</td>
+          <td style="text-align:left;padding:6px 4px;border-bottom:1px solid #e2e8f0;">${line.price_unit.toFixed(2)}</td>
+          <td style="text-align:left;padding:6px 4px;border-bottom:1px solid #e2e8f0;">${line.price_subtotal.toFixed(2)}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const stateLabel = stateLabels[state] || state;
+  const dateStr = formatDate(dateOrder);
+
+  return `
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <title>أمر شراء - ${name}</title>
+  <style>
+    @page { margin: 15mm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Arial", sans-serif;
+      font-size: 13px;
+      color: #1e293b;
+      background: #fff;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .no-print { display: block; }
+    @media print {
+      .no-print { display: none !important; }
+      body { max-width: 100%; padding: 5mm; }
+    }
+    .header {
+      text-align: center;
+      border-bottom: 2px solid #1e293b;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .header h1 { font-size: 20px; color: #1e293b; margin-bottom: 4px; }
+    .title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #1e40af;
+      margin: 12px 0;
+    }
+    .info-grid {
+      display: flex;
+      justify-content: space-between;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+    }
+    .info-grid .col { display: flex; flex-direction: column; gap: 4px; }
+    .info-grid .col .lbl { font-size: 11px; color: #64748b; }
+    .info-grid .col .val { font-weight: bold; color: #0f172a; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+    }
+    th {
+      background: #1e40af;
+      color: #fff;
+      padding: 8px 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    td { padding: 6px 4px; }
+    tr:nth-child(even) { background: #f8fafc; }
+    .totals {
+      width: 300px;
+      margin-right: auto;
+      border-collapse: collapse;
+    }
+    .totals td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .totals .grand-total td {
+      font-weight: bold;
+      font-size: 15px;
+      color: #1e40af;
+      border-top: 2px solid #1e40af;
+      border-bottom: none;
+    }
+    .notes {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 14px;
+      font-size: 12px;
+      color: #92400e;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align:center;padding:20px 0;">
+    <button onclick="window.print()" style="padding:12px 40px;font-size:14px;font-weight:bold;background:#059669;color:white;border:none;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+      🖨️ طباعة
+    </button>
+    <p style="margin-top:10px;font-size:12px;color:#888;">أو استخدم Ctrl+P للطباعة</p>
+  </div>
+
+  <div class="header">
+    <h1>أمر شراء</h1>
+  </div>
+
+  <div class="info-grid">
+    <div class="col">
+      <span class="lbl">رقم الأمر</span>
+      <span class="val">${name}</span>
+    </div>
+    <div class="col">
+      <span class="lbl">التاريخ</span>
+      <span class="val">${dateStr}</span>
+    </div>
+    <div class="col">
+      <span class="lbl">المورد</span>
+      <span class="val">${partnerName}</span>
+    </div>
+    ${partnerRef ? `<div class="col">
+      <span class="lbl">مرجع المورد</span>
+      <span class="val">${partnerRef}</span>
+    </div>` : ""}
+    <div class="col">
+      <span class="lbl">الحالة</span>
+      <span class="val">${stateLabel}</span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40px;">#</th>
+        <th style="text-align:right;">المنتج</th>
+        <th style="width:70px;">الكمية</th>
+        <th style="width:70px;">المستلم</th>
+        <th style="width:90px;">سعر الوحدة</th>
+        <th style="width:100px;">الإجمالي</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${linesHtml}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr>
+      <td style="text-align:right;">المجموع</td>
+      <td style="text-align:left;">${amountUntaxed.toFixed(2)} ${currency}</td>
+    </tr>
+    <tr class="grand-total">
+      <td style="text-align:right;">الإجمالي</td>
+      <td style="text-align:left;">${amountTotal.toFixed(2)} ${currency}</td>
+    </tr>
+  </table>
+
+  ${notes ? `<div class="notes"><strong>ملاحظات:</strong> ${notes}</div>` : ""}
+
+  <div class="footer">
+    <div>${name}</div>
+  </div>
+</body>
+</html>`;
+}
+
+const printPurchaseOrder = async (po: PurchaseOrder) => {
+  try {
+    const res = await $fetch<any>("/api/purchase-orders/detail", {
+      query: { id: po.id },
+    });
+    if (!res?.success || !res?.data) return;
+
+    const d = res.data;
+    const lines: POLine[] = d.lines || [];
+    const partnerName = d.partner_id?.[1] || "-";
+
+    const html = buildPOReceiptHtml({
+      name: d.name,
+      dateOrder: d.date_order,
+      partnerName,
+      partnerRef: d.partner_ref || "",
+      state: d.state,
+      notes: d.notes || "",
+      lines,
+      amountUntaxed: d.amount_untaxed || 0,
+      amountTotal: d.amount_total || 0,
+      currency: d.currency_id?.[1] || "ج.م",
+    });
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.top = "-9999px";
+    iframe.style.left = "-9999px";
+    iframe.style.width = "1px";
+    iframe.style.height = "1px";
+    iframe.style.opacity = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+    doc.write(html);
+    doc.close();
+
+    const win = iframe.contentWindow;
+    if (!win) return;
+    win.focus();
+    win.print();
+    win.onafterprint = () => {
+      document.body.removeChild(iframe);
+    };
+  } catch {
+    // silently fail
+  }
+};
 </script>
 
 <template>
@@ -371,6 +654,14 @@ const stateClass = (state: string) => {
                       class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer"
                     >
                       إنشاء فاتورة
+                    </button>
+                    <button
+                      v-if="po.state === 'purchase' || po.state === 'done'"
+                      @click.stop="printPurchaseOrder(po)"
+                      class="p-2 rounded-lg hover:bg-white text-secondary transition-colors cursor-pointer"
+                      title="طباعة أمر الشراء"
+                    >
+                      <Printer class="w-[18px] h-[18px] text-primary" />
                     </button>
                   </div>
                 </td>

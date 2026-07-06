@@ -412,6 +412,18 @@ function updateReceipt(path: string[], value: any) {
           </select>
         </div>
         <div class="space-y-2">
+          <label class="block text-xs font-bold text-muted-foreground">سمك الخط</label>
+          <select
+            :value="config.receipt.fontWeight"
+            @change="updateReceipt(['fontWeight'], ($event.target as HTMLSelectElement).value)"
+            class="w-full h-10 px-3 bg-white border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none cursor-pointer"
+          >
+            <option value="normal">عادي</option>
+            <option value="500">متوسط</option>
+            <option value="bold">عريض</option>
+          </select>
+        </div>
+        <div class="space-y-2">
           <label class="block text-xs font-bold text-muted-foreground">حجم الخط (px)</label>
           <div class="flex items-center gap-3">
             <input
@@ -419,7 +431,7 @@ function updateReceipt(path: string[], value: any) {
               @input="updateReceipt(['fontSize'], Number(($event.target as HTMLInputElement).value))"
               type="range"
               min="8"
-              max="20"
+              max="28"
               class="flex-1 accent-primary"
             />
             <span class="text-sm font-bold w-8 text-center">{{ config.receipt.fontSize }}</span>
