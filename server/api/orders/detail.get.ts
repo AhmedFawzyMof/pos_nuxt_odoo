@@ -32,6 +32,11 @@ function normalizeOrder(raw: any) {
     pos_reference: raw.pos_reference || "",
     company_id: toTuple(raw.company_id),
     session_summary: raw.session_summary,
+    order_discount: toFloat(raw.order_discount),
+    order_discount_type: raw.order_discount_type || "fixed",
+    service_fee: toFloat(raw.service_fee),
+    service_fee_type: raw.service_fee_type || "fixed",
+    note: raw.note || "",
   };
 }
 

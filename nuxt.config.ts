@@ -10,9 +10,9 @@ export default defineNuxtConfig({
     build: {
       rollupOptions: {
         onwarn(warning, warn) {
-          if (warning.plugin === '@tailwindcss/vite:generate:build') return
-          if (warning.code === 'ANNONCOMMENT') return
-          warn(warning)
+          if (warning.plugin === "@tailwindcss/vite:generate:build") return;
+          if (warning.code === "ANNONCOMMENT") return;
+          warn(warning);
         },
       },
     },
@@ -31,7 +31,7 @@ export default defineNuxtConfig({
   },
   nitro: {
     externals: {
-      trace: ['better-sqlite3'],
+      trace: ["better-sqlite3"],
     },
   },
   app: {

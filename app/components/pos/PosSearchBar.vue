@@ -28,9 +28,16 @@ const dismissed = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
 const dropdownStyle = ref({ top: "0px", left: "0px", width: "0px" });
 
-watch(() => props.modelValue, (v) => { localValue.value = v; });
+watch(
+  () => props.modelValue,
+  (v) => {
+    localValue.value = v;
+  },
+);
 
-watch(localValue, () => { dismissed.value = false; });
+watch(localValue, () => {
+  dismissed.value = false;
+});
 
 watchEffect(() => {
   const hasInput = localValue.value.length > 0;
@@ -95,7 +102,10 @@ function handleKeydown(e: KeyboardEvent) {
 
 function onClickOutside(e: MouseEvent) {
   const target = e.target as HTMLElement;
-  if (!target.closest(".search-bar-container") && !target.closest(".search-suggestions-dropdown")) {
+  if (
+    !target.closest(".search-bar-container") &&
+    !target.closest(".search-suggestions-dropdown")
+  ) {
     showDropdown.value = false;
     dismissed.value = true;
   }
@@ -121,14 +131,18 @@ const totalStock = (product: POSProduct) => {
   <div class="search-bar-container relative w-full">
     <div class="flex items-center gap-2 w-full">
       <div class="relative flex-1">
-        <Search class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <Search
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4"
+        />
         <input
           ref="inputRef"
           :value="localValue"
           @input="onInput"
           @keydown="handleKeydown"
           @focus="dismissed = false"
-          :placeholder="scannerActive ? 'ماسح الباركود نشط...' : 'بحث بالاسم أو الباركود...'"
+          :placeholder="
+            scannerActive ? 'ماسح الباركود نشط...' : 'بحث بالاسم أو الباركود...'
+          "
           class="w-full h-10 pr-9 pl-9 bg-muted/50 border border-outline-variant/60 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
         />
         <button
@@ -142,12 +156,17 @@ const totalStock = (product: POSProduct) => {
       <button
         @click="toggleScanner"
         class="shrink-0 h-10 w-10 flex items-center justify-center rounded-lg border border-outline-variant/60 hover:bg-muted/80 transition-all cursor-pointer"
-        :class="{ 'bg-primary/10 border-primary/30 text-primary': scannerActive }"
+        :class="{
+          'bg-primary/10 border-primary/30 text-primary': scannerActive,
+        }"
         title="ماسح الباركود"
       >
         <span class="material-symbols-outlined text-lg">qr_code_scanner</span>
       </button>
-      <div v-if="scannerActive" class="absolute top-14 left-0 right-0 z-50 max-w-md mx-auto">
+      <div
+        v-if="scannerActive"
+        class="absolute top-14 left-0 right-0 z-50 max-w-md mx-auto"
+      >
         <BarcodeScanner
           :active="scannerActive"
           @scan="handleScan"
@@ -164,10 +183,16 @@ const totalStock = (product: POSProduct) => {
         class="search-suggestions-dropdown fixed z-[9999] bg-card border border-outline-variant/60 rounded-xl shadow-xl overflow-hidden max-h-80 overflow-y-auto"
         :style="dropdownStyle"
       >
-        <div v-if="loading" class="p-4 text-center text-sm text-muted-foreground">
+        <div
+          v-if="loading"
+          class="p-4 text-center text-sm text-muted-foreground"
+        >
           جاري البحث...
         </div>
-        <div v-else-if="!loading && localValue && suggestions.length === 0" class="p-4 text-center text-sm text-muted-foreground">
+        <div
+          v-else-if="!loading && localValue && suggestions.length === 0"
+          class="p-4 text-center text-sm text-muted-foreground"
+        >
           لا توجد نتائج لـ "{{ localValue }}"
         </div>
         <div v-else>
@@ -177,7 +202,9 @@ const totalStock = (product: POSProduct) => {
             @click="selectProduct(product)"
             class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-right border-b border-outline-variant/20 last:border-b-0 cursor-pointer"
           >
-            <div class="w-10 h-10 rounded-lg bg-muted/30 border border-outline-variant/40 flex items-center justify-center overflow-hidden shrink-0">
+            <div
+              class="w-10 h-10 rounded-lg bg-muted/30 border border-outline-variant/40 flex items-center justify-center overflow-hidden shrink-0"
+            >
               <img
                 v-if="product.image_1920"
                 :src="`data:image/png;base64,${product.image_1920}`"
@@ -186,21 +213,41 @@ const totalStock = (product: POSProduct) => {
               <Package v-else class="w-5 h-5 text-muted-foreground/40" />
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold truncate">{{ product.display_name || product.name }}</p>
+              <p class="text-sm font-semibold truncate">
+                {{ product.display_name || product.name }}
+              </p>
               <p class="text-[11px] text-muted-foreground">
                 {{ product.barcode || "—" }}
               </p>
             </div>
             <div class="text-right shrink-0">
               <p class="text-sm font-bold text-primary">
-                {{ (product.list_price || 0).toLocaleString("en-US", { minimumFractionDigits: 2 }) }} ج.م
+                {{
+                  (product.list_price || 0).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                  })
+                }}
+                ج.م
               </p>
-              <p class="text-[10px]" :class="totalStock(product) <= 0 ? 'text-destructive' : 'text-emerald-600'">
-                {{ totalStock(product) <= 0 ? "نفذ" : `${totalStock(product)} متوفر` }}
+              <p
+                class="text-[10px]"
+                :class="
+                  totalStock(product) <= 0
+                    ? 'text-destructive'
+                    : 'text-emerald-600'
+                "
+              >
+                {{
+                  totalStock(product) <= 0
+                    ? "نفذ"
+                    : `${totalStock(product)} متوفر`
+                }}
               </p>
             </div>
             <div class="shrink-0">
-              <span class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+              <span
+                class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              >
                 <Plus class="w-4 h-4" />
               </span>
             </div>

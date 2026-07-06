@@ -102,6 +102,22 @@ export default defineEventHandler(async (event) => {
       ]);
     }
 
+    // Propagate standard_price to all product variants so the cost change
+    // persists when read back (all.get.ts computes cost from variant records).
+    if (body.standard_price !== undefined && !isNaN(Number(body.standard_price))) {
+      const variantRecords = await safeSearchRead(
+        odoo,
+        "product.product",
+        [["product_tmpl_id", "=", templateId]],
+        ["id"],
+      );
+      for (const v of variantRecords) {
+        await odooWrite(odoo, "product.product", [v.id], {
+          standard_price: Number(body.standard_price),
+        });
+      }
+    }
+
     // ── Variant handling ─────────────────────────────────────────────────────
     if (body.variants && body.variants.length > 0) {
       const formSuffixes: string[] = [];

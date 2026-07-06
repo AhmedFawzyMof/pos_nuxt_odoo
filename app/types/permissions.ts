@@ -46,7 +46,7 @@ export type ActionKey =
   | 'product.create' | 'product.edit' | 'product.delete' | 'product.view'
   | 'product.viewCost' | 'product.viewMargin'
   | 'category.create' | 'category.edit' | 'category.delete' | 'category.view'
-  | 'order.view' | 'order.void' | 'order.editPayment' | 'order.removeLine'
+  | 'order.view' | 'order.void' | 'order.editPayment' | 'order.removeLine' | 'order.editPrice'
   | 'cashier.sale' | 'cashier.changePrice' | 'cashier.discount'
   | 'cashier.cashInOut' | 'cashier.closeSession' | 'cashier.forceClose'
   | 'purchase.create' | 'purchase.confirm' | 'purchase.receive'
@@ -75,6 +75,7 @@ export const ActionPermissions: Record<ActionKey, PermissionCheck> = {
   'order.void': { requireAny: [Groups.POS_MANAGER, Groups.SETTINGS_ACCESS_RIGHTS] },
   'order.editPayment': { requireAny: [Groups.POS_MANAGER, Groups.SETTINGS_ACCESS_RIGHTS] },
   'order.removeLine': { requireAny: [Groups.POS_MANAGER, Groups.SETTINGS_ACCESS_RIGHTS] },
+  'order.editPrice': { requireAny: [Groups.POS_MANAGER, Groups.SETTINGS_ACCESS_RIGHTS] },
   'cashier.sale': { require: [Groups.POS_USER] },
   'cashier.changePrice': { require: [Groups.POS_MANAGER] },
   'cashier.discount': { require: [Groups.POS_MANAGER] },

@@ -37,7 +37,7 @@ export function useBarcodeScanner(options: {
       return "تم رفض صلاحية الكاميرا. يرجى تفعيلها من إعدادات المتصفح.";
     }
     if (name === "NotFoundError" || name === "DevicesNotFoundError") {
-      return "لم يتم العثور على كاميرا خلفية متوافقة.";
+      return "لم يتم العثور على كاميرا متوافقة.";
     }
     return `تعذر تشغيل الكاميرا: ${err?.message || err}`;
   };
@@ -132,9 +132,19 @@ export function useBarcodeScanner(options: {
         el.style.minWidth = "300px";
       }
 
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+        });
+      } catch (err: any) {
+        if (err.name === "OverconstrainedError") {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+        } else {
+          throw err;
+        }
+      }
 
       videoEl = document.createElement("video");
       videoEl.srcObject = stream;

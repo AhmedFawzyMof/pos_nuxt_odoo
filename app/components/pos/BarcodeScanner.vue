@@ -25,6 +25,9 @@ const SCANNER_ID = "qrcode-stream-scanner";
 const paused = ref(false);
 const error = ref("");
 const currentZoom = ref(1);
+const cameraConstraints = ref<MediaTrackConstraints>({
+  facingMode: "environment",
+});
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 3;
 
@@ -54,6 +57,13 @@ function onCameraOn() {
 }
 
 function onError(err: Error) {
+  if (
+    err.name === "OverconstrainedError" &&
+    cameraConstraints.value.facingMode
+  ) {
+    cameraConstraints.value = {};
+    return;
+  }
   const msg = getErrorMessage(err);
   error.value = msg;
   emit("error", msg);
@@ -68,7 +78,7 @@ function getErrorMessage(err: { name?: string; message?: string }): string {
     return "تم رفض صلاحية الكاميرا. يرجى تفعيلها من إعدادات المتصفح.";
   }
   if (err.name === "NotFoundError") {
-    return "لم يتم العثور على كاميرا خلفية متوافقة.";
+    return "لم يتم العثور على كاميرا متوافقة.";
   }
   return `تعذر تشغيل الكاميرا: ${err.message || err}`;
 }
@@ -99,6 +109,8 @@ watch(
     error.value = "";
     if (!active) {
       paused.value = false;
+    } else {
+      cameraConstraints.value = { facingMode: "environment" };
     }
   },
 );
@@ -113,8 +125,12 @@ watch(
       <QrcodeStream
         :paused="paused"
         :formats="barcodeFormats"
+        :constraints="cameraConstraints"
         class="w-full h-[300px] block"
-        :style="{ transform: `scale(${currentZoom})`, transformOrigin: 'center center' }"
+        :style="{
+          transform: `scale(${currentZoom})`,
+          transformOrigin: 'center center',
+        }"
         @detect="onDetect"
         @camera-on="onCameraOn"
         @error="onError"
@@ -145,7 +161,9 @@ watch(
           >
             {{ currentZoom.toFixed(1) }}x
           </span>
-          <div class="relative w-[14px] h-[96px] flex items-center justify-center">
+          <div
+            class="relative w-[14px] h-[96px] flex items-center justify-center"
+          >
             <input
               type="range"
               :min="ZOOM_MIN"

@@ -249,6 +249,11 @@ export interface POSOrder {
   company_id?: [number, string];
   lines?: OrderLine[];
   statement_ids?: OrderPayment[];
+  order_discount?: number;
+  order_discount_type?: string;
+  service_fee?: number;
+  service_fee_type?: string;
+  note?: string;
 }
 
 export interface OrderLine {
@@ -298,4 +303,25 @@ export interface OrderPaymentsPayload {
 export interface OrderRemoveItemPayload {
   order_id: number;
   line_id: number;
+}
+
+export interface OrderUpdateItem {
+  line_id?: number | null;
+  product_id: number;
+  product_name?: string;
+  qty: number;
+  price: number;
+  discount: number;
+  _deleted?: boolean;
+}
+
+export interface OrderUpdatePayload {
+  order_id: number;
+  items: OrderUpdateItem[];
+  order_discount: number;
+  order_discount_type: "fixed" | "percent";
+  service_fee: number;
+  service_fee_type: "fixed" | "percent";
+  customer_id: number | false;
+  note: string;
 }

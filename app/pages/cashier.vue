@@ -25,7 +25,12 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { usePosCartStore } from "~~/stores/pos-cart";
 import { usePosHotkeys } from "~/composables/usePosHotkeys";
-import type { POSProduct, POSCategory, PaymentMethod } from "~/types/pos";
+import type {
+  POSProduct,
+  POSProductVariant,
+  POSCategory,
+  PaymentMethod,
+} from "~/types/pos";
 import { usePermissions } from "~/composables/usePermissions";
 
 const { canViewPage, can, isManager } = usePermissions();
@@ -276,8 +281,10 @@ async function handleScan(barcode: string) {
   currentPage.value = 1;
   allProducts.value = [];
   await loadMasterData(1);
-  tryAutoAddFirstResult(weightKg);
-  if (allProducts.value.length === 0) {
+  if (allProducts.value.length > 0) {
+    const product = allProducts.value[0];
+    if (product) handleAddToCart(product, undefined, weightKg ?? undefined);
+  } else {
     showFeedbackToast("المنتج غير موجود", "error");
   }
   searchQuery.value = "";
@@ -304,19 +311,18 @@ function handleProductClick(product: POSProduct) {
 
 function handleAddToCart(
   product: POSProduct,
-  variant?: POSProduct["variants"][0],
+  variant?: POSProductVariant,
+  qty?: number,
 ) {
-  if (variant) {
-    cart.addItem(product, variant, variant.to_weight ? 0.01 : 1);
-  } else {
-    const qty = product.to_weight ? 0.01 : 1;
-    cart.addItem(product, undefined, qty);
-  }
+  const quantity =
+    qty ??
+    (variant ? (variant.to_weight ? 0.01 : 1) : product.to_weight ? 0.01 : 1);
+  cart.addItem(product, variant, quantity);
 }
 
 function handleAddToCartFromDetail(
   product: POSProduct,
-  variant?: POSProduct["variants"][0],
+  variant?: POSProductVariant,
 ) {
   handleAddToCart(product, variant);
   showProductDetail.value = false;
@@ -340,16 +346,6 @@ function handleSessionClosed() {
   showCloseSessionModal.value = false;
   cart.clearCart();
   router.push(configId.value ? `/pos?config_id=${configId.value}` : "/pos");
-}
-
-function tryAutoAddFirstResult(customWeightKg?: number | null) {
-  if (searchQuery.value && allProducts.value.length > 0) {
-    const product = allProducts.value[0];
-    if (product) {
-      const qty = customWeightKg ?? (product.to_weight ? 0.01 : 1);
-      cart.addItem(product, undefined, qty);
-    }
-  }
 }
 
 watch(
