@@ -260,7 +260,7 @@ function handleSearch(val: string) {
 
 function handleSelectSuggestion(product: POSProduct) {
   searchSuggestions.value = [];
-  handleAddToCart(product);
+  handleAddToCart(product, undefined, 1);
 }
 
 async function handleScannerError(message: string) {
@@ -317,6 +317,7 @@ function handleAddToCart(
   const quantity =
     qty ??
     (variant ? (variant.to_weight ? 0.01 : 1) : product.to_weight ? 0.01 : 1);
+  console.log("[POS] handleAddToCart", product, quantity);
   cart.addItem(product, variant, quantity);
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, watchEffect, onMounted, onUnmounted } from "vue";
+import { ref, watch, watchEffect, onMounted, onUnmounted, nextTick } from "vue";
 import { Search, X, Plus, Package } from "@lucide/vue";
 import BarcodeScanner from "./BarcodeScanner.vue";
 import type { POSProduct } from "~/types/pos";
@@ -58,6 +58,13 @@ watch(showDropdown, (show) => {
       left: `${rect.left}px`,
       width: `${rect.width}px`,
     };
+  }
+});
+
+watch(() => props.suggestions, (suggestions) => {
+  if (suggestions.length === 1 && localValue.value && inputRef.value === document.activeElement) {
+    selectProduct(suggestions[0]);
+    nextTick(() => inputRef.value?.focus());
   }
 });
 

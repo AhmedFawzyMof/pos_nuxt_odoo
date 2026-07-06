@@ -13,6 +13,7 @@ import {
   ChevronRight,
   CheckCheck,
   Eye,
+  Edit3,
   Printer,
   LoaderCircle,
   CloudOff,
@@ -67,6 +68,7 @@ const toastMessage = ref("");
 const toastType = ref<"success" | "error">("success");
 const selectedOrderId = ref<number | null>(null);
 const drawerOpen = ref(false);
+const openInEditMode = ref(false);
 
 const todayStr = computed(() => {
   const d = new Date();
@@ -138,6 +140,12 @@ const prevPage = () => {
 
 function openDetail(orderId: number) {
   selectedOrderId.value = orderId;
+  drawerOpen.value = true;
+}
+
+function openDetailForEdit(orderId: number) {
+  selectedOrderId.value = orderId;
+  openInEditMode.value = true;
   drawerOpen.value = true;
 }
 
@@ -469,6 +477,14 @@ const statusIcons: Record<string, any> = {
                         <Eye class="w-[18px] h-[18px]" />
                       </button>
                       <button
+                        v-if="order.state !== 'cancelled' && order.state !== 'refund' && can('order.editPayment')"
+                        @click.stop="openDetailForEdit(order.id)"
+                        class="p-2 rounded-lg hover:bg-white text-amber-600 transition-colors cursor-pointer"
+                        title="تعديل الطلب"
+                      >
+                        <Edit3 class="w-[18px] h-[18px]" />
+                      </button>
+                      <button
                         v-if="order.state !== 'cancelled'"
                         @click.stop="printOrder(order)"
                         class="p-2 rounded-lg hover:bg-white text-secondary transition-colors cursor-pointer"
@@ -568,6 +584,8 @@ const statusIcons: Record<string, any> = {
     <OrdersOrderDetailDrawer
       v-model:isOpen="drawerOpen"
       :order-id="selectedOrderId"
+      :open-in-edit-mode="openInEditMode"
+      @update:open-in-edit-mode="openInEditMode = $event"
       @refresh="refresh"
     />
 

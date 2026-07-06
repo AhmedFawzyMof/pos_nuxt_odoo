@@ -39,8 +39,8 @@
       </div>
       <div
         v-if="cfg.footer?.showOrderNumber || cfg.footer?.showDate || cfg.footer?.showTime"
-        class="text-center mb-2"
-        :style="{ fontSize: baseFontSize + 'px', color: cfg.colors?.secondary }"
+        class="text-center font-bold mb-2"
+        :style="{ fontSize: Math.round(baseFontSize * 1.15) + 'px', color: cfg.colors?.primary }"
       >
         <div v-if="cfg.footer?.showOrderNumber">{{ orderName }}</div>
         <div>{{ dateStr }} {{ timeStr }}</div>
@@ -112,7 +112,7 @@
 
       <!-- Footer -->
       <template v-if="cfg.footer?.enabled">
-        <div class="text-center leading-relaxed" :style="{ fontSize: baseFontSize + 'px', color: cfg.colors?.secondary }">
+        <div class="text-center leading-relaxed" :style="{ fontSize: Math.round(baseFontSize * 1.1) + 'px', fontWeight: 'bold', color: cfg.colors?.primary }">
           <div v-if="cfg.footer?.showThankYou">{{ cfg.footer?.thankYouText }}</div>
           <div v-if="cfg.footer?.showTerms && cfg.footer?.termsText" class="mt-1">{{ cfg.footer?.termsText }}</div>
         </div>

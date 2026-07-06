@@ -50,13 +50,18 @@ interface SearchProduct {
   taxes_id: number[];
 }
 
-const props = defineProps<{
-  isOpen: boolean;
-  orderId: number | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    isOpen: boolean;
+    orderId: number | null;
+    openInEditMode?: boolean;
+  }>(),
+  { openInEditMode: false },
+);
 
 const emit = defineEmits<{
   (e: "update:isOpen", value: boolean): void;
+  (e: "update:openInEditMode", value: boolean): void;
   (e: "refresh"): void;
 }>();
 
@@ -194,7 +199,12 @@ watch(
   (open) => {
     if (open && props.orderId) {
       editMode.value = false;
-      fetchDetail(props.orderId);
+      fetchDetail(props.orderId).then(() => {
+        if (props.openInEditMode) {
+          enterEditMode();
+          emit("update:openInEditMode", false);
+        }
+      });
       fetchReceiptConfig();
     }
   },

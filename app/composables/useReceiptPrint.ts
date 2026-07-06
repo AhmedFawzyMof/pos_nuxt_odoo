@@ -178,7 +178,7 @@ export function useReceiptPrint() {
       cfg.footer?.showOrderNumber ||
       cfg.footer?.showDate ||
       cfg.footer?.showTime
-        ? `<div style="text-align:center;font-size:${fontSize}px;margin-bottom:8px;color:${secondaryColor}">
+        ? `<div style="text-align:center;font-size:${fontSize + 2}px;font-weight:bold;margin-bottom:8px;color:${primaryColor}">
       ${cfg.footer?.showOrderNumber ? `<div>${params.orderName}</div>` : ""}
       ${cfg.footer?.showDate || cfg.footer?.showTime ? `<div>${cfg.footer?.showDate ? dateStr : ""} ${cfg.footer?.showTime ? timeStr : ""}</div>` : ""}
     </div>`
@@ -272,7 +272,7 @@ export function useReceiptPrint() {
 
     const footerHtml = cfg.footer?.enabled
       ? `
-    <div style="text-align:center;font-size:${fontSize}px;line-height:1.625;color:${secondaryColor}">
+    <div style="text-align:center;font-size:${fontSize + 1}px;font-weight:bold;line-height:1.625;color:${primaryColor}">
       ${cfg.footer?.showThankYou ? `<div>${cfg.footer?.thankYouText || "شكراً لتسوقكم معنا"}</div>` : ""}
       ${cfg.footer?.showTerms && cfg.footer?.termsText ? `<div style="margin-top:4px">${cfg.footer.termsText}</div>` : ""}
     </div>
