@@ -7,6 +7,7 @@ import {
   CloudOff,
   AlertCircle,
   X,
+  CheckCheck,
   LoaderCircle,
   ArrowUpDown,
   ArrowUp,
@@ -135,7 +136,19 @@ const drawerOpen = ref(false);
 const drawerMode = ref<"add" | "edit">("add");
 const selectedProduct = ref<Product | null>(null);
 const isSaving = ref(false);
-const actionError = ref("");
+const showToast = ref(false);
+const toastMessage = ref("");
+const toastType = ref<"success" | "error">("success");
+
+function showToastMessage(message: string, type: "success" | "error") {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+}
+
 const liveStockLoading = ref(false);
 
 const checkLiveStock = async () => {
@@ -217,7 +230,7 @@ const handleDelete = async (product: Product) => {
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.message || err.statusMessage || "خطأ في الاتصال بالنظام، لم يتم حذف المنتج.");
+      showToastMessage(err.message || err.statusMessage || "خطأ في الاتصال بالنظام، لم يتم حذف المنتج.", "error");
     } finally {
       isSaving.value = false;
     }
@@ -228,7 +241,6 @@ const handleSave = async (
   payload: Partial<Product> & { variants?: any[]; image_1920?: string | null },
 ) => {
   isSaving.value = true;
-  actionError.value = "";
 
   try {
     const response = await $fetch<{
@@ -246,10 +258,12 @@ const handleSave = async (
     }
   } catch (err: any) {
     console.error("Failed to preserve modifications:", err);
-    actionError.value =
+    showToastMessage(
       err.message ||
       err.statusMessage ||
-      "فشل في حفظ المنتج. يرجى المحاولة مجدداً.";
+      "فشل في حفظ المنتج. يرجى المحاولة مجدداً.",
+      "error",
+    );
   } finally {
     isSaving.value = false;
   }
@@ -270,8 +284,10 @@ const handleRestore = async (product: Product) => {
     }
   } catch (err: any) {
     console.error("Failed to restore product:", err);
-    actionError.value =
-      err.message || err.statusMessage || "فشل في استعادة المنتج.";
+    showToastMessage(
+      err.message || err.statusMessage || "فشل في استعادة المنتج.",
+      "error",
+    );
   } finally {
     isSaving.value = false;
   }
@@ -280,7 +296,6 @@ const handleRestore = async (product: Product) => {
 const handleDeleteFromDrawer = async () => {
   if (selectedProduct.value) {
     isSaving.value = true;
-    actionError.value = "";
 
     const isArchived = selectedProduct.value.active === false;
     const endpoint = isArchived ? "/api/products/unarchive" : "/api/products/archive";
@@ -301,10 +316,12 @@ const handleDeleteFromDrawer = async () => {
       }
     } catch (err: any) {
       console.error("Failed to update product archive status:", err);
-      actionError.value =
+      showToastMessage(
         err.message ||
         err.statusMessage ||
-        "فشل في تغيير حالة المنتج. يرجى المحاولة مجدداً.";
+        "فشل في تغيير حالة المنتج. يرجى المحاولة مجدداً.",
+        "error",
+      );
     } finally {
       isSaving.value = false;
     }
@@ -463,23 +480,6 @@ const handleDeleteFromDrawer = async () => {
         <p class="text-sm opacity-80">{{ error?.message }}</p>
       </div>
 
-      <!-- Action error toast (save / archive) -->
-      <Transition name="fade">
-        <div
-          v-if="actionError"
-          class="flex items-start gap-3 bg-error-container/20 border border-error/30 text-on-error-container px-4 py-3 rounded-xl"
-        >
-          <AlertCircle class="w-5 h-5 text-error mt-0.5 shrink-0" />
-          <p class="text-sm flex-1">{{ actionError }}</p>
-          <button
-            @click="actionError = ''"
-            class="text-error hover:text-error/70 transition-colors"
-          >
-            <X class="w-4 h-4" />
-          </button>
-        </div>
-      </Transition>
-
       <ProductsTable
         :products="sortedProducts"
         :status="status"
@@ -505,6 +505,33 @@ const handleDeleteFromDrawer = async () => {
         @delete="handleDeleteFromDrawer"
       />
     </template>
+  </div>
+
+  <!-- Feedback Toast -->
+  <div
+    class="fixed bottom-10 left-1/2 -translate-x-1/2 z-100 transition-all duration-500 bg-white text-primary"
+    :class="
+      showToast
+        ? 'translate-y-0 opacity-100'
+        : 'translate-y-32 opacity-0 pointer-events-none'
+    "
+  >
+    <div
+      class="px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3"
+      :class="
+        toastType === 'success'
+          ? 'bg-on-white text-white'
+          : 'bg-error text-on-error'
+      "
+    >
+      <component
+        :is="toastType === 'success' ? CheckCheck : AlertCircle"
+        class="w-5 h-5 shrink-0"
+      />
+      <div>
+        <p class="font-bold text-sm text-primary">{{ toastMessage }}</p>
+      </div>
+    </div>
   </div>
 </template>
 

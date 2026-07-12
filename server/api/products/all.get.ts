@@ -257,9 +257,7 @@ export default defineEventHandler(async (event) => {
       list_price: tmpl.list_price || 0,
       barcode: tmpl.barcode || (firstVariant ? firstVariant.barcode : ""),
       qty_available: qtyAvailable,
-      standard_price: product_variant_ids.length > 0
-        ? Math.min(...product_variant_ids.map((v: any) => v.standard_price ?? 0))
-        : (tmpl.standard_price || 0),
+      standard_price: tmpl.standard_price || 0,
       product_variant_ids,
       pos_categories: resolvedPosCategories,
       taxes_id: resolvedTaxes.map((t: any) => t.id),

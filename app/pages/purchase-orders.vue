@@ -132,6 +132,35 @@ const handleReceive = async (data: { po_id: number; lines: any[] }) => {
   }
 };
 
+const reverseReceive = async (poId: number) => {
+  if (!confirm("هل أنت متأكد من عكس استلام هذا الأمر؟ سيتم إرجاع المنتجات إلى المخزون."))
+    return;
+  try {
+    const res = await $fetch<{ success: boolean; message?: string; bill_warning?: string }>(
+      "/api/purchase-orders/reverse-receive",
+      { method: "POST", body: { po_id: poId } },
+    );
+    if (res.success) {
+      if (res.bill_warning) {
+        showToastMessage(res.bill_warning, "error");
+      } else {
+        showToastMessage("تم عكس الاستلام بنجاح", "success");
+      }
+      await refresh();
+    } else {
+      showToastMessage(res.message || "فشل عكس الاستلام", "error");
+    }
+  } catch (e: any) {
+    showToastMessage(
+      e?.data?.statusMessage ||
+        e?.statusMessage ||
+        e?.message ||
+        "خطأ في الاتصال بالخادم",
+      "error",
+    );
+  }
+};
+
 const createBill = async (poId: number) => {
   try {
     const res = await $fetch<{ success: boolean; message?: string }>(
@@ -647,13 +676,24 @@ const printPurchaseOrder = async (po: PurchaseOrder) => {
                     <button
                       v-if="
                         po.state === 'purchase' &&
-                        po.receipt_status !== 'pending' &&
+                        po.receipt_status === 'done' &&
                         can('purchase.createBill')
                       "
                       @click.stop="createBill(po.id)"
                       class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer"
                     >
                       إنشاء فاتورة
+                    </button>
+                    <button
+                      v-if="
+                        po.state === 'purchase' &&
+                        po.receipt_status === 'done' &&
+                        can('purchase.reverseReceive')
+                      "
+                      @click.stop="reverseReceive(po.id)"
+                      class="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 cursor-pointer"
+                    >
+                      عكس الاستلام
                     </button>
                     <button
                       v-if="po.state === 'purchase' || po.state === 'done'"

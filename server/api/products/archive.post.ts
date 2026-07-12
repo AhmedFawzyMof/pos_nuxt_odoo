@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const tmplFound = await odoo.execute_kw("product.template", "search", [
-      [["id", "=", body.id]],
+      [[["id", "=", body.id]]],
     ]);
     const model = tmplFound.length > 0 ? "product.template" : "product.product";
     await odoo.execute_kw(model, "write", [[[body.id], { active: false }]]);

@@ -50,7 +50,7 @@ export type ActionKey =
   | 'cashier.sale' | 'cashier.changePrice' | 'cashier.discount'
   | 'cashier.cashInOut' | 'cashier.closeSession' | 'cashier.forceClose'
   | 'purchase.create' | 'purchase.confirm' | 'purchase.receive'
-  | 'purchase.createBill'
+  | 'purchase.reverseReceive' | 'purchase.createBill'
   | 'vendorBill.create' | 'vendorBill.post' | 'vendorBill.pay'
   | 'vendorBill.cancel' | 'vendorBill.view'
   | 'expense.create' | 'expense.view'
@@ -85,6 +85,7 @@ export const ActionPermissions: Record<ActionKey, PermissionCheck> = {
   'purchase.create': { require: [Groups.PURCHASE_USER] },
   'purchase.confirm': { require: [Groups.PURCHASE_USER] },
   'purchase.receive': { requireAny: [Groups.PURCHASE_USER, Groups.STOCK_USER] },
+  'purchase.reverseReceive': { requireAny: [Groups.PURCHASE_USER, Groups.STOCK_USER] },
   'purchase.createBill': { require: [Groups.ACCOUNT_INVOICE] },
   'vendorBill.view': { require: [Groups.ACCOUNT_INVOICE] },
   'vendorBill.create': { require: [Groups.ACCOUNT_INVOICE] },

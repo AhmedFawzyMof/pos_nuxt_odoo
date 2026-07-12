@@ -13,11 +13,23 @@ export default defineEventHandler(async (event) => {
   const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_manager')
 
-  const tmplFound = await odoo.execute_kw("product.template", "search", [
-    [["id", "=", body.id]],
-  ]);
-  const model = tmplFound.length > 0 ? "product.template" : "product.product";
-  await odoo.execute_kw(model, "unlink", [[body.id]]);
+  try {
+    const tmplFound = await odoo.execute_kw("product.template", "search", [
+      [[["id", "=", body.id]]],
+    ]);
+    const model = tmplFound.length > 0 ? "product.template" : "product.product";
+    await odoo.execute_kw(model, "unlink", [[body.id]]);
+  } catch (err: any) {
+    const message =
+      err.faultString ||
+      err.statusMessage ||
+      err.message ||
+      "فشل في حذف المنتج.";
+    throw createError({
+      statusCode: 400,
+      statusMessage: message,
+    });
+  }
 
   return {
     success: true,

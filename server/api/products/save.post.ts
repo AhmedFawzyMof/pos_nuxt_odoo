@@ -7,6 +7,7 @@ async function odooWrite(
   return await odoo.execute_kw(model, "write", [[ids, values], {}]);
 }
 import { requirePermission } from '~~/server/utils/permissions'
+import { tryCatch } from '~~/server/utils/tryCatch'
 
 async function safeSearchRead(
   odoo: any,
@@ -26,15 +27,46 @@ export default defineEventHandler(async (event) => {
   await requirePermission(event, 'pos_manager')
 
   try {
+    const isEditMode = !!body.id;
+
+    // ── Barcode uniqueness check ────────────────────────────────────────
+    const submittedBarcode = body.barcode?.trim();
+    if (submittedBarcode) {
+      const [barcodeErr, barcodeResults] = await tryCatch(
+        safeSearchRead(
+          odoo,
+          "product.product",
+          [["barcode", "=", submittedBarcode]],
+          ["id", "product_tmpl_id"],
+        ),
+      );
+      if (!barcodeErr && barcodeResults?.length > 0) {
+        if (!isEditMode) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: `الباركود "${submittedBarcode}" مستخدم بالفعل لمنتج آخر`,
+          });
+        }
+        // In edit mode, only reject if the barcode belongs to a different template
+        const currentTemplateId = body.id;
+        const isOwn = barcodeResults.some(
+          (r: any) => Number(r.product_tmpl_id?.[0] || r.product_tmpl_id) === currentTemplateId,
+        );
+        if (!isOwn) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: `الباركود "${submittedBarcode}" مستخدم بالفعل لمنتج آخر`,
+          });
+        }
+      }
+    }
+
     const productValues: any = {
       name: body.name,
       pos_categ_ids: body.pos_categ_ids?.length
         ? [[6, 0, body.pos_categ_ids.map(Number)]]
         : [],
-      barcode:
-        body.variants && body.variants.length > 0
-          ? false
-          : body.barcode || false,
+      barcode: body.barcode || false,
       type: ["consu", "service"].includes(body.type) ? body.type : "consu",
       list_price: isNaN(Number(body.list_price))
         ? 0.0
@@ -65,7 +97,6 @@ export default defineEventHandler(async (event) => {
     }
 
     let templateId: number;
-    const isEditMode = !!body.id;
 
     if (isEditMode) {
       const tmplSearch = await safeSearchRead(
@@ -237,12 +268,6 @@ export default defineEventHandler(async (event) => {
           if (matched.barcode) {
             await odooWrite(odoo, "product.product", [vid], {
               barcode: matched.barcode,
-            });
-          }
-
-          if (matched.standard_price !== undefined && !isNaN(Number(matched.standard_price))) {
-            await odooWrite(odoo, "product.product", [vid], {
-              standard_price: Number(matched.standard_price),
             });
           }
 

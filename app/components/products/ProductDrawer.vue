@@ -232,10 +232,13 @@ watch(
         }
 
         // تعبئة المتغيرات القادمة من السيرفر إذا كان للمنتج variants مخزنة مسبقاً
-        if ((props.product as any).product_variant_ids) {
-          formVariants.value = (
-            (props.product as any).product_variant_ids || []
-          ).map((v: any) => ({
+        const variantIds = (props.product as any).product_variant_ids || [];
+        const hasRealVariants = variantIds.some(
+          (v: any) => v.product_template_attribute_value_ids?.length > 0
+        );
+
+        if (hasRealVariants) {
+          formVariants.value = variantIds.map((v: any) => ({
             id: v.id,
             name_suffix:
               (v.display_name || "")
