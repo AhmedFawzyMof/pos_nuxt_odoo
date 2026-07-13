@@ -114,7 +114,10 @@ const loadPO = async () => {
 watch(
   [() => props.open, () => props.purchaseOrder],
   ([isOpen]) => {
-    if (isOpen) loadPO();
+    if (isOpen) {
+      isConfirming.value = false;
+      loadPO();
+    }
   },
   { immediate: true },
 );

@@ -141,10 +141,9 @@ const reverseReceive = async (poId: number) => {
       { method: "POST", body: { po_id: poId } },
     );
     if (res.success) {
+      showToastMessage(res.message || "تم عكس الاستلام بنجاح", "success");
       if (res.bill_warning) {
-        showToastMessage(res.bill_warning, "error");
-      } else {
-        showToastMessage("تم عكس الاستلام بنجاح", "success");
+        setTimeout(() => showToastMessage(res.bill_warning!, "error"), 600);
       }
       await refresh();
     } else {

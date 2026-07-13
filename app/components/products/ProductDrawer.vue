@@ -13,22 +13,10 @@ import {
   VideoOff,
   ScanBarcode,
   ChevronDown,
-  Layers,
-  Plus,
   Image,
   Upload,
   Check,
 } from "@lucide/vue";
-
-// واجهة تعريف هيكل المتغير المحلي
-interface ProductVariantLocal {
-  id?: number;
-  name_suffix: string; // مثل: "أحمر", "كبير", "X Large"
-  barcode: string;
-  standard_price: number;
-  price_extra: number; // السعر الإضافي الفارق عن السعر الأساسي
-  stock_locations: { locationId: number; locationName: string; quantity: number }[];
-}
 
 const { data: locationsResponse } = await useFetch<{
   success: boolean;
@@ -56,7 +44,6 @@ const emit = defineEmits<{
   (
     e: "save",
     payload: Partial<Product> & {
-      variants?: ProductVariantLocal[];
       pos_categ_ids?: number[];
       location_qty?: { location_id: number; qty: number }[];
     },
@@ -97,9 +84,6 @@ const formTaxable = computed({
   },
 });
 
-// مصفوفة إدارة المتغيرات الديناميكية
-const formVariants = ref<ProductVariantLocal[]>([]);
-
 const handleImageUpload = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
@@ -120,29 +104,7 @@ const removeImage = () => {
   formImage1920.value = null;
 };
 
-// إضافة متغير فارغ جديد للمصفوفة
-const addVariantField = () => {
-  formVariants.value.push({
-    name_suffix: "",
-    barcode: "",
-    standard_price: 0,
-    price_extra: 0,
-    stock_locations: formLocationQty.value.map((lq) => ({
-      locationId: lq.locationId,
-      locationName: lq.locationName,
-      quantity: 0,
-    })),
-  });
-};
-
-// إزالة متغير من المصفوفة قبل الحفظ
-const removeVariantField = (index: number) => {
-  formVariants.value.splice(index, 1);
-};
-
-const activeBarcodeTarget = ref<{ type: "main" | "variant"; index?: number }>({
-  type: "main",
-});
+const isScanningMain = ref(false);
 
 const {
   isActive: isScannerActive,
@@ -154,17 +116,9 @@ const {
   elementId: "barcode-camera-preview",
   pauseDuration: 1800,
   onScan: (barcode, done) => {
-    if (activeBarcodeTarget.value.type === "main") {
-      const trimmed = barcode.trim();
-      const parsed = parseWeightBarcode(trimmed);
-      formBarcode.value = parsed && formIsWeight.value ? parsed.productCode : trimmed;
-    } else if (
-      activeBarcodeTarget.value.type === "variant" &&
-      activeBarcodeTarget.value.index !== undefined
-    ) {
-      const idx = activeBarcodeTarget.value.index;
-      formVariants.value[idx]!.barcode = barcode.trim();
-    }
+    const trimmed = barcode.trim();
+    const parsed = parseWeightBarcode(trimmed);
+    formBarcode.value = parsed && formIsWeight.value ? parsed.productCode : trimmed;
     stop();
     setTimeout(done, 1800);
   },
@@ -190,7 +144,6 @@ watch(
         formPosCategoryIds.value = [];
         formTaxesId.value = [];
         formLocationQty.value = [];
-        formVariants.value = [];
         formImage1920.value = null;
       } else if (props.mode === "edit" && props.product) {
         formName.value = props.product.name;
@@ -231,45 +184,13 @@ watch(
           formImage1920.value = null;
         }
 
-        // تعبئة المتغيرات القادمة من السيرفر إذا كان للمنتج variants مخزنة مسبقاً
-        const variantIds = (props.product as any).product_variant_ids || [];
-        const hasRealVariants = variantIds.some(
-          (v: any) => v.product_template_attribute_value_ids?.length > 0
-        );
-
-        if (hasRealVariants) {
-          formVariants.value = variantIds.map((v: any) => ({
-            id: v.id,
-            name_suffix:
-              (v.display_name || "")
-                .replace(/^\[.*?\]\s*/, "")
-                .replace(props.product?.name || "", "")
-                .replace(/[\(\)]/g, "")
-                .trim() || v.display_name || "",
-            barcode: v.barcode || "",
-            standard_price: v.standard_price ?? 0,
-            price_extra: v.price_extra ?? (v.lst_price
-              ? v.lst_price - (props.product?.list_price || 0)
-              : 0),
-            stock_locations: (v.stock_locations || []).map((sl: any) => ({
-              locationId: sl.location_id,
-              locationName: sl.location_name,
-              quantity: sl.qty || 0,
-            })),
-          }));
-        } else {
-          formVariants.value = [];
-        }
       }
     }
   },
 );
 
-const toggleCameraScanner = async (
-  target: "main" | "variant",
-  index?: number,
-) => {
-  activeBarcodeTarget.value = { type: target, index };
+const toggleCameraScanner = async () => {
+  isScanningMain.value = !isScannerActive.value;
   if (isScannerActive.value) {
     await stop();
   } else {
@@ -308,24 +229,6 @@ const selectedLocationNames = computed(() => {
   return formLocationQty.value.map((lq) => lq.locationName);
 });
 
-const syncLocationToVariants = () => {
-  const activeIds = formLocationQty.value.map((lq) => lq.locationId);
-  for (const v of formVariants.value) {
-    for (const lq of formLocationQty.value) {
-      if (!v.stock_locations.find((sl) => sl.locationId === lq.locationId)) {
-        v.stock_locations.push({
-          locationId: lq.locationId,
-          locationName: lq.locationName,
-          quantity: 0,
-        });
-      }
-    }
-    v.stock_locations = v.stock_locations.filter((sl) =>
-      activeIds.includes(sl.locationId)
-    );
-  }
-};
-
 const addLocation = (loc: any) => {
   if (!formLocationQty.value.find((lq) => lq.locationId === loc.id)) {
     formLocationQty.value.push({
@@ -334,12 +237,10 @@ const addLocation = (loc: any) => {
       quantity: 0,
     });
   }
-  syncLocationToVariants();
 };
 
 const removeLocation = (index: number) => {
   formLocationQty.value.splice(index, 1);
-  syncLocationToVariants();
 };
 
 const saveProduct = () => {
@@ -362,13 +263,6 @@ const saveProduct = () => {
       qty: Number(lq.quantity),
     })),
     image_1920: formImage1920.value,
-    variants: formVariants.value.map((v) => ({
-      ...v,
-      location_qty: v.stock_locations.map((sl) => ({
-        location_id: sl.locationId,
-        qty: Number(sl.quantity),
-      })),
-    })),
     pos_categ_ids: formPosCategoryIds.value,
     taxes_id: formTaxesId.value,
   });
@@ -509,18 +403,16 @@ const saveProduct = () => {
                 >
                 <button
                   type="button"
-                  @click="toggleCameraScanner('main')"
+                  @click="toggleCameraScanner"
                   :class="[
                     'absolute right-1 h-8 w-9 flex items-center justify-center rounded-md transition-all border outline-none',
-                    isScannerActive && activeBarcodeTarget.type === 'main'
+                    isScannerActive && isScanningMain
                       ? 'bg-error-container text-on-error-container border-error/20'
                       : 'bg-white text-on-white-variant border-outline-variant hover:bg-white',
                   ]"
                 >
                   <VideoOff
-                    v-if="
-                      isScannerActive && activeBarcodeTarget.type === 'main'
-                    "
+                    v-if="isScannerActive && isScanningMain"
                     class="w-4 h-4"
                   />
                   <ScanBarcode v-else class="w-4 h-4" />
@@ -625,7 +517,7 @@ const saveProduct = () => {
                 </div>
               </div>
 
-              <div v-if="formVariants.length === 0">
+              <div>
                 <div
                   v-for="(lq, idx) in formLocationQty"
                   :key="lq.locationId"
@@ -633,7 +525,8 @@ const saveProduct = () => {
                 >
                   <input
                     v-model.number="lq.quantity"
-                    class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all"
+                    :disabled="mode === 'edit'"
+                    class="peer w-full h-12 px-4 pt-4 border-b-2 border-outline-variant focus:border-primary bg-transparent text-body-md outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder=" "
                     type="number"
                     min="0"
@@ -646,143 +539,6 @@ const saveProduct = () => {
                         : `الموقع ${idx + 1} الكمية`
                     }}</label
                   >
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="pt-2 border-t border-dashed border-outline-variant space-y-3"
-            >
-              <div class="flex items-center justify-between">
-                <h3
-                  class="text-label-md font-bold text-primary flex items-center gap-2"
-                >
-                  <Layers class="w-4 h-4" />
-                  متغيرات وبدائل المنتج الفرعية
-                </h3>
-                <button
-                  type="button"
-                  @click="addVariantField"
-                  class="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-md hover:bg-primary/20 transition-all font-bold cursor-pointer"
-                >
-                  <Plus class="w-3.5 h-3.5" />
-                  إضافة متغير
-                </button>
-              </div>
-
-              <div
-                v-if="formVariants.length === 0"
-                class="text-center p-4 bg-white rounded-xl border border-dashed border-outline-variant"
-              >
-                <p class="text-xs text-on-white-variant">
-                  لا توجد متغيرات منشأة لهذا المنتج حالياً، يباع كمنتج منفرد
-                  موحد السعر.
-                </p>
-              </div>
-
-              <div
-                v-else
-                class="space-y-3 max-h-[220px] overflow-y-auto custom-scrollbar p-1"
-              >
-                <div
-                  v-for="(variant, idx) in formVariants"
-                  :key="idx"
-                  class="p-3 bg-white rounded-xl border border-outline-variant space-y-2 relative group"
-                >
-                  <button
-                    type="button"
-                    @click="removeVariantField(idx)"
-                    class="absolute top-2 left-2 text-on-white-variant hover:text-error transition-colors p-1 rounded-full hover:bg-error/10 cursor-pointer"
-                  >
-                    <X class="w-3.5 h-3.5" />
-                  </button>
-
-                  <div class="grid grid-cols-2 gap-2 pt-2">
-                    <div class="relative">
-                      <input
-                        v-model="variant.name_suffix"
-                        class="w-full h-9 px-2 text-xs border rounded-lg border-outline focus:border-primary outline-none"
-                        placeholder="مثل: أحمر، حجم كبير، XL"
-                        type="text"
-                      />
-                      <span
-                        class="absolute -top-2 right-2 text-[9px] bg-white px-1 text-on-white-variant"
-                        >اسم المتغير</span
-                      >
-                    </div>
-
-                    <div class="relative">
-                      <input
-                        v-model.number="variant.price_extra"
-                        class="w-full h-9 px-2 text-xs border rounded-lg border-outline focus:border-primary outline-none"
-                        placeholder="0.00"
-                        type="number"
-                        step="0.1"
-                      />
-                      <span
-                        class="absolute -top-2 right-2 text-[9px] bg-white px-1 text-primary font-bold"
-                        >الفارق السعري (+ / -)</span
-                      >
-                    </div>
-                  </div>
-
-                  <div v-if="can('product.viewCost')" class="relative">
-                    <input
-                      v-model.number="variant.standard_price"
-                      class="w-full h-9 px-2 text-xs border rounded-lg border-outline focus:border-primary outline-none"
-                      placeholder="0.00"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                    />
-                    <span
-                      class="absolute -top-2 right-2 text-[9px] bg-white px-1 text-on-white-variant"
-                      >تكلفة المتغير (Cost)</span
-                    >
-                  </div>
-
-                  <div class="relative flex items-center">
-                    <input
-                      v-model="variant.barcode"
-                      class="w-full h-9 pr-8 pl-2 text-xs border rounded-lg border-outline focus:border-primary font-mono outline-none"
-                      placeholder="باركود خاص بالبديل"
-                      type="text"
-                    />
-                    <span
-                      class="absolute -top-2 right-2 text-[9px] bg-white px-1 text-on-white-variant"
-                      >باركود المتغير</span
-                    >
-                    <button
-                      type="button"
-                      @click="toggleCameraScanner('variant', idx)"
-                      :class="[
-                        'absolute right-1 h-7 w-7 flex items-center justify-center rounded-md transition-all border outline-none',
-                        isScannerActive &&
-                        activeBarcodeTarget.type === 'variant' &&
-                        activeBarcodeTarget.index === idx
-                          ? 'bg-error-container text-on-error-container border-error/20'
-                          : 'bg-white text-on-white-variant border-outline-variant hover:bg-white',
-                      ]"
-                    >
-                      <ScanBarcode class="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div v-if="variant.stock_locations.length > 0" class="border-t border-dashed border-outline-variant pt-2 mt-1">
-                    <span class="text-[9px] text-on-white-variant block mb-1">الكمية لكل موقع</span>
-                    <div class="grid grid-cols-2 gap-1.5">
-                      <div v-for="sl in variant.stock_locations" :key="sl.locationId" class="relative">
-                        <input
-                          v-model.number="sl.quantity"
-                          class="w-full h-7 px-2 text-[10px] border rounded-lg border-outline focus:border-primary outline-none"
-                          placeholder="0"
-                          type="number"
-                          min="0"
-                        />
-                        <span class="text-[8px] text-on-white-variant block truncate">{{ sl.locationName }}</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>

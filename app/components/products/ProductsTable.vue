@@ -142,19 +142,7 @@ const emit = defineEmits<{
               </div>
             </td>
             <td class="px-6 py-4 font-mono text-label-md text-on-white-variant">
-              <template v-if="prod.product_variant_ids?.length">
-                <div
-                  v-for="v in prod.product_variant_ids"
-                  :key="v.id"
-                  class="text-[11px] leading-relaxed"
-                >
-                  <span v-if="v.barcode" class="text-on-white-variant">{{ v.barcode }}</span>
-                  <span v-else class="text-outline">&mdash;</span>
-                </div>
-              </template>
-              <template v-else>
-                {{ prod.barcode || "—" }}
-              </template>
+              {{ prod.barcode || "—" }}
             </td>
             <td class="px-6 py-4 text-primary font-bold text-label-md">
               {{
