@@ -244,7 +244,7 @@ const removeLocation = (index: number) => {
 };
 
 const saveProduct = () => {
-  emit("save", {
+  const payload: any = {
     id: props.product?.id,
     name: formName.value,
     barcode: formBarcode.value,
@@ -258,14 +258,20 @@ const saveProduct = () => {
     active: formActive.value,
     available_in_pos: formAvailableInPos.value,
     to_weight: formIsWeight.value,
-    location_qty: formLocationQty.value.map((lq) => ({
-      location_id: lq.locationId,
-      qty: Number(lq.quantity),
-    })),
     image_1920: formImage1920.value,
     pos_categ_ids: formPosCategoryIds.value,
     taxes_id: formTaxesId.value,
-  });
+  };
+  // Only send location_qty on create (add mode).
+  // In edit mode the qty input is disabled and cannot change,
+  // so sending it would trigger an unnecessary inventory adjustment.
+  if (props.mode === "add") {
+    payload.location_qty = formLocationQty.value.map((lq) => ({
+      location_id: lq.locationId,
+      qty: Number(lq.quantity),
+    }));
+  }
+  emit("save", payload);
 };
 </script>
 

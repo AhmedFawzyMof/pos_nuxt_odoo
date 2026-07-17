@@ -414,6 +414,9 @@ async function updateOdooStock(
 
     if (quants.length > 0) {
       quantId = quants[0].id;
+      // Skip if qty unchanged — prevents unnecessary inventory adjustments
+      const currentQty = Number(quants[0].quantity) || 0;
+      if (currentQty === newQty) return;
       await odooWrite(odoo, "stock.quant", [quantId], {
         inventory_quantity: newQty,
       });
