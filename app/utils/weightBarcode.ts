@@ -12,14 +12,16 @@ function isLegacyFormat(barcode: string): boolean {
 export function parseWeightBarcode(
   barcode: string
 ): ParsedWeightBarcode | null {
-  if (!/^\d{13}$/.test(barcode)) return null;
+  const clean = (barcode ?? '').trim();
+  if (!/^\d{13}$/.test(clean)) return null;
+  const barcode = clean;
 
   // PRIMARY: 7-digit product + 5-digit weight (grams) + 1 check
   const primaryProductCode = barcode.substring(0, 7);
   const primaryWeightStr = barcode.substring(7, 12);
   const primaryWeightGrams = parseInt(primaryWeightStr, 10);
 
-  if (primaryWeightGrams > 0) {
+  if (primaryWeightGrams > 0 && Number.isFinite(primaryWeightGrams)) {
     return {
       productCode: primaryProductCode,
       weightKg: primaryWeightGrams / 1000,
@@ -34,7 +36,7 @@ export function parseWeightBarcode(
     const legacyWeightStr = barcode.substring(8, 12);
     const legacyWeightGrams = parseInt(legacyWeightStr, 10);
 
-    if (legacyWeightGrams > 0) {
+    if (legacyWeightGrams > 0 && Number.isFinite(legacyWeightGrams)) {
       return {
         productCode: legacyProductCode,
         weightKg: legacyWeightGrams / 1000,
