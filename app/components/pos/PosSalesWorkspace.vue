@@ -130,8 +130,16 @@ async function resolveWeightToCart(parsed: ParsedWeightBarcode) {
     const res = await $fetch<any>("/api/products/search", {
       query: { query: parsed.productCode },
     });
-    const candidates = (res.data || []).filter((p: any) => p.to_weight);
-    const match: any = findWeightProduct(candidates, parsed);
+    let candidates = (res.data || []).filter((p: any) => p.to_weight);
+    let match: any = findWeightProduct(candidates, parsed);
+    if (!match) {
+      // Fallback: some products may still store the full 13-digit barcode.
+      const res2 = await $fetch<any>("/api/products/search", {
+        query: { query: parsed.rawBarcode },
+      });
+      candidates = (res2.data || []).filter((p: any) => p.to_weight);
+      match = findWeightProduct(candidates, parsed);
+    }
     if (match) {
       const product: POSProduct = {
         id: match.id,
