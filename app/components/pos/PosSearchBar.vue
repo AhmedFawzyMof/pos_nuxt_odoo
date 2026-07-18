@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, watchEffect, onMounted, onUnmounted, nextTick } from "vue";
-import { Search, X, Plus, Package } from "@lucide/vue";
+import { Search, X, Plus, Package, Scale } from "@lucide/vue";
 import BarcodeScanner from "./BarcodeScanner.vue";
 import type { POSProduct } from "~/types/pos";
 import { parseWeightBarcode } from "~/utils/weightBarcode";
@@ -192,13 +192,17 @@ const totalStock = (product: POSProduct) => {
       </button>
       <button
         @click="toggleWeightMode"
-        class="shrink-0 h-10 w-10 flex items-center justify-center rounded-lg border border-outline-variant/60 hover:bg-muted/80 transition-all cursor-pointer"
-        :class="{
-          'bg-amber-500/10 border-amber-500/30 text-amber-600': weightMode,
-        }"
+        type="button"
+        class="shrink-0 h-10 px-2 flex items-center gap-1 rounded-lg border transition-all cursor-pointer"
+        :class="
+          weightMode
+            ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+            : 'bg-muted/50 border-outline-variant/60 hover:bg-muted/80 text-muted-foreground'
+        "
         :title="weightMode ? 'وضع الوزن مفعل' : 'تفعيل وضع الوزن'"
       >
-        <span class="material-symbols-outlined text-lg">scale</span>
+        <Scale class="w-4 h-4" />
+        <span v-if="weightMode" class="text-xs font-bold">وزن</span>
       </button>
       <div
         v-if="scannerActive"

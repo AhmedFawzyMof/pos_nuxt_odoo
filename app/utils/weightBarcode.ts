@@ -92,8 +92,8 @@ export function findWeightProduct(
     candidates.find(
       (p) =>
         p.to_weight &&
-        (p.barcode === parsed.productCode ||
-          p.default_code === parsed.productCode),
+        (p.barcode?.startsWith(parsed.productCode) ||
+          p.default_code?.startsWith(parsed.productCode)),
     ) || null
   );
 }

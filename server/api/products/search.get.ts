@@ -21,7 +21,9 @@ export default defineEventHandler(async (event) => {
   // Check if searchQuery looks like a 7-digit product code from weight barcode
   // If so, also search for products whose barcode starts with this code + 5 digits weight + 1 check digit = 6 chars
   const isProductCode = /^\d{7}$/.test(searchQuery);
-  const barcodePattern = isProductCode ? searchQuery + "______" : searchQuery;
+  // Weight barcodes store the 7-digit product code as the barcode; match by
+  // prefix (startsWith) so both 7-digit and full 13-digit stored barcodes hit.
+  const barcodePattern = isProductCode ? searchQuery + "%" : searchQuery;
 
   const domain: any[] = [
     "|",
