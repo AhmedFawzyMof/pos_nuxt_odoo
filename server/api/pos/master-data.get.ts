@@ -115,6 +115,7 @@ export default defineEventHandler(async (event) => {
       name: p.display_name,
       display_name: p.display_name,
       barcode: p.barcode || "",
+      default_code: p.default_code || "",
       list_price: p.lst_price || 0,
       weight: p.weight || 0,
       to_weight: p.to_weight || false,

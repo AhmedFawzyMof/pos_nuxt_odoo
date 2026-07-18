@@ -54,6 +54,7 @@ export interface POSProduct {
   name: string;
   display_name: string;
   barcode: string;
+  default_code?: string;
   type: "consu" | "service" | "product";
   list_price: number;
   standard_price: number;

@@ -281,10 +281,35 @@ async function handleScan(barcode: string) {
   currentPage.value = 1;
   allProducts.value = [];
   await loadMasterData(1);
-  if (allProducts.value.length > 0) {
-    const product = allProducts.value[0];
-    if (product) handleAddToCart(product, undefined, weightKg ?? undefined);
+
+  // Pick the product whose barcode actually matches the scanned value.
+  // Candidates come back as a page of loose substring matches, so we must
+  // filter for the exact scanned barcode, then fall back to the product
+  // code prefix rather than blindly taking allProducts.value[0].
+  const candidates = allProducts.value;
+  const exact = candidates.find((p: POSProduct) => p.barcode === barcode);
+  const byCode = candidates.find(
+    (p: POSProduct) =>
+      p.barcode.startsWith(searchBarcode) || p.default_code === searchBarcode,
+  );
+  const product = exact || byCode || null;
+
+  if (product) {
+    console.info(
+      "[POS] scan matched product:",
+      product.id,
+      product.barcode,
+      "weightKg:",
+      weightKg,
+    );
+    handleAddToCart(product, undefined, weightKg ?? undefined);
   } else {
+    console.warn(
+      "[POS] scan no exact match for barcode:",
+      barcode,
+      "candidates:",
+      candidates.length,
+    );
     showFeedbackToast("المنتج غير موجود", "error");
   }
   searchQuery.value = "";
