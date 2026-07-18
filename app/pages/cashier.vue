@@ -3,7 +3,6 @@ import { ref, computed, watch, onMounted, nextTick } from "vue";
 import {
   parseWeightBarcode,
   tryWeightBarcodeSearch,
-  type ParsedWeightBarcode,
 } from "~/utils/weightBarcode";
 import {
   AlertCircle,
@@ -125,6 +124,7 @@ const error = ref("");
 const totalPages = ref(1);
 const searchSuggestions = ref<POSProduct[]>([]);
 const searchLoading = ref(false);
+const pendingWeightKg = ref<number | null>(null);
 const allowOutOfStockSale = ref(false);
 
 const { selectedCartIndex } = usePosHotkeys({
@@ -256,14 +256,19 @@ function handleSearch(val: string) {
   const parsed = parseWeightBarcode(val);
   if (parsed) {
     console.info(
-      '[WEIGHT-BARCODE] typed weight barcode, resolving exact:',
+      '[WEIGHT-BARCODE] typed weight barcode:',
       parsed.rawBarcode,
       'weightKg:', parsed.weightKg,
     );
-    resolveWeightBarcode(parsed);
+    pendingWeightKg.value = parsed.weightKg;
+    searchLoading.value = true;
+    searchDebounce = setTimeout(() => {
+      fetchSearchSuggestions(parsed.productCode);
+    }, 300);
     return;
   }
 
+  pendingWeightKg.value = null;
   searchLoading.value = true;
   searchDebounce = setTimeout(() => {
     const { searchQuery: parsedQuery } = tryWeightBarcodeSearch(val);
@@ -271,66 +276,20 @@ function handleSearch(val: string) {
   }, 300);
 }
 
-async function resolveWeightBarcode(parsed: ParsedWeightBarcode) {
-  console.info('[WEIGHT-BARCODE] resolving product for code:', parsed.productCode);
-  try {
-    const query: Record<string, any> = {
-      config_id: configId.value,
-      page: 1,
-      limit: 10,
-      search: parsed.productCode,
-    };
-    if (selectedLocationId.value) query.location_id = selectedLocationId.value;
-    if (activeCategoryId.value) query.category_id = activeCategoryId.value;
-
-    const res = await $fetch<any>("/api/pos/master-data", { query });
-
-    if (!res.success) {
-      console.warn('[WEIGHT-BARCODE] API search failed for productCode:', parsed.productCode);
-      showFeedbackToast("المنتج غير موجود", "error");
-      return;
-    }
-
-    const candidates: POSProduct[] = res.products.data || [];
-    console.info('[WEIGHT-BARCODE] candidates found:', candidates.length);
-
-    const product = candidates.find(
-      (p: POSProduct) =>
-        p.to_weight &&
-        (p.barcode?.startsWith(parsed.productCode) || p.default_code === parsed.productCode),
-    );
-
-    if (!product) {
-      console.warn('[WEIGHT-BARCODE] no weight product matched code:', parsed.productCode);
-      showFeedbackToast("المنتج غير موجود", "error");
-      return;
-    }
-
-    console.info(
-      '[WEIGHT-BARCODE] Product resolved:',
-      product.display_name || product.name,
-      'id:', product.id,
-      'to_weight:', product.to_weight,
-    );
-
-    const existingQty = cart.findItem(product.id)?.quantity || 0;
-    console.info('[WEIGHT-BARCODE] Existing cart quantity:', existingQty);
-    console.info('[WEIGHT-BARCODE] Quantity to add:', parsed.weightKg);
-    console.info('[WEIGHT-BARCODE] Final cart quantity:', existingQty + parsed.weightKg);
-
-    handleAddToCart(product, undefined, parsed.weightKg);
-
-    searchSuggestions.value = [];
-    searchLoading.value = false;
-  } catch (err: any) {
-    console.error('[WEIGHT-BARCODE] error resolving product:', err);
-    showFeedbackToast("فشل البحث عن المنتج", "error");
-  }
-}
-
 function handleSelectSuggestion(product: POSProduct, weightKg?: number) {
   searchSuggestions.value = [];
-  handleAddToCart(product, undefined, weightKg ?? 1);
+  const hasPendingWeight = pendingWeightKg.value !== null && product.to_weight;
+  const finalQty = weightKg ?? (hasPendingWeight ? pendingWeightKg.value : null) ?? 1;
+  const usedWeight = pendingWeightKg.value;
+  pendingWeightKg.value = null;
+  console.info(
+    '[WEIGHT-BARCODE] suggestion selected — product:',
+    product.display_name || product.name,
+    'qty:', finalQty,
+    'wasWeightBarcode:', usedWeight !== null,
+    'isWeightProduct:', product.to_weight,
+  );
+  handleAddToCart(product, undefined, finalQty);
 }
 
 async function handleScannerError(message: string) {
