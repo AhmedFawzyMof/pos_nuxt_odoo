@@ -128,7 +128,7 @@ async function resolveWeightToCart(parsed: ParsedWeightBarcode) {
       parsed.weightKg,
     );
     const res = await $fetch<any>("/api/products/search", {
-      query: { query: parsed.rawBarcode },
+      query: { query: parsed.productCode },
     });
     const candidates = (res.data || []).filter((p: any) => p.to_weight);
     const match: any = findWeightProduct(candidates, parsed);
