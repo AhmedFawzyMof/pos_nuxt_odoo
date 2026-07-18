@@ -10,11 +10,10 @@ function isLegacyFormat(barcode: string): boolean {
 }
 
 export function parseWeightBarcode(
-  barcode: string
+  rawBarcode: string
 ): ParsedWeightBarcode | null {
-  const clean = (barcode ?? '').trim();
-  if (!/^\d{13}$/.test(clean)) return null;
-  const barcode = clean;
+  const barcode = (rawBarcode ?? '').trim();
+  if (!/^\d{13}$/.test(barcode)) return null;
 
   // PRIMARY: 7-digit product + 5-digit weight (grams) + 1 check
   const primaryProductCode = barcode.substring(0, 7);
