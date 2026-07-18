@@ -149,6 +149,22 @@ async function handleSubmit() {
 
   const payments = validPayments;
 
+  console.info('[WEIGHT-BARCODE] Order payload items:',
+    cart.items.map((item) => ({
+      product_id: item.variant?.id || item.product.id,
+      product_name: item.product.display_name || item.product.name,
+      quantity: item.quantity,
+      price: item.price,
+      to_weight: item.product.to_weight,
+    })),
+  );
+  console.info('[WEIGHT-BARCODE] Quantity sent to backend for weight products:',
+    cart.items.filter((i) => i.product.to_weight).map((i) => ({
+      product: i.product.display_name || i.product.name,
+      quantity: i.quantity,
+    })),
+  );
+
   try {
     const res = await $fetch<OrderResponse>("/api/pos/order", {
       method: "POST",

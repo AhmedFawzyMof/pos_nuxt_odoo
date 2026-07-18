@@ -1,6 +1,7 @@
 export interface ParsedWeightBarcode {
   productCode: string;
   weightKg: number;
+  isWeightBarcode: true;
   format: 'primary' | 'fallback';
   rawBarcode: string;
 }
@@ -23,6 +24,7 @@ export function parseWeightBarcode(
     const result: ParsedWeightBarcode = {
       productCode: primaryProductCode,
       weightKg: primaryWeightGrams / 1000,
+      isWeightBarcode: true,
       format: 'primary',
       rawBarcode: barcode,
     };
@@ -44,6 +46,7 @@ export function parseWeightBarcode(
       const result: ParsedWeightBarcode = {
         productCode: legacyProductCode,
         weightKg: legacyWeightGrams / 1000,
+        isWeightBarcode: true,
         format: 'fallback',
         rawBarcode: barcode,
       };

@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, nextTick } from "vue";
 import {
   parseWeightBarcode,
   tryWeightBarcodeSearch,
+  type ParsedWeightBarcode,
 } from "~/utils/weightBarcode";
 import {
   AlertCircle,
@@ -251,6 +252,18 @@ function handleSearch(val: string) {
     searchLoading.value = false;
     return;
   }
+
+  const parsed = parseWeightBarcode(val);
+  if (parsed) {
+    console.info(
+      '[WEIGHT-BARCODE] typed weight barcode, resolving exact:',
+      parsed.rawBarcode,
+      'weightKg:', parsed.weightKg,
+    );
+    resolveWeightBarcode(parsed);
+    return;
+  }
+
   searchLoading.value = true;
   searchDebounce = setTimeout(() => {
     const { searchQuery: parsedQuery } = tryWeightBarcodeSearch(val);
@@ -258,9 +271,66 @@ function handleSearch(val: string) {
   }, 300);
 }
 
-function handleSelectSuggestion(product: POSProduct) {
+async function resolveWeightBarcode(parsed: ParsedWeightBarcode) {
+  console.info('[WEIGHT-BARCODE] resolving product for code:', parsed.productCode);
+  try {
+    const query: Record<string, any> = {
+      config_id: configId.value,
+      page: 1,
+      limit: 10,
+      search: parsed.productCode,
+    };
+    if (selectedLocationId.value) query.location_id = selectedLocationId.value;
+    if (activeCategoryId.value) query.category_id = activeCategoryId.value;
+
+    const res = await $fetch<any>("/api/pos/master-data", { query });
+
+    if (!res.success) {
+      console.warn('[WEIGHT-BARCODE] API search failed for productCode:', parsed.productCode);
+      showFeedbackToast("المنتج غير موجود", "error");
+      return;
+    }
+
+    const candidates: POSProduct[] = res.products.data || [];
+    console.info('[WEIGHT-BARCODE] candidates found:', candidates.length);
+
+    const product = candidates.find(
+      (p: POSProduct) =>
+        p.to_weight &&
+        (p.barcode?.startsWith(parsed.productCode) || p.default_code === parsed.productCode),
+    );
+
+    if (!product) {
+      console.warn('[WEIGHT-BARCODE] no weight product matched code:', parsed.productCode);
+      showFeedbackToast("المنتج غير موجود", "error");
+      return;
+    }
+
+    console.info(
+      '[WEIGHT-BARCODE] Product resolved:',
+      product.display_name || product.name,
+      'id:', product.id,
+      'to_weight:', product.to_weight,
+    );
+
+    const existingQty = cart.findItem(product.id)?.quantity || 0;
+    console.info('[WEIGHT-BARCODE] Existing cart quantity:', existingQty);
+    console.info('[WEIGHT-BARCODE] Quantity to add:', parsed.weightKg);
+    console.info('[WEIGHT-BARCODE] Final cart quantity:', existingQty + parsed.weightKg);
+
+    handleAddToCart(product, undefined, parsed.weightKg);
+
+    searchSuggestions.value = [];
+    searchLoading.value = false;
+  } catch (err: any) {
+    console.error('[WEIGHT-BARCODE] error resolving product:', err);
+    showFeedbackToast("فشل البحث عن المنتج", "error");
+  }
+}
+
+function handleSelectSuggestion(product: POSProduct, weightKg?: number) {
   searchSuggestions.value = [];
-  handleAddToCart(product, undefined, 1);
+  handleAddToCart(product, undefined, weightKg ?? 1);
 }
 
 async function handleScannerError(message: string) {
@@ -276,6 +346,12 @@ async function handleScan(barcode: string) {
   const parsed = parseWeightBarcode(barcode);
   const searchBarcode = parsed ? parsed.productCode : barcode;
   const weightKg = parsed ? parsed.weightKg : null;
+
+  console.info('[WEIGHT-BARCODE] Raw barcode:', barcode);
+  if (parsed) {
+    console.info('[WEIGHT-BARCODE] Parsed productCode:', parsed.productCode);
+    console.info('[WEIGHT-BARCODE] Parsed weightKg:', parsed.weightKg);
+  }
 
   searchQuery.value = searchBarcode;
   currentPage.value = 1;
@@ -295,13 +371,24 @@ async function handleScan(barcode: string) {
   const product = exact || byCode || null;
 
   if (product) {
-    console.info(
-      "[POS] scan matched product:",
-      product.id,
-      product.barcode,
-      "weightKg:",
-      weightKg,
-    );
+    console.info('[WEIGHT-BARCODE] Product resolved:', product.display_name || product.name, 'id:', product.id);
+    console.info('[WEIGHT-BARCODE] Is weight product:', product.to_weight);
+
+    if (parsed && weightKg != null) {
+      if (!product.to_weight) {
+        console.warn('[WEIGHT-BARCODE] barcode is weight-format but product is NOT to_weight — ignoring parsed weight');
+        handleAddToCart(product, undefined, undefined);
+        return;
+      }
+
+      const existingQty = cart.findItem(product.id)?.quantity || 0;
+      console.info('[WEIGHT-BARCODE] Existing cart quantity:', existingQty);
+      console.info('[WEIGHT-BARCODE] Quantity to add:', weightKg);
+      console.info('[WEIGHT-BARCODE] Final cart quantity:', existingQty + weightKg);
+    } else {
+      console.info('[WEIGHT-BARCODE] Non-weight scan, default quantity');
+    }
+
     handleAddToCart(product, undefined, weightKg ?? undefined);
   } else {
     console.warn(
@@ -342,7 +429,7 @@ function handleAddToCart(
   const quantity =
     qty ??
     (variant ? (variant.to_weight ? 0.01 : 1) : product.to_weight ? 0.01 : 1);
-  console.log("[POS] handleAddToCart", product, quantity);
+  console.info('[WEIGHT-BARCODE] handleAddToCart — product:', product.display_name || product.name, 'qty passed:', qty, 'final quantity:', quantity);
   cart.addItem(product, variant, quantity);
 }
 
