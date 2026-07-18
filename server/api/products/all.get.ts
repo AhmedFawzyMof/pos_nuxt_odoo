@@ -27,9 +27,14 @@ export default defineEventHandler(async (event) => {
     baseDomain.push(["pos_categ_ids", "=", categoryId]);
   }
   if (searchText) {
+    // Check if searchText looks like a 7-digit product code from weight barcode
+    // If so, also search for products whose barcode starts with this code + 5 digits weight + 1 check digit = 6 chars
+    const isProductCode = /^\d{7}$/.test(searchText);
+    const barcodePattern = isProductCode ? searchText + "______" : searchText;
+
     baseDomain.push("|", "|");
     baseDomain.push(["name", "ilike", searchText]);
-    baseDomain.push(["barcode", "ilike", searchText]);
+    baseDomain.push(["barcode", "ilike", barcodePattern]);
     baseDomain.push(["default_code", "ilike", searchText]);
   }
   if (negativeStock && !locationId) {
