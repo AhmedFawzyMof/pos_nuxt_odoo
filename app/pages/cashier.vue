@@ -256,15 +256,14 @@ function handleSearch(val: string) {
   const parsed = parseWeightBarcode(val);
   if (parsed) {
     console.info(
-      '[WEIGHT-BARCODE] typed weight barcode:',
+      '[WEIGHT-BARCODE] typed/pasted weight barcode:',
       parsed.rawBarcode,
       'weightKg:', parsed.weightKg,
     );
     pendingWeightKg.value = parsed.weightKg;
+    searchSuggestions.value = [];
     searchLoading.value = true;
-    searchDebounce = setTimeout(() => {
-      fetchSearchSuggestions(parsed.productCode);
-    }, 300);
+    fetchSearchSuggestions(parsed.productCode);
     return;
   }
 
