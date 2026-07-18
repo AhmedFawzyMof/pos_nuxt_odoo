@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, nextTick } from "vue";
 import {
   parseWeightBarcode,
   tryWeightBarcodeSearch,
+  type ParsedWeightBarcode,
 } from "~/utils/weightBarcode";
 import {
   AlertCircle,
@@ -251,14 +252,88 @@ function handleSearch(val: string) {
     searchLoading.value = false;
     return;
   }
+
+  const parsed = parseWeightBarcode(val);
+  if (parsed) {
+    // Weighted barcode typed directly: resolve the EXACT 13-digit barcode
+    // instead of a loose substring search that can return the wrong product
+    // (e.g. a 1kg bulk pack sharing the same 7-digit prefix).
+    console.info(
+      "[POS] typed weight barcode, resolving exact:",
+      parsed.rawBarcode,
+      "weightKg:",
+      parsed.weightKg,
+    );
+    searchLoading.value = true;
+    searchSuggestions.value = [];
+    resolveWeightBarcodeToCart(parsed).finally(() => {
+      searchLoading.value = false;
+    });
+    return;
+  }
+
   searchLoading.value = true;
   searchDebounce = setTimeout(() => {
-    const { searchQuery: parsedQuery, weightKg } = tryWeightBarcodeSearch(val);
-    if (weightKg != null) {
-      console.info("[POS] typed weight barcode parsed:", val, "-> productCode:", parsedQuery, "weightKg:", weightKg);
-    }
+    const { searchQuery: parsedQuery } = tryWeightBarcodeSearch(val);
     fetchSearchSuggestions(parsedQuery);
   }, 300);
+}
+
+function mapSearchToPOSProduct(p: any): POSProduct {
+  return {
+    id: p.id,
+    name: p.name,
+    display_name: p.name,
+    barcode: p.barcode || "",
+    type: "product",
+    list_price: p.list_price || 0,
+    standard_price: p.standard_price || 0,
+    qty_available: typeof p.quantity === "number" ? p.quantity : 0,
+    virtual_available: 0,
+    incoming_qty: 0,
+    outgoing_qty: 0,
+    weight: 0,
+    volume: 0,
+    sale_ok: true,
+    active: true,
+    available_in_pos: true,
+    to_weight: false,
+    taxes_id: p.taxes_id || [],
+  };
+}
+
+async function resolveWeightBarcodeToCart(parsed: ParsedWeightBarcode) {
+  try {
+    const res = await $fetch<any>("/api/products/search", {
+      query: {
+        query: parsed.rawBarcode,
+        locationId: selectedLocationId.value ?? undefined,
+      },
+    });
+    const match = (res.data || []).find(
+      (p: any) => p.barcode === parsed.rawBarcode,
+    );
+    if (match) {
+      const product = mapSearchToPOSProduct(match);
+      console.info(
+        "[POS] weight barcode exact match:",
+        product.id,
+        product.barcode,
+        "weightKg:",
+        parsed.weightKg,
+      );
+      handleAddToCart(product, undefined, parsed.weightKg);
+    } else {
+      console.warn(
+        "[POS] weight barcode no exact product for:",
+        parsed.rawBarcode,
+      );
+      showFeedbackToast("المنتج غير موجود", "error");
+    }
+  } catch (err: any) {
+    console.error("[POS] weight barcode resolve error:", err);
+    showFeedbackToast("المنتج غير موجود", "error");
+  }
 }
 
 function handleSelectSuggestion(product: POSProduct, weightKg?: number | null) {
