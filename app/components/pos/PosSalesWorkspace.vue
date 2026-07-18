@@ -131,7 +131,7 @@ async function resolveWeightToCart(parsed: ParsedWeightBarcode) {
       query: { query: parsed.rawBarcode },
     });
     const candidates = (res.data || []).filter((p: any) => p.to_weight);
-    const match = findWeightProduct(candidates, parsed);
+    const match: any = findWeightProduct(candidates, parsed);
     if (match) {
       const product: POSProduct = {
         id: match.id,
