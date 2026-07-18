@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, watchEffect, onMounted, onUnmounted, nextTick } from "vue";
-import { Search, X, Plus, Package, Scale } from "@lucide/vue";
+import { Search, X, Plus, Package } from "@lucide/vue";
 import BarcodeScanner from "./BarcodeScanner.vue";
 import type { POSProduct } from "~/types/pos";
 import { parseWeightBarcode } from "~/utils/weightBarcode";
@@ -9,17 +9,15 @@ const props = withDefaults(
   defineProps<{
     modelValue: string;
     scannerActive?: boolean;
-    weightMode?: boolean;
     suggestions?: POSProduct[];
     loading?: boolean;
   }>(),
-  { scannerActive: false, weightMode: false, suggestions: () => [], loading: false },
+  { scannerActive: false, suggestions: () => [], loading: false },
 );
 
 const emit = defineEmits<{
   "update:modelValue": [value: string];
   "update:scannerActive": [value: boolean];
-  "update:weightMode": [value: boolean];
   scan: [barcode: string];
   error: [message: string];
   "add-to-cart": [product: POSProduct, weightKg?: number | null];
@@ -96,10 +94,6 @@ function toggleScanner() {
   emit("update:scannerActive", !props.scannerActive);
 }
 
-function toggleWeightMode() {
-  emit("update:weightMode", !props.weightMode);
-}
-
 function selectProduct(product: POSProduct) {
   showDropdown.value = false;
   dismissed.value = true;
@@ -164,11 +158,7 @@ const totalStock = (product: POSProduct) => {
           @keydown="handleKeydown"
           @focus="dismissed = false"
           :placeholder="
-            scannerActive
-              ? 'ماسح الباركود نشط...'
-              : weightMode
-                ? 'باركود وزن: اكتب أو امسح باركود الوزن...'
-                : 'بحث بالاسم أو الباركود...'
+            scannerActive ? 'ماسح الباركود نشط...' : 'بحث بالاسم أو الباركود...'
           "
           class="w-full h-10 pr-9 pl-9 bg-muted/50 border border-outline-variant/60 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
         />
@@ -189,20 +179,6 @@ const totalStock = (product: POSProduct) => {
         title="ماسح الباركود"
       >
         <span class="material-symbols-outlined text-lg">qr_code_scanner</span>
-      </button>
-      <button
-        @click="toggleWeightMode"
-        type="button"
-        class="shrink-0 h-10 px-2 flex items-center gap-1 rounded-lg border transition-all cursor-pointer"
-        :class="
-          weightMode
-            ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-            : 'bg-muted/50 border-outline-variant/60 hover:bg-muted/80 text-muted-foreground'
-        "
-        :title="weightMode ? 'وضع الوزن مفعل' : 'تفعيل وضع الوزن'"
-      >
-        <Scale class="w-4 h-4" />
-        <span v-if="weightMode" class="text-xs font-bold">وزن</span>
       </button>
       <div
         v-if="scannerActive"

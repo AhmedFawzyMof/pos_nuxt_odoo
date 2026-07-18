@@ -18,7 +18,6 @@ const cart = usePosCartStore();
 
 const searchQuery = ref("");
 const scannerActive = ref(false);
-const weightMode = ref(false);
 const activeCategoryId = ref<number | null>(null);
 const currentPage = ref(1);
 const selectedProduct = ref<POSProduct | null>(null);
@@ -89,12 +88,11 @@ function handleCategorySelect(categoryId: number | null) {
 }
 
 function handleSearch(val: string) {
-  if (weightMode.value) {
-    const parsed = parseWeightBarcode(val);
-    if (parsed) {
-      resolveWeightToCart(parsed);
-      return;
-    }
+  const parsed = parseWeightBarcode(val);
+  if (parsed) {
+    // Parser detected a weight barcode -> weight search only.
+    resolveWeightToCart(parsed);
+    return;
   }
   searchQuery.value = val;
   currentPage.value = 1;
@@ -103,12 +101,11 @@ function handleSearch(val: string) {
 }
 
 function handleScan(barcode: string) {
-  if (weightMode.value) {
-    const parsed = parseWeightBarcode(barcode);
-    if (parsed) {
-      resolveWeightToCart(parsed);
-      return;
-    }
+  const parsed = parseWeightBarcode(barcode);
+  if (parsed) {
+    // Parser detected a weight barcode -> weight search only.
+    resolveWeightToCart(parsed);
+    return;
   }
   searchQuery.value = barcode;
   scannerActive.value = false;
@@ -208,7 +205,6 @@ watch(
         <PosSearchBar
           v-model="searchQuery"
           v-model:scanner-active="scannerActive"
-          v-model:weight-mode="weightMode"
           @scan="handleScan"
           @update:model-value="handleSearch"
         />
