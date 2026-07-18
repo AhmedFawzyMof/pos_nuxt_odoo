@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from "vue";
-import {
-  parseWeightBarcode,
-  tryWeightBarcodeSearch,
-} from "~/utils/weightBarcode";
+import { parseWeightBarcode } from "~/utils/weightBarcode";
 import {
   AlertCircle,
   ShoppingCart,
@@ -253,25 +250,10 @@ function handleSearch(val: string) {
     return;
   }
 
-  const parsed = parseWeightBarcode(val);
-  if (parsed) {
-    console.info(
-      '[WEIGHT-BARCODE] typed/pasted weight barcode:',
-      parsed.rawBarcode,
-      'weightKg:', parsed.weightKg,
-    );
-    pendingWeightKg.value = parsed.weightKg;
-    searchSuggestions.value = [];
-    searchLoading.value = true;
-    fetchSearchSuggestions(parsed.productCode);
-    return;
-  }
-
   pendingWeightKg.value = null;
   searchLoading.value = true;
   searchDebounce = setTimeout(() => {
-    const { searchQuery: parsedQuery } = tryWeightBarcodeSearch(val);
-    fetchSearchSuggestions(parsedQuery);
+    fetchSearchSuggestions(val);
   }, 300);
 }
 
@@ -301,63 +283,94 @@ async function handleScan(barcode: string) {
   searchSuggestions.value = [];
   searchLoading.value = false;
 
-  const parsed = parseWeightBarcode(barcode);
-  const searchBarcode = parsed ? parsed.productCode : barcode;
-  const weightKg = parsed ? parsed.weightKg : null;
+  console.debug('[BARCODE] Raw barcode:', barcode);
 
-  console.info('[WEIGHT-BARCODE] Raw barcode:', barcode);
-  if (parsed) {
-    console.info('[WEIGHT-BARCODE] Parsed productCode:', parsed.productCode);
-    console.info('[WEIGHT-BARCODE] Parsed weightKg:', parsed.weightKg);
-  }
-
-  searchQuery.value = searchBarcode;
+  // Step 1: Try exact product barcode match FIRST
+  // Never parse a barcode as weight if it exactly matches a product.
+  searchQuery.value = barcode;
   currentPage.value = 1;
   allProducts.value = [];
   await loadMasterData(1);
 
-  // Pick the product whose barcode actually matches the scanned value.
-  // Candidates come back as a page of loose substring matches, so we must
-  // filter for the exact scanned barcode, then fall back to the product
-  // code prefix rather than blindly taking allProducts.value[0].
-  const candidates = allProducts.value;
-  const exact = candidates.find((p: POSProduct) => p.barcode === barcode);
-  const byCode = candidates.find(
-    (p: POSProduct) =>
-      p.barcode.startsWith(searchBarcode) || p.default_code === searchBarcode,
+  const exactProduct = allProducts.value.find(
+    (p: POSProduct) => p.barcode === barcode,
   );
-  const product = exact || byCode || null;
-
-  if (product) {
-    console.info('[WEIGHT-BARCODE] Product resolved:', product.display_name || product.name, 'id:', product.id);
-    console.info('[WEIGHT-BARCODE] Is weight product:', product.to_weight);
-
-    if (parsed && weightKg != null) {
-      if (!product.to_weight) {
-        console.warn('[WEIGHT-BARCODE] barcode is weight-format but product is NOT to_weight — ignoring parsed weight');
-        handleAddToCart(product, undefined, undefined);
-        return;
-      }
-
-      const existingQty = cart.findItem(product.id)?.quantity || 0;
-      console.info('[WEIGHT-BARCODE] Existing cart quantity:', existingQty);
-      console.info('[WEIGHT-BARCODE] Quantity to add:', weightKg);
-      console.info('[WEIGHT-BARCODE] Final cart quantity:', existingQty + weightKg);
-    } else {
-      console.info('[WEIGHT-BARCODE] Non-weight scan, default quantity');
-    }
-
-    handleAddToCart(product, undefined, weightKg ?? undefined);
-  } else {
-    console.warn(
-      "[POS] scan no exact match for barcode:",
-      barcode,
-      "candidates:",
-      candidates.length,
+  if (exactProduct) {
+    console.debug('[BARCODE] Exact normal barcode match: true');
+    console.debug('[BARCODE] Weight barcode detected: false');
+    console.debug(
+      '[BARCODE] Product resolved:',
+      exactProduct.display_name || exactProduct.name,
     );
-    showFeedbackToast("المنتج غير موجود", "error");
+    handleAddToCart(exactProduct, undefined, undefined);
+    searchQuery.value = '';
+    return;
   }
-  searchQuery.value = "";
+  console.debug('[BARCODE] Exact normal barcode match: false');
+
+  // Step 2: No exact product match — try weight barcode parsing
+  const parsed = parseWeightBarcode(barcode);
+  if (!parsed) {
+    console.warn('[POS] scan no match for barcode:', barcode);
+    showFeedbackToast('المنتج غير موجود', 'error');
+    searchQuery.value = '';
+    return;
+  }
+
+  console.debug('[BARCODE] Weight barcode detected: true');
+  console.debug('[BARCODE] Parsed product code:', parsed.productCode);
+  console.debug('[BARCODE] Parsed weight:', parsed.weightKg);
+
+  // Step 3: Search for product by parsed product code
+  searchQuery.value = parsed.productCode;
+  currentPage.value = 1;
+  allProducts.value = [];
+  await loadMasterData(1);
+
+  const product = allProducts.value.find(
+    (p: POSProduct) =>
+      p.barcode.startsWith(parsed.productCode) ||
+      p.default_code === parsed.productCode,
+  );
+
+  if (!product) {
+    console.warn(
+      '[POS] no product found for weight barcode code:',
+      parsed.productCode,
+    );
+    showFeedbackToast('المنتج غير موجود', 'error');
+    searchQuery.value = '';
+    return;
+  }
+
+  console.debug(
+    '[BARCODE] Product resolved:',
+    product.display_name || product.name,
+    'id:',
+    product.id,
+  );
+  console.debug(
+    '[BARCODE] Product quantity type:',
+    product.to_weight ? 'weight' : 'unit',
+  );
+
+  // Step 4: Verify product is configured as weight-based
+  if (!product.to_weight) {
+    console.debug(
+      '[BARCODE] Weight barcode rejected — product not weight-based',
+    );
+    showFeedbackToast('المنتج غير مهيأ للبيع بالوزن', 'error');
+    searchQuery.value = '';
+    return;
+  }
+
+  // Step 5: Add with parsed weight
+  const existingQty = cart.findItem(product.id)?.quantity || 0;
+  console.debug('[CART] Existing quantity:', existingQty);
+  console.debug('[CART] Quantity being added:', parsed.weightKg);
+  console.debug('[CART] Final quantity:', existingQty + parsed.weightKg);
+  handleAddToCart(product, undefined, parsed.weightKg);
+  searchQuery.value = '';
 }
 
 function handleLocationChange(event: Event) {
