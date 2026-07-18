@@ -245,10 +245,18 @@ const removeLocation = (index: number) => {
 };
 
 const saveProduct = () => {
+  // For weight products, store only the 7-digit product code (the "first half"
+  // of a 13-digit weight barcode) as the barcode, so it becomes the search key.
+  let finalBarcode = formBarcode.value;
+  if (formIsWeight.value) {
+    const parsed = parseWeightBarcode(formBarcode.value);
+    if (parsed) finalBarcode = parsed.productCode;
+  }
+
   const payload: any = {
     id: props.product?.id,
     name: formName.value,
-    barcode: formBarcode.value,
+    barcode: finalBarcode,
     type: formType.value,
     list_price: Number(formListPrice.value),
     standard_price: Number(formStandardPrice.value),

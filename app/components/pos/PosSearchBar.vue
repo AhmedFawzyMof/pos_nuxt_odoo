@@ -9,15 +9,17 @@ const props = withDefaults(
   defineProps<{
     modelValue: string;
     scannerActive?: boolean;
+    weightMode?: boolean;
     suggestions?: POSProduct[];
     loading?: boolean;
   }>(),
-  { scannerActive: false, suggestions: () => [], loading: false },
+  { scannerActive: false, weightMode: false, suggestions: () => [], loading: false },
 );
 
 const emit = defineEmits<{
   "update:modelValue": [value: string];
   "update:scannerActive": [value: boolean];
+  "update:weightMode": [value: boolean];
   scan: [barcode: string];
   error: [message: string];
   "add-to-cart": [product: POSProduct, weightKg?: number | null];
@@ -94,6 +96,10 @@ function toggleScanner() {
   emit("update:scannerActive", !props.scannerActive);
 }
 
+function toggleWeightMode() {
+  emit("update:weightMode", !props.weightMode);
+}
+
 function selectProduct(product: POSProduct) {
   showDropdown.value = false;
   dismissed.value = true;
@@ -158,7 +164,11 @@ const totalStock = (product: POSProduct) => {
           @keydown="handleKeydown"
           @focus="dismissed = false"
           :placeholder="
-            scannerActive ? 'ماسح الباركود نشط...' : 'بحث بالاسم أو الباركود...'
+            scannerActive
+              ? 'ماسح الباركود نشط...'
+              : weightMode
+                ? 'باركود وزن: اكتب أو امسح باركود الوزن...'
+                : 'بحث بالاسم أو الباركود...'
           "
           class="w-full h-10 pr-9 pl-9 bg-muted/50 border border-outline-variant/60 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
         />
@@ -179,6 +189,16 @@ const totalStock = (product: POSProduct) => {
         title="ماسح الباركود"
       >
         <span class="material-symbols-outlined text-lg">qr_code_scanner</span>
+      </button>
+      <button
+        @click="toggleWeightMode"
+        class="shrink-0 h-10 w-10 flex items-center justify-center rounded-lg border border-outline-variant/60 hover:bg-muted/80 transition-all cursor-pointer"
+        :class="{
+          'bg-amber-500/10 border-amber-500/30 text-amber-600': weightMode,
+        }"
+        :title="weightMode ? 'وضع الوزن مفعل' : 'تفعيل وضع الوزن'"
+      >
+        <span class="material-symbols-outlined text-lg">scale</span>
       </button>
       <div
         v-if="scannerActive"

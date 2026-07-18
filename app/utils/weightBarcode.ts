@@ -73,3 +73,27 @@ export function tryWeightBarcodeSearch(
   }
   return { searchQuery: query, weightKg: null };
 }
+
+/**
+ * From a list of candidate products, pick the weight product whose stored
+ * barcode (the 7-digit product code / "first half") matches the parsed
+ * weight barcode. When weight products are saved, their `barcode` is set to
+ * that 7-digit code, so the match is exact.
+ */
+export function findWeightProduct(
+  candidates: Array<{
+    barcode?: string;
+    default_code?: string;
+    to_weight?: boolean;
+  }>,
+  parsed: ParsedWeightBarcode,
+): (typeof candidates)[number] | null {
+  return (
+    candidates.find(
+      (p) =>
+        p.to_weight &&
+        (p.barcode === parsed.productCode ||
+          p.default_code === parsed.productCode),
+    ) || null
+  );
+}

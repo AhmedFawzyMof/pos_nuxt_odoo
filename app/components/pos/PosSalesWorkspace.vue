@@ -7,6 +7,7 @@ import PosProductGrid from "./PosProductGrid.vue";
 import PosCartPanel from "./PosCartPanel.vue";
 import PosProductDetailSheet from "./PosProductDetailSheet.vue";
 import { usePosCartStore } from "~~/stores/pos-cart";
+import { parseWeightBarcode, findWeightProduct, type ParsedWeightBarcode } from "~/utils/weightBarcode";
 import type { POSProduct, POSCategory } from "~/types/pos";
 
 const props = defineProps<{
@@ -17,6 +18,7 @@ const cart = usePosCartStore();
 
 const searchQuery = ref("");
 const scannerActive = ref(false);
+const weightMode = ref(false);
 const activeCategoryId = ref<number | null>(null);
 const currentPage = ref(1);
 const selectedProduct = ref<POSProduct | null>(null);
@@ -87,6 +89,13 @@ function handleCategorySelect(categoryId: number | null) {
 }
 
 function handleSearch(val: string) {
+  if (weightMode.value) {
+    const parsed = parseWeightBarcode(val);
+    if (parsed) {
+      resolveWeightToCart(parsed);
+      return;
+    }
+  }
   searchQuery.value = val;
   currentPage.value = 1;
   allProducts.value = [];
@@ -94,11 +103,64 @@ function handleSearch(val: string) {
 }
 
 function handleScan(barcode: string) {
+  if (weightMode.value) {
+    const parsed = parseWeightBarcode(barcode);
+    if (parsed) {
+      resolveWeightToCart(parsed);
+      return;
+    }
+  }
   searchQuery.value = barcode;
   scannerActive.value = false;
   currentPage.value = 1;
   allProducts.value = [];
   loadMasterData(1);
+}
+
+async function resolveWeightToCart(parsed: ParsedWeightBarcode) {
+  try {
+    console.info(
+      "[POS] weight-mode resolve:",
+      parsed.rawBarcode,
+      "productCode:",
+      parsed.productCode,
+      "weightKg:",
+      parsed.weightKg,
+    );
+    const res = await $fetch<any>("/api/products/search", {
+      query: { query: parsed.rawBarcode },
+    });
+    const candidates = (res.data || []).filter((p: any) => p.to_weight);
+    const match = findWeightProduct(candidates, parsed);
+    if (match) {
+      const product: POSProduct = {
+        id: match.id,
+        name: match.name,
+        display_name: match.name,
+        barcode: match.barcode || "",
+        type: "product",
+        list_price: match.list_price || 0,
+        standard_price: match.standard_price || 0,
+        qty_available: typeof match.quantity === "number" ? match.quantity : 0,
+        virtual_available: 0,
+        incoming_qty: 0,
+        outgoing_qty: 0,
+        weight: 0,
+        volume: 0,
+        sale_ok: true,
+        active: true,
+        available_in_pos: true,
+        to_weight: true,
+        taxes_id: match.taxes_id || [],
+      };
+      console.info("[POS] weight-mode match:", product.id, product.barcode, "weightKg:", parsed.weightKg);
+      cart.addItem(product, undefined, parsed.weightKg);
+    } else {
+      console.warn("[POS] weight-mode no to_weight product for:", parsed.rawBarcode);
+    }
+  } catch (err: any) {
+    console.error("[POS] weight-mode resolve error:", err);
+  }
 }
 
 function handleProductClick(product: POSProduct) {
@@ -138,6 +200,7 @@ watch(
         <PosSearchBar
           v-model="searchQuery"
           v-model:scanner-active="scannerActive"
+          v-model:weight-mode="weightMode"
           @scan="handleScan"
           @update:model-value="handleSearch"
         />
