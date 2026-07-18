@@ -28,14 +28,17 @@ const { can, canViewPage } = usePermissions();
 
 if (import.meta.client) {
   if (!canViewPage(route.path)) {
-    navigateTo('/')
+    navigateTo("/");
   }
 }
 
 const currentPage = ref(1);
+const pageSize = ref(28);
+const pageSizeOptions = [28, 100, 300, 500];
 
 const searchQuery = ref("");
 const archiveFilter = ref<"all" | "active" | "archived">("all");
+const negativeStockFilter = ref(false);
 type SortField = "qty_available" | "standard_price" | "list_price";
 type SortOrder = "asc" | "desc";
 const sortField = ref<SortField>("qty_available");
@@ -64,8 +67,24 @@ const {
   locations?: { id: number; name: string }[];
 }>("/api/products/all", {
   lazy: true,
-  query: { page: currentPage, archiveFilter, search: searchQuery, locationId: selectedLocationId, categoryId: activeCategoryId },
-  watch: [currentPage, archiveFilter, searchQuery, selectedLocationId, activeCategoryId],
+  query: {
+    page: currentPage,
+    limit: pageSize,
+    archiveFilter,
+    search: searchQuery,
+    locationId: selectedLocationId,
+    categoryId: activeCategoryId,
+    negativeStock: negativeStockFilter,
+  },
+  watch: [
+    currentPage,
+    pageSize,
+    archiveFilter,
+    searchQuery,
+    selectedLocationId,
+    activeCategoryId,
+    negativeStockFilter,
+  ],
   transform: (response) => {
     if (!response.data) response.data = [];
     if (response.categories) categories.value = response.categories;
@@ -83,6 +102,10 @@ watch(selectedLocationId, () => {
 });
 
 watch(activeCategoryId, () => {
+  currentPage.value = 1;
+});
+
+watch(negativeStockFilter, () => {
   currentPage.value = 1;
 });
 
@@ -171,8 +194,8 @@ const checkLiveStock = async () => {
       for (const prod of products.value) {
         if (prod.id && res.stockMap[prod.id]) {
           const s = res.stockMap[prod.id];
-          prod.qty_available = s.qty_available;
-          prod.stock_locations = s.stock_locations;
+          prod.qty_available = s?.qty_available ?? 0;
+          prod.stock_locations = s?.stock_locations ?? [];
         }
       }
     }
@@ -230,7 +253,12 @@ const handleDelete = async (product: Product) => {
       }
     } catch (err: any) {
       console.error(err);
-      showToastMessage(err.message || err.statusMessage || "خطأ في الاتصال بالنظام، لم يتم حذف المنتج.", "error");
+      showToastMessage(
+        err.message ||
+          err.statusMessage ||
+          "خطأ في الاتصال بالنظام، لم يتم حذف المنتج.",
+        "error",
+      );
     } finally {
       isSaving.value = false;
     }
@@ -260,8 +288,8 @@ const handleSave = async (
     console.error("Failed to preserve modifications:", err);
     showToastMessage(
       err.message ||
-      err.statusMessage ||
-      "فشل في حفظ المنتج. يرجى المحاولة مجدداً.",
+        err.statusMessage ||
+        "فشل في حفظ المنتج. يرجى المحاولة مجدداً.",
       "error",
     );
   } finally {
@@ -298,7 +326,9 @@ const handleDeleteFromDrawer = async () => {
     isSaving.value = true;
 
     const isArchived = selectedProduct.value.active === false;
-    const endpoint = isArchived ? "/api/products/unarchive" : "/api/products/archive";
+    const endpoint = isArchived
+      ? "/api/products/unarchive"
+      : "/api/products/archive";
 
     try {
       const response = await $fetch<{
@@ -318,8 +348,8 @@ const handleDeleteFromDrawer = async () => {
       console.error("Failed to update product archive status:", err);
       showToastMessage(
         err.message ||
-        err.statusMessage ||
-        "فشل في تغيير حالة المنتج. يرجى المحاولة مجدداً.",
+          err.statusMessage ||
+          "فشل في تغيير حالة المنتج. يرجى المحاولة مجدداً.",
         "error",
       );
     } finally {
@@ -332,59 +362,17 @@ const handleDeleteFromDrawer = async () => {
 <template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <div
-      class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white p-4 rounded-xl border border-outline-variant shadow-sm"
+      class="flex flex-col justify-between items-stretch sm:items-center gap-4 bg-white p-4 rounded-xl border border-outline-variant shadow-sm"
     >
-      <div class="relative flex-1 max-w-md">
-        <Search
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-on-white-variant w-5 h-5"
-        />
-        <input
-          v-model="searchQuery"
-          class="w-full h-11 pr-10 pl-4 bg-white rounded-full border-none focus:ring-2 focus:ring-primary text-label-md outline-none"
-          placeholder="بحث بالاسم، الباركود، أو التصنيف..."
-          type="text"
-        />
-      </div>
-      <div class="flex items-center gap-1 bg-white-low rounded-full p-1 border border-outline-variant">
-        <button
-          @click="archiveFilter = 'all'"
-          class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer"
-          :class="archiveFilter === 'all' ? 'bg-white text-primary shadow-sm' : 'text-on-white-variant hover:text-on-white'"
+      <div class="flex items-center gap-2 w-full flex-wrap sm:flex-nowrap">
+        <select
+          v-model="pageSize"
+          class="h-9 px-3 rounded-full border border-outline-variant bg-white text-label-md text-on-white outline-none focus:ring-2 focus:ring-primary cursor-pointer"
         >
-          الكل
-        </button>
-        <button
-          @click="archiveFilter = 'active'"
-          class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer"
-          :class="archiveFilter === 'active' ? 'bg-white text-primary shadow-sm' : 'text-on-white-variant hover:text-on-white'"
-        >
-          النشط
-        </button>
-        <button
-          @click="archiveFilter = 'archived'"
-          class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer"
-          :class="archiveFilter === 'archived' ? 'bg-white text-primary shadow-sm' : 'text-on-white-variant hover:text-on-white'"
-        >
-          المؤرشف
-        </button>
-      </div>
-      <div class="flex items-center gap-1 bg-white-low rounded-full p-1 border border-outline-variant">
-        <button
-          v-for="field in (['qty_available', 'standard_price', 'list_price'] as SortField[])"
-          :key="field"
-          @click="toggleSort(field)"
-          class="px-3 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer flex items-center gap-1.5"
-          :class="sortField === field ? 'bg-white text-primary shadow-sm' : 'text-on-white-variant hover:text-on-white'"
-        >
-          <Package v-if="field === 'qty_available'" class="w-3.5 h-3.5" />
-          <DollarSign v-if="field === 'standard_price'" class="w-3.5 h-3.5" />
-          <Tag v-if="field === 'list_price'" class="w-3.5 h-3.5" />
-          {{ sortLabels[field] }}
-          <ArrowUp v-if="sortField === field && sortOrder === 'asc'" class="w-3 h-3" />
-          <ArrowDown v-if="sortField === field && sortOrder === 'desc'" class="w-3 h-3" />
-        </button>
-      </div>
-      <div class="flex items-center gap-2">
+          <option v-for="opt in pageSizeOptions" :key="opt" :value="opt">
+            {{ opt }} / صفحة
+          </option>
+        </select>
         <button
           @click="refresh()"
           class="p-2.5 rounded-full border border-outline-variant hover:bg-white transition-all active:scale-95 text-on-white-variant cursor-pointer flex items-center justify-center"
@@ -410,16 +398,112 @@ const handleDeleteFromDrawer = async () => {
         <button
           v-if="can('product.create')"
           @click="openAddDrawer"
-          class="text-white flex items-center justify-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-bold hover:bg-primary/95 transition-all active:scale-95 cursor-pointer shadow-sm"
+          class="text-white flex items-center justify-center gap-2 bg-primary px-6 py-2.5 rounded-full font-bold hover:bg-primary/95 transition-all active:scale-95 cursor-pointer shadow-sm"
         >
           <Plus class="w-5 h-5" />
           إضافة منتج جديد
         </button>
       </div>
+      <div class="flex w-full gap-4 flex-wrap sm:flex-nowrap">
+        <div class="relative flex-1 max-w-md">
+          <Search
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-on-white-variant w-5 h-5"
+          />
+          <input
+            v-model="searchQuery"
+            class="w-full h-11 pr-10 pl-4 bg-white rounded-full border-none focus:ring-2 focus:ring-primary text-label-md outline-none"
+            placeholder="بحث بالاسم، الباركود، أو التصنيف..."
+            type="text"
+          />
+        </div>
+        <div
+          class="flex items-center gap-1 bg-white-low rounded-full p-1 border border-outline-variant"
+        >
+          <button
+            @click="archiveFilter = 'all'"
+            class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer"
+            :class="
+              archiveFilter === 'all'
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-on-white-variant hover:text-on-white'
+            "
+          >
+            الكل
+          </button>
+          <button
+            @click="archiveFilter = 'active'"
+            class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer"
+            :class="
+              archiveFilter === 'active'
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-on-white-variant hover:text-on-white'
+            "
+          >
+            النشط
+          </button>
+          <button
+            @click="archiveFilter = 'archived'"
+            class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer"
+            :class="
+              archiveFilter === 'archived'
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-on-white-variant hover:text-on-white'
+            "
+          >
+            المؤرشف
+          </button>
+          <button
+            @click="negativeStockFilter = !negativeStockFilter"
+            class="px-3.5 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            :class="
+              negativeStockFilter
+                ? 'bg-red-100 text-red-700'
+                : 'text-on-white-variant hover:bg-white hover:text-red-700'
+            "
+          >
+            <AlertCircle class="w-3.5 h-3.5" />
+            <span>سلبي</span>
+          </button>
+        </div>
+        <div
+          class="flex items-center gap-1 bg-white-low rounded-full p-1 border border-outline-variant"
+        >
+          <button
+            v-for="field in [
+              'qty_available',
+              'standard_price',
+              'list_price',
+            ] as SortField[]"
+            :key="field"
+            @click="toggleSort(field)"
+            class="px-3 py-1.5 rounded-full text-label-md font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            :class="
+              sortField === field
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-on-white-variant hover:text-on-white'
+            "
+          >
+            <Package v-if="field === 'qty_available'" class="w-3.5 h-3.5" />
+            <DollarSign v-if="field === 'standard_price'" class="w-3.5 h-3.5" />
+            <Tag v-if="field === 'list_price'" class="w-3.5 h-3.5" />
+            {{ sortLabels[field] }}
+            <ArrowUp
+              v-if="sortField === field && sortOrder === 'asc'"
+              class="w-3 h-3"
+            />
+            <ArrowDown
+              v-if="sortField === field && sortOrder === 'desc'"
+              class="w-3 h-3"
+            />
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Location + Category filters row -->
-    <div class="flex flex-wrap items-center gap-3 bg-white p-3 rounded-xl border border-outline-variant shadow-sm">
+    <div
+      class="flex flex-wrap items-center gap-3 bg-white p-3 rounded-xl border border-outline-variant shadow-sm"
+    >
       <div class="flex items-center gap-2">
         <MapPin class="w-4 h-4 text-on-white-variant shrink-0" />
         <select
@@ -427,11 +511,7 @@ const handleDeleteFromDrawer = async () => {
           class="h-9 px-3 rounded-full border border-outline-variant bg-white text-label-md text-on-white outline-none focus:ring-2 focus:ring-primary cursor-pointer"
         >
           <option :value="null">جميع المواقع</option>
-          <option
-            v-for="loc in locations"
-            :key="loc.id"
-            :value="loc.id"
-          >
+          <option v-for="loc in locations" :key="loc.id" :value="loc.id">
             {{ loc.name }}
           </option>
         </select>
@@ -442,7 +522,11 @@ const handleDeleteFromDrawer = async () => {
         <button
           @click="activeCategoryId = null"
           class="shrink-0 px-3 py-1 rounded-full text-label-sm transition-all cursor-pointer"
-          :class="activeCategoryId === null ? 'bg-primary text-white font-bold shadow-sm' : 'text-on-white-variant hover:bg-white-low border border-outline-variant'"
+          :class="
+            activeCategoryId === null
+              ? 'bg-primary text-white font-bold shadow-sm'
+              : 'text-on-white-variant hover:bg-white-low border border-outline-variant'
+          "
         >
           الكل
         </button>
@@ -451,7 +535,11 @@ const handleDeleteFromDrawer = async () => {
           :key="cat.id"
           @click="activeCategoryId = cat.id"
           class="shrink-0 px-3 py-1 rounded-full text-label-sm transition-all cursor-pointer"
-          :class="activeCategoryId === cat.id ? 'bg-primary text-white font-bold shadow-sm' : 'text-on-white-variant hover:bg-white-low border border-outline-variant'"
+          :class="
+            activeCategoryId === cat.id
+              ? 'bg-primary text-white font-bold shadow-sm'
+              : 'text-on-white-variant hover:bg-white-low border border-outline-variant'
+          "
         >
           {{ cat.name }}
         </button>

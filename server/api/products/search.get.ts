@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const locationId = query.locationId
     ? parseInt(query.locationId as string, 10)
     : null;
+  const includeZeroQty = query.includeZeroQty === 'true';
 
   if (!searchQuery) {
     return { success: true, data: [] };
@@ -30,7 +31,6 @@ export default defineEventHandler(async (event) => {
       [domain],
       {
         fields: ["id", "name", "barcode", "standard_price", "lst_price", "taxes_id"],
-        limit: 20,
       },
     ]),
   );
@@ -84,7 +84,7 @@ export default defineEventHandler(async (event) => {
         quantity: locationId ? qty : undefined,
       };
     })
-    .filter((p: any) => !locationId || p.quantity > 0);
+    .filter((p: any) => !locationId || includeZeroQty || p.quantity > 0);
 
   return { success: true, data };
 });

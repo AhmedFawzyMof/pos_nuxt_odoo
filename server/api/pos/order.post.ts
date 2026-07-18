@@ -35,6 +35,7 @@ export default defineEventHandler(async (event) => {
     service_fee_type: body.service_fee_type || "amount",
     note: body.note || "",
     amount_tax: Number(body.amount_tax) || 0,
+    target_location_id: body.location_id ? Number(body.location_id) : false,
   };
 
   const positionalParams = [sessionId, sanitizedPayload];

@@ -244,6 +244,7 @@ export interface POSOrder {
   amount_paid: number;
   amount_tax: number;
   amount_return: number;
+  amount_discount: number;
   state: "draft" | "paid" | "done" | "cancelled" | "invoiced" | "refund";
   pos_reference?: string;
   company_id?: [number, string];

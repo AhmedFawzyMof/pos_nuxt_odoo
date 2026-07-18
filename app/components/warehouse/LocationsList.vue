@@ -26,6 +26,7 @@ import {
   Pencil,
   Check,
   X,
+  ClipboardCheck,
 } from "@lucide/vue";
 import { usePermissions } from "~/composables/usePermissions";
 const { can } = usePermissions();
@@ -37,6 +38,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "create-location"): void;
   (e: "stock-transfer"): void;
+  (e: "stock-reconciliation"): void;
   (e: "updated"): void;
 }>();
 
@@ -149,6 +151,14 @@ function onKeydown(e: KeyboardEvent, loc: LocationItem) {
         >
           <Plus class="w-5 h-5" />
           إنشاء موقع جديد
+        </button>
+        <button
+          v-if="can('warehouse.reconciliation')"
+          @click="$emit('stock-reconciliation')"
+          class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-label-md font-bold flex items-center gap-2 hover:bg-emerald-700 transition-all active:scale-95 cursor-pointer"
+        >
+          <ClipboardCheck class="w-5 h-5" />
+          تسوية المخزون
         </button>
         <button
           v-if="can('warehouse.transfer')"

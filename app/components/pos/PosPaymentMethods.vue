@@ -66,6 +66,10 @@ function removePaymentAllocation(index: number) {
 function updateAllocation(index: number, amount: number) {
   if (amount < 0) amount = 0;
   if (!localPaymentAllocations.value[index]) return;
+  // Prevent setting amount to 0 if there's still remaining balance
+  if (amount === 0 && remaining.value > 0) {
+    amount = remaining.value;
+  }
   localPaymentAllocations.value[index].amount = amount;
 }
 

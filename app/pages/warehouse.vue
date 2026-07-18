@@ -2,6 +2,9 @@
 import { ref, computed, onMounted } from "vue";
 import { AlertCircle, RefreshCcw, CheckCheck } from "@lucide/vue";
 import { usePermissions } from "~/composables/usePermissions";
+import WarehouseStockTransferModal from "~/components/warehouse/StockTransferModal.vue";
+import WarehouseCreateLocationModal from "~/components/warehouse/CreateLocationModal.vue";
+import WarehouseInventoryReconciliationModal from "~/components/warehouse/InventoryReconciliationModal.vue";
 
 const route = useRoute();
 const { canViewPage, can } = usePermissions();
@@ -55,6 +58,7 @@ const stockLevels = computed(() =>
 
 const openTransfer = ref(false);
 const openCreateLoctaion = ref(false);
+const openReconciliation = ref(false);
 
 const toastMessage = ref("");
 const toastType = ref<"success" | "error">("success");
@@ -146,6 +150,7 @@ onMounted(async () => {
           :locations="locations"
           @create-location="openCreateLoctaion = true"
           @stock-transfer="openTransfer = true"
+          @stock-reconciliation="openReconciliation = true"
         />
 
         <WarehouseRecentMovements
@@ -175,6 +180,13 @@ onMounted(async () => {
         :open="openTransfer"
         v-on:update:open="(val) => (openTransfer = val)"
         @transfer-completed="async () => { await translateLocations(); refresh(); }"
+      />
+
+      <WarehouseInventoryReconciliationModal
+        :existing-locations="locations"
+        :open="openReconciliation"
+        v-on:update:open="(val) => (openReconciliation = val)"
+        @reconciliation-completed="async () => { await translateLocations(); refresh(); }"
       />
     </div>
 

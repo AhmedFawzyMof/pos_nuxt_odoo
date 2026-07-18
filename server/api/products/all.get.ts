@@ -5,13 +5,14 @@ import { requirePermission } from '~~/server/utils/permissions'
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const page = Math.max(1, parseInt((query.page as string) || "1"));
-  const limit = 28;
+  const limit = query.limit ? parseInt(query.limit as string, 10) : 28;
   const offset = (page - 1) * limit;
 
   const archiveFilter = (query.archiveFilter as string) || "all";
   const searchText = (query.search as string) || "";
   const locationId = query.locationId ? parseInt(query.locationId as string, 10) : null;
   const categoryId = query.categoryId ? parseInt(query.categoryId as string, 10) : null;
+  const negativeStock = query.negativeStock === "true";
 
   const odoo = await getAdminOdooClient();
   await requirePermission(event, 'pos_user')
@@ -30,6 +31,9 @@ export default defineEventHandler(async (event) => {
     baseDomain.push(["name", "ilike", searchText]);
     baseDomain.push(["barcode", "ilike", searchText]);
     baseDomain.push(["default_code", "ilike", searchText]);
+  }
+  if (negativeStock && !locationId) {
+    baseDomain.push(["qty_available", "<", 0]);
   }
 
   const odooContext = { active_test: false };

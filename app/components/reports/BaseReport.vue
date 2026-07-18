@@ -36,6 +36,32 @@ const reportData = ref<any>(null);
 const pending = ref(false);
 const error = ref<any>(null);
 
+const totalUnpaid = computed(() => {
+  if (!reportData.value?.rows?.length) return 0;
+  return reportData.value.rows.reduce((sum: number, row: any) => {
+    const total = Number(row.total ?? row.amount_total ?? row["الإجمالي"] ?? 0);
+    const paid = Number(row.paid ?? row.amount_paid ?? row["المدفوع"] ?? 0);
+    return sum + Math.max(0, total - paid);
+  }, 0);
+});
+
+const isDiscountKpi = (label: string) => {
+  return label.includes("خصم") || label.includes("discount") || label.includes("Discount");
+};
+
+const discountKpi = computed(() => {
+  if (!reportData.value?.summary?.length) return null;
+  return reportData.value.summary.find((k: any) => 
+    k.label?.includes("خصم") || k.label?.includes("discount") || k.label?.includes("Discount")
+  ) || null;
+});
+
+const totalDiscountsWithUnpaid = computed(() => {
+  if (!discountKpi.value) return null;
+  const discountValue = Number(discountKpi.value.value || 0);
+  return discountValue + totalUnpaid.value;
+});
+
 async function fetchData() {
   pending.value = true;
   error.value = null;
@@ -176,6 +202,11 @@ defineExpose({ refresh, handleExport });
             >
               {{ typeof kpi.value === 'object' ? JSON.stringify(kpi.value) : kpi.value }}
             </h3>
+            <!-- Show unpaid amount in discounts KPI -->
+            <p v-if="reportType === 'sales' && isDiscountKpi(kpi.label) && totalUnpaid > 0" 
+               class="text-xs text-error font-bold mt-1">
+              + {{ totalUnpaid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} ج.م غير مدفوع
+            </p>
           </div>
         </div>
 

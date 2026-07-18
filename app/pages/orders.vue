@@ -118,12 +118,24 @@ const endItem = computed(() =>
 
 const totalSales = computed(() =>
   ordersList.value
-    .filter((o) => o.state !== "cancelled")
+    .filter((o) => o.state !== "cancelled" && o.state !== "draft")
     .reduce((sum, o) => sum + o.amount_total, 0),
 );
 
+const totalDiscounts = computed(() =>
+  ordersList.value
+    .filter((o) => o.state !== "cancelled" && o.state !== "draft")
+    .reduce((sum, o) => sum + (o.amount_discount || 0), 0),
+);
+
+const totalUnpaid = computed(() =>
+  ordersList.value
+    .filter((o) => o.state !== "cancelled" && o.state !== "draft")
+    .reduce((sum, o) => sum + (o.amount_total - o.amount_paid), 0),
+);
+
 const completedCount = computed(
-  () => ordersList.value.filter((o) => o.state !== "cancelled").length,
+  () => ordersList.value.filter((o) => o.state !== "cancelled" && o.state !== "draft").length,
 );
 
 const nextPage = () => {
@@ -294,7 +306,7 @@ const statusIcons: Record<string, any> = {
 
       <template v-if="status !== 'error'">
         <!-- Top KPI Dashboard -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div
             class="bg-white border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
           >
@@ -311,6 +323,27 @@ const statusIcons: Record<string, any> = {
               class="w-14 h-14 bg-primary-container/10 rounded-full flex items-center justify-center text-primary"
             >
               <Banknote class="w-7 h-7" />
+            </div>
+          </div>
+
+          <div
+            class="bg-white border border-outline-variant p-6 rounded-2xl flex items-center justify-between shadow-sm"
+          >
+            <div class="space-y-1">
+              <p class="text-label-md text-on-white-variant">
+                الخصومات (خسارة)
+              </p>
+              <h2 class="text-display-sm font-bold text-error">
+                {{ (totalDiscounts + totalUnpaid).toLocaleString("en-US") }} ج.م
+              </h2>
+              <p class="text-xs text-on-white-variant">
+                إجمالي قيم الخصومات + غير مدفوع
+              </p>
+            </div>
+            <div
+              class="w-14 h-14 bg-error-container/20 rounded-full flex items-center justify-center text-error"
+            >
+              <Trash2 class="w-7 h-7" />
             </div>
           </div>
 

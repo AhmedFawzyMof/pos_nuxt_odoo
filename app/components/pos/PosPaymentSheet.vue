@@ -57,10 +57,16 @@ const lastOrderServiceFee = ref(0);
 const lastOrderGrandTotal = ref(0);
 
 const isFullyPaid = computed(
-  () =>
-    localPaymentAllocations.value.reduce((s, p) => s + p.amount, 0) >=
-      cart.grandTotal &&
-    localPaymentAllocations.value.length > 0,
+  () => {
+    // If grandTotal is 0 or negative (100% discount), no payment needed
+    if (cart.grandTotal <= 0) return true;
+    // Otherwise require payments >= grandTotal and at least one payment
+    return (
+      localPaymentAllocations.value.reduce((s, p) => s + p.amount, 0) >=
+        cart.grandTotal &&
+      localPaymentAllocations.value.length > 0
+    );
+  },
 );
 
 watch(
@@ -96,9 +102,23 @@ async function handleSubmit() {
   errorMessage.value = "";
   successMessage.value = "";
 
+  if (!cart.selectedLocationId) {
+    errorMessage.value = "يجب تحديد موقع التخزين قبل إتمام الطلب";
+    return;
+  }
+
   if (!isFullyPaid.value) {
     errorMessage.value = "يجب تغطية كامل المبلغ قبل تأكيد الدفع";
     return;
+  }
+
+  // Check that all payment allocations have valid amounts (> 0) only if grandTotal > 0
+  if (cart.grandTotal > 0) {
+    const hasZeroAmountPayment = localPaymentAllocations.value.some((p) => p.amount <= 0);
+    if (hasZeroAmountPayment) {
+      errorMessage.value = "جميع طرق الدفع يجب أن يكون لها مبلغ أكبر من صفر";
+      return;
+    }
   }
 
   if (!props.sessionId) {
@@ -108,14 +128,26 @@ async function handleSubmit() {
 
   isSaving.value = true;
 
-  const payments = localPaymentAllocations.value.map((p) => {
-    const method = props.paymentMethods.find((m) => m.id === p.methodId);
-    return {
-      method_id: p.methodId,
-      method_name: method?.name || "",
-      amount: p.amount,
-    };
-  });
+  // Filter out any 0-amount payments and validate total
+  const validPayments = localPaymentAllocations.value
+    .filter((p) => p.amount > 0)
+    .map((p) => {
+      const method = props.paymentMethods.find((m) => m.id === p.methodId);
+      return {
+        method_id: p.methodId,
+        method_name: method?.name || "",
+        amount: p.amount,
+      };
+    });
+
+  const totalPaid = validPayments.reduce((s, p) => s + p.amount, 0);
+  if (totalPaid < cart.grandTotal - 0.01) {
+    errorMessage.value = "مبلغ الدفع أقل من الإجمالي";
+    isSaving.value = false;
+    return;
+  }
+
+  const payments = validPayments;
 
   try {
     const res = await $fetch<OrderResponse>("/api/pos/order", {

@@ -37,6 +37,7 @@ const props = defineProps<{
   mode: "add" | "edit";
   product: Product | null;
   isSaving: boolean;
+  defaultType?: "consu" | "service" | "product";
 }>();
 
 const emit = defineEmits<{
@@ -131,7 +132,7 @@ watch(
       if (props.mode === "add") {
         formName.value = "";
         formBarcode.value = "";
-        formType.value = "product";
+        formType.value = props.defaultType || "product";
         formListPrice.value = 0;
         formStandardPrice.value = 0;
         formWeight.value = 0;
