@@ -253,14 +253,27 @@ function handleSearch(val: string) {
   }
   searchLoading.value = true;
   searchDebounce = setTimeout(() => {
-    const { searchQuery: parsedQuery } = tryWeightBarcodeSearch(val);
+    const { searchQuery: parsedQuery, weightKg } = tryWeightBarcodeSearch(val);
+    if (weightKg != null) {
+      console.info("[POS] typed weight barcode parsed:", val, "-> productCode:", parsedQuery, "weightKg:", weightKg);
+    }
     fetchSearchSuggestions(parsedQuery);
   }, 300);
 }
 
-function handleSelectSuggestion(product: POSProduct) {
+function handleSelectSuggestion(product: POSProduct, weightKg?: number | null) {
   searchSuggestions.value = [];
-  handleAddToCart(product, undefined, 1);
+  const qty = weightKg != null ? weightKg : 1;
+  if (weightKg != null) {
+    console.info(
+      "[POS] typed-barcode suggestion selected, using weightKg:",
+      weightKg,
+      "product:",
+      product.id,
+      product.barcode,
+    );
+  }
+  handleAddToCart(product, undefined, qty);
 }
 
 async function handleScannerError(message: string) {

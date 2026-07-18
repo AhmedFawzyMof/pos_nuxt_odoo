@@ -3,6 +3,7 @@ import { ref, watch, watchEffect, onMounted, onUnmounted, nextTick } from "vue";
 import { Search, X, Plus, Package } from "@lucide/vue";
 import BarcodeScanner from "./BarcodeScanner.vue";
 import type { POSProduct } from "~/types/pos";
+import { parseWeightBarcode } from "~/utils/weightBarcode";
 
 const props = withDefaults(
   defineProps<{
@@ -19,7 +20,7 @@ const emit = defineEmits<{
   "update:scannerActive": [value: boolean];
   scan: [barcode: string];
   error: [message: string];
-  "add-to-cart": [product: POSProduct];
+  "add-to-cart": [product: POSProduct, weightKg?: number | null];
 }>();
 
 const localValue = ref(props.modelValue);
@@ -62,8 +63,9 @@ watch(showDropdown, (show) => {
 });
 
 watch(() => props.suggestions, (suggestions) => {
-  if (suggestions.length === 1 && localValue.value && inputRef.value === document.activeElement) {
-    selectProduct(suggestions[0]);
+  const only = suggestions[0];
+  if (suggestions.length === 1 && only && localValue.value && inputRef.value === document.activeElement) {
+    selectProduct(only);
     nextTick(() => inputRef.value?.focus());
   }
 });
@@ -95,15 +97,23 @@ function toggleScanner() {
 function selectProduct(product: POSProduct) {
   showDropdown.value = false;
   dismissed.value = true;
+  const parsed = parseWeightBarcode(localValue.value);
+  const weight = parsed?.weightKg ?? null;
   localValue.value = "";
   emit("update:modelValue", "");
-  emit("add-to-cart", product);
+  emit("add-to-cart", product, weight);
 }
 
 function handleKeydown(e: KeyboardEvent) {
   if (e.key === "Escape") {
     showDropdown.value = false;
     dismissed.value = true;
+  } else if (e.key === "Enter" && showDropdown.value && props.suggestions.length > 0) {
+    const first = props.suggestions[0];
+    if (first) {
+      e.preventDefault();
+      selectProduct(first);
+    }
   }
 }
 
